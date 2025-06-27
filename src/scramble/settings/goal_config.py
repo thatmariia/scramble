@@ -1,0 +1,30 @@
+from dataclasses import dataclass
+
+from scramble.settings.goal import Goal
+
+
+@dataclass
+class GoalConfig:
+    """
+    Configuration for a specific optimization goal.
+    Contains the goal type, whether it is enabled, and its weight in the optimization process.
+
+    Attributes:
+    ----------
+    goal : Goal
+        The type of goal to be optimized for.
+    enabled : bool = True
+        Whether this goal is enabled in the optimization process.
+    weight : float = 1.0
+        The weight of this goal in the optimization process, determining its influence relative to other goals.
+    """
+    goal: Goal
+    enabled: bool = True
+    weight: float = 1.0
+
+
+DEFAULT_GOAL_CONFIGS = {
+    Goal.BALANCE_LEVEL: GoalConfig(goal=Goal.BALANCE_LEVEL, enabled=True, weight=1.0),
+    Goal.DIVERSIFY_PARTNERS: GoalConfig(goal=Goal.DIVERSIFY_PARTNERS, enabled=True, weight=1.0),
+    Goal.DIVERSIFY_OPPONENTS: GoalConfig(goal=Goal.DIVERSIFY_OPPONENTS, enabled=True, weight=1.0),
+}
