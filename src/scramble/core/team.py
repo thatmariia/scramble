@@ -57,4 +57,4 @@ class Team:
         """
         if not self.players:
             return 0.0
-        return sum(player.level.value for player in self.players) / len(self.players)
+        return float(sum(player.level.value for player in self.players)) / len(self.players)

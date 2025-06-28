@@ -1,4 +1,7 @@
+from itertools import combinations
+
 from scramble.core.player_history import PlayerHistory
+from scramble.core.round import Round
 
 
 class HistoryManager:
@@ -89,31 +92,36 @@ class HistoryManager:
         if player_id not in self.player_histories:
             self.player_histories[player_id] = PlayerHistory()
 
-    def update_from_round(self, round):
+    def update_from_round(self, game_round: Round):
         """
         Updates the player histories based on the round matches.
 
         Parameters
         ----------
-        round : Round
+        game_round : Round
             The round containing matches to update player histories.
         """
-        for match in round.matches:
-            teams = match.teams
+        for player_id, partner_id in game_round.partner_pairs():
+            self.ensure_player(player_id)
+            self.player_histories[player_id].record_partner(partner_id)
 
-            # record partners
-            for team in teams:
-                for player in team.active_players:
-                    self.ensure_player(player.id)
-                    for other_player in team.active_players:
-                        if player.id != other_player.id:
-                            self.player_histories[player.id].record_partner(other_player.id)
+        for player_id, opponent_id in game_round.opponent_pairs():
+            self.ensure_player(player_id)
+            self.player_histories[player_id].record_opponent(opponent_id)
 
-            # record opponents
-            for team in teams:
-                for player in team.active_players:
-                    self.ensure_player(player.id)
-                    for other_team in teams:
-                        if team != other_team:
-                            for opponent in other_team.active_players:
-                                self.player_histories[player.id].record_opponent(opponent.id)
+    def remove_round(self, game_round: Round):
+        """
+        Removes the player histories based on the round matches.
+
+        Parameters
+        ----------
+        game_round : Round
+            The round containing matches to remove player histories.
+        """
+        for player_id, partner_id in game_round.partner_pairs():
+            if player_id in self.player_histories:
+                self.player_histories[player_id].remove_partner(partner_id)
+
+        for player_id, opponent_id in game_round.opponent_pairs():
+            if player_id in self.player_histories:
+                self.player_histories[player_id].remove_opponent(opponent_id)
