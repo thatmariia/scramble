@@ -2,7 +2,7 @@
 from ortools.sat.python import cp_model as cp
 
 from itertools import combinations
-from scramble.core import Player, HistoryManager, Match, Round
+from scramble.core import Player, HistoryManager, Match, Field, Round
 from scramble.settings import Settings
 from scramble.solver.utils import are_disjoint
 from scramble.solver.scoring import score_match
@@ -164,7 +164,19 @@ class ScrambleSolver:
         status = self.solver.Solve(self.model)
 
         if status in [cp.OPTIMAL, cp.FEASIBLE]:
-            # TODO: extract assignments and build Round
-            return Round(matches=[], resting_players=[])
+            selected_matches = [
+                match_teams
+                for match_teams, match_var in self.vars["match"].items()
+                if self.solver.Value(match_var) == 1
+            ]
+            matches = []
+            for i, match_teams in enumerate(selected_matches):
+                team_player_ids_list = [list(team_player_ids) for team_player_ids in match_teams]
+                # TODO: select fields instead of creating them
+                field = Field(id=i, name=f"Field {i + 1}")
+                match = Match.from_team_player_ids(team_player_ids_list, self._player_lookup, field)
+                matches.append(match)
+            resting_players = [self._player_lookup[player_id] for player_id in self.resting_player_ids]
+            return Round(matches=matches, resting_players=resting_players)
         else:
             raise RuntimeError("No feasible solution found")
