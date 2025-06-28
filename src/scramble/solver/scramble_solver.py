@@ -40,6 +40,7 @@ class ScrambleSolver:
             active_players: list[Player],
             resting_players: list[Player],
             history: HistoryManager,
+            fields: list[Field],
             settings: Settings,
     ):
         """
@@ -53,6 +54,8 @@ class ScrambleSolver:
             List of players who are resting and should not be assigned to matches.
         history : HistoryManager
             The history manager containing player histories.
+        fields : list[Field]
+            List of fields available for matches.
         settings : Settings
             The settings for the scramble solver.
         """
@@ -60,6 +63,7 @@ class ScrambleSolver:
         self.resting_players = resting_players
         self._player_lookup = {player.id: player for player in active_players + resting_players}
         self.history = history
+        self.fields = fields
         self.settings = settings
 
         self.model = cp.CpModel()
@@ -102,9 +106,8 @@ class ScrambleSolver:
         - Ensure each team is part of at most one match.
         - Ensure each player is in exactly one team.
         """
-
         # limit number of matches by the number of fields
-        self.model.Add(sum(self.vars["match"].values()) <= self.settings.nr_fields)
+        self.model.Add(sum(self.vars["match"].values()) <= len(self.fields))
 
         # team variable is True iff it’s part of some match
         for team_player_ids, team_var in self.vars["team"].items():
@@ -167,8 +170,7 @@ class ScrambleSolver:
             matches = []
             for i, match_teams in enumerate(selected_matches):
                 team_player_ids_list = [list(team_player_ids) for team_player_ids in match_teams]
-                # TODO: select fields instead of creating them
-                field = Field(id=i, name=f"Field {i + 1}")
+                field = self.fields[i % len(self.fields)]
                 match = Match.from_team_player_ids(team_player_ids_list, self._player_lookup, field)
                 matches.append(match)
             return Round(matches=matches, resting_players=self.resting_players)
