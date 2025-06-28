@@ -15,6 +15,26 @@ class Team:
     """
     players: list[Player] = None
 
+    @classmethod
+    def from_player_ids(cls, player_ids: list[int], player_lookup: dict[int, Player]) -> "Team":
+        """
+        Creates a Team instance from a list of player IDs and a player lookup dictionary.
+
+        Parameters
+        ----------
+        player_ids : list[int]
+            List of player IDs to include in the team.
+        player_lookup : dict[int, Player]
+            Dictionary mapping player IDs to Player objects.
+
+        Returns
+        -------
+        Team
+            A new Team instance containing the specified players.
+        """
+        players = [player_lookup[pid] for pid in player_ids if pid in player_lookup]
+        return cls(players=players)
+
     def player_ids(self) -> set[int]:
         """
         Returns a set of player IDs in the team.

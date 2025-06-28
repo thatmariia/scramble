@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from scramble.core.player import Player
 from scramble.core.team import Team
 from scramble.core.field import Field
 
@@ -18,6 +19,35 @@ class Match:
     """
     teams: list[Team]
     field: Field
+
+    @classmethod
+    def from_team_player_ids(
+        cls,
+        team_player_ids: list[list[int]],
+        player_lookup: dict[int, Player],
+        field: Field | None = None
+    ) -> "Match":
+        """
+        Creates a Match instance from a list of team player IDs and a player lookup dictionary.
+
+        Parameters
+        ----------
+        team_player_ids : list[list[int]]
+            List of lists, where each inner list contains player IDs for a team.
+        player_lookup : dict[int, Player]
+            Dictionary mapping player IDs to Player objects.
+        field : Field | None = None
+            Optional field on which the match is played. If None, a dummy field is used.
+
+        Returns
+        -------
+        Match
+            A new Match instance containing the specified teams and field.
+        """
+        teams = [Team.from_player_ids(player_ids, player_lookup) for player_ids in team_player_ids]
+        if not field:
+            field = Field.dummy()
+        return cls(teams=teams, field=field)
 
     def all_player_ids(self) -> set[int]:
         """

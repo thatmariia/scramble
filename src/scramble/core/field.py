@@ -15,3 +15,15 @@ class Field:
     """
     id: int
     name: str
+
+    @classmethod
+    def dummy(cls) -> "Field":
+        """
+        Creates a dummy field with a default ID and name.
+
+        Returns
+        -------
+        Field
+            A new Field instance with ID -1 and name "Dummy Field".
+        """
+        return cls(id=-1, name="Dummy Field")

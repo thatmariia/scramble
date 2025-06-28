@@ -2,7 +2,7 @@
 from ortools.sat.python import cp_model as cp
 
 from itertools import combinations
-from scramble.core import Player, HistoryManager, Round
+from scramble.core import Player, HistoryManager, Match, Round
 from scramble.settings import Settings
 from scramble.solver.utils import are_disjoint
 from scramble.solver.scoring import score_match
@@ -19,6 +19,8 @@ class ScrambleSolver:
     ----------
     players : list[Player]
         List of players to be assigned to teams and matches.
+    _player_lookup : dict[int, Player]
+        Dictionary mapping player IDs to Player objects for quick access.
     history : HistoryManager
         The history manager containing player histories.
     settings : Settings
@@ -58,6 +60,7 @@ class ScrambleSolver:
             If None, all players are considered for matches.
         """
         self.players = players
+        self._player_lookup = {player.id: player for player in players}
         self.history = history
         self.settings = settings
         self.resting_player_ids = resting_player_ids or set()
@@ -131,8 +134,19 @@ class ScrambleSolver:
         """
         Sets the weighted sum of scoring functions as the objective to minimize.
         """
-        # TODO: Use score_match to build a cost expression
-        pass
+        objective_terms = []
+        for match_teams, match_var in self.vars["match"].items():
+            # get the player IDs for the teams in this match
+            team_player_ids_list = [list(team_player_ids) for team_player_ids in match_teams]
+            # create a Match object from the team player IDs
+            match = Match.from_team_player_ids(team_player_ids_list, self._player_lookup)
+            # score the match using the scoring function
+            score = score_match(match, self.history, self.settings.goal_configs)
+            # add the score multiplied by the match variable to the objective
+            objective_terms.append(score * match_var)
+
+        # set the objective to minimize the total score
+        self.model.Minimize(sum(objective_terms))
 
     def solve(self) -> Round:
         """
