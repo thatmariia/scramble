@@ -24,6 +24,7 @@ packages = [{ include = "scramble", from = "src" }]
 [tool.poetry.group.dev.dependencies]
 typer = {extras = ["all"], version = "^0.16.0"}
 pyyaml = "^6.0.2"
+pytest = "^8.4.1"
 
 [tool.poetry.scripts]
 scramble = "scramble.cli.main:app"
