@@ -2,7 +2,7 @@
 from ortools.sat.python import cp_model as cp
 
 from itertools import combinations
-from scramble.core import Player, HistoryManager, Match, Field, Round
+from scramble.core import Player, HistoryManager, Match, Court, Round
 from scramble.settings import Settings
 from scramble.solver.utils import are_disjoint
 from scramble.solver.scoring import score_match
@@ -19,8 +19,6 @@ class ScrambleSolver:
     ----------
     active_players : list[Player]
         List of players to be assigned to teams and matches.
-    resting_players : list[Player]
-        List of players who are resting and should not be assigned to matches.
     _player_lookup : dict[int, Player]
         Dictionary mapping player IDs to Player objects for quick access.
     history : HistoryManager
@@ -38,9 +36,8 @@ class ScrambleSolver:
     def __init__(
             self,
             active_players: list[Player],
-            resting_players: list[Player],
             history: HistoryManager,
-            fields: list[Field],
+            courts: list[Court],
             settings: Settings,
     ):
         """
@@ -50,20 +47,17 @@ class ScrambleSolver:
         ----------
         active_players : list[Player]
             List of players to be assigned to teams and matches.
-        resting_players : list[Player]
-            List of players who are resting and should not be assigned to matches.
         history : HistoryManager
             The history manager containing player histories.
-        fields : list[Field]
-            List of fields available for matches.
+        courts : list[Court]
+            List of courts available for matches.
         settings : Settings
             The settings for the scramble solver.
         """
         self.active_players = active_players
-        self.resting_players = resting_players
-        self._player_lookup = {player.id: player for player in active_players + resting_players}
+        self._player_lookup = {player.id: player for player in active_players}
         self.history = history
-        self.fields = fields
+        self.courts = courts
         self.settings = settings
 
         self.model = cp.CpModel()
@@ -103,12 +97,12 @@ class ScrambleSolver:
         """
         Adds constraints to ensure valid match structure.
         Constraints:
-        - Limit the number of matches to the number of fields.
+        - Limit the number of matches to the number of courts.
         - Ensure each team is part of at most one match.
         - Ensure each player is in exactly one team.
         """
-        # limit number of matches by the number of fields
-        self.model.Add(sum(self.vars["match"].values()) <= len(self.fields))
+        # limit number of matches by the number of courts
+        self.model.Add(sum(self.vars["match"].values()) <= len(self.courts))
 
         # team variable is True iff it’s part of some match
         for team_player_ids, team_var in self.vars["team"].items():
@@ -171,9 +165,9 @@ class ScrambleSolver:
             matches = []
             for i, match_teams in enumerate(selected_matches):
                 team_player_ids_list = [list(team_player_ids) for team_player_ids in match_teams]
-                field = self.fields[i % len(self.fields)]
-                match = Match.from_team_player_ids(team_player_ids_list, self._player_lookup, field)
+                court = self.courts[i % len(self.courts)]
+                match = Match.from_team_player_ids(team_player_ids_list, self._player_lookup, court)
                 matches.append(match)
-            return Round(matches=matches, resting_players=self.resting_players)
+            return Round(matches)
         else:
             raise RuntimeError("No feasible solution found")

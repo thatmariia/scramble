@@ -1,0 +1,95 @@
+from dataclasses import dataclass, field
+
+from scramble.core import Player
+
+
+@dataclass
+class PlayerState:
+    """
+    Represents the state of players in the Scramble app.
+    This class is used to manage active and resting players during a session.
+
+    Attributes
+    ----------
+    active_players : dict[int, Player]
+        A dictionary mapping player IDs to Player objects for active players.
+    resting_players : dict[int, Player]
+        A dictionary mapping player IDs to Player objects for resting players.
+    """
+    active_players: dict[int, Player] = field(default_factory=dict)
+    resting_players: dict[int, Player] = field(default_factory=dict)
+
+    def active_list(self):
+        """
+        Returns a list of active players.
+
+        Returns
+        -------
+        list[Player]
+            A list of Player objects representing active players.
+        """
+        return list(self.active_players.values())
+
+    def resting_list(self):
+        """
+        Returns a list of resting players.
+
+        Returns
+        -------
+        list[Player]
+            A list of Player objects representing resting players.
+        """
+        return list(self.resting_players.values())
+
+    def clear(self):
+        """
+        Clears both active and resting players.
+        This method is used to reset the player state.
+        """
+        self.active_players.clear()
+        self.resting_players.clear()
+
+    def add(self, player: Player):
+        """
+        Adds a player to the active players list.
+
+        Parameters
+        ----------
+        player : Player
+            The player to be added.
+        """
+        self.active_players[player.id] = player
+
+    def remove(self, player_id: int):
+        """
+        Removes a player from the active or resting players.
+
+        If the player is active, they are removed from active players.
+        If the player is resting, they are removed from resting players.
+
+        Parameters
+        ----------
+        player_id : int
+            The ID of the player to be removed.
+        """
+        if player_id in self.active_players:
+            del self.active_players[player_id]
+        elif player_id in self.resting_players:
+            del self.resting_players[player_id]
+
+    def toggle_rest(self, player_id: int):
+        """
+        Toggles the resting state of a player.
+
+        If the player is active, they are moved to resting players.
+        If the player is resting, they are moved back to active players.
+
+        Parameters
+        ----------
+        player_id : int
+            The ID of the player whose resting state is to be toggled.
+        """
+        if player_id in self.active_players:
+            self.resting_players[player_id] = self.active_players.pop(player_id)
+        elif player_id in self.resting_players:
+            self.active_players[player_id] = self.resting_players.pop(player_id)

@@ -71,3 +71,32 @@ class PlayerHistory:
             The ID of the other player.
         """
         self.opponents[other_id] = self.opponents.get(other_id, 0) + 1
+
+    def remove_partner(self, other_id: int):
+        """
+        Removes the record of a partnership with another player (reduces by 1).
+
+        Parameters
+        ----------
+        other_id : int
+            The ID of the other player.
+        """
+        if other_id in self.partners:
+            self.partners[other_id] -= 1
+            if self.partners[other_id] <= 0:
+                del self.partners[other_id]
+
+    def remove_opponent(self, other_id: int):
+        """
+        Removes the record of an opponent (reduces by 1).
+
+        Parameters
+        ----------
+        other_id : int
+            The ID of the other player.
+        """
+        if other_id in self.opponents:
+            self.opponents[other_id] -= 1
+            if self.opponents[other_id] <= 0:
+                del self.opponents[other_id]
+
