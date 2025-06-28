@@ -1,8 +1,6 @@
 from scoring_functions import SCORING_FUNCTIONS
-from scramble.settings.goal import Goal
-from scramble.settings.goal_config import GoalConfig
-from scramble.core.match import Match
-from scramble.core.history_manager import HistoryManager
+from scramble.settings import Goal, GoalConfig
+from scramble.core import Match, HistoryManager
 
 
 def score_match(match: Match, history: HistoryManager, active_goals: dict[Goal, GoalConfig]) -> float:

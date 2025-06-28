@@ -1,8 +1,6 @@
 from typing import Protocol
-from scramble.settings.goal import Goal
-from scramble.settings.goal_config import GoalConfig
-from scramble.core.match import Match
-from scramble.core.history_manager import HistoryManager
+from scramble.settings import Goal
+from scramble.core import Match, HistoryManager
 
 
 # --- Scoring function protocol ---
