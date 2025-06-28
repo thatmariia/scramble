@@ -103,17 +103,17 @@ class HistoryManager:
 
             # record partners
             for team in teams:
-                for player in team.players:
+                for player in team.active_players:
                     self.ensure_player(player.id)
-                    for other_player in team.players:
+                    for other_player in team.active_players:
                         if player.id != other_player.id:
                             self.player_histories[player.id].record_partner(other_player.id)
 
             # record opponents
             for team in teams:
-                for player in team.players:
+                for player in team.active_players:
                     self.ensure_player(player.id)
                     for other_team in teams:
                         if team != other_team:
-                            for opponent in other_team.players:
+                            for opponent in other_team.active_players:
                                 self.player_histories[player.id].record_opponent(opponent.id)

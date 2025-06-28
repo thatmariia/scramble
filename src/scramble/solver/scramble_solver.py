@@ -17,18 +17,16 @@ class ScrambleSolver:
 
     Attributes
     ----------
-    players : list[Player]
+    active_players : list[Player]
         List of players to be assigned to teams and matches.
+    resting_players : list[Player]
+        List of players who are resting and should not be assigned to matches.
     _player_lookup : dict[int, Player]
         Dictionary mapping player IDs to Player objects for quick access.
     history : HistoryManager
         The history manager containing player histories.
     settings : Settings
         The settings for the scramble solver.
-    resting_player_ids : set[int] | None
-        Optional set of player IDs who should not be assigned to matches.
-    nonresting_player_ids : set[int]
-        Set of player IDs who are eligible to play (not resting).
     model : cp.CpModel
         The CP-SAT model for the optimization problem.
     solver : cp.CpSolver
@@ -39,34 +37,30 @@ class ScrambleSolver:
 
     def __init__(
             self,
-            players: list[Player],
+            active_players: list[Player],
+            resting_players: list[Player],
             history: HistoryManager,
             settings: Settings,
-            resting_player_ids: set[int] | None = None,
     ):
         """
         Initializes the ScrambleSolver with players, their history, and settings.
 
         Parameters
         ----------
-        players : list[Player]
+        active_players : list[Player]
             List of players to be assigned to teams and matches.
+        resting_players : list[Player]
+            List of players who are resting and should not be assigned to matches.
         history : HistoryManager
             The history manager containing player histories.
         settings : Settings
             The settings for the scramble solver.
-        resting_player_ids : set[int] | None
-            Optional set of player IDs who should not be assigned to matches.
-            If None, all players are considered for matches.
         """
-        self.players = players
-        self._player_lookup = {player.id: player for player in players}
+        self.active_players = active_players
+        self.resting_players = resting_players
+        self._player_lookup = {player.id: player for player in active_players + resting_players}
         self.history = history
         self.settings = settings
-        self.resting_player_ids = resting_player_ids or set()
-        self.nonresting_player_ids = set(
-            player.id for player in self.players if player.id not in self.resting_player_ids
-        )
 
         self.model = cp.CpModel()
         self.solver = cp.CpSolver()
@@ -85,13 +79,14 @@ class ScrambleSolver:
         self.vars["match"] = {}
 
         # create a variable for each team indicating if they are in a match
-        for team_player_ids in combinations(self.nonresting_player_ids, self.settings.team_size):
+        for team_players in combinations(self.active_players, self.settings.team_size):
+            team_player_ids = tuple(sorted(player.id for player in team_players))
             self.vars["team"][team_player_ids] = self.model.NewBoolVar(f"team_{team_player_ids}")
 
         # create a variable for each configuration of competing teams
         # indicating if they are in a match
         team_ids_list = list(self.vars["team"].keys())
-        for nr_teams in range(self.settings.min_nr_teams_in_match, len(self.nonresting_player_ids) + 1):
+        for nr_teams in range(self.settings.min_nr_teams_in_match, len(self.active_players) + 1):
             for match_teams in combinations(team_ids_list, nr_teams):
                 if not are_disjoint(match_teams):
                     continue
@@ -122,11 +117,11 @@ class ScrambleSolver:
                 self.model.Add(team_var == sum(matches_involving_team))
 
         # each player is in exactly one team
-        for player_id in self.nonresting_player_ids:
+        for player in self.active_players:
             teams_with_player = [
                 self.vars["team"][team_player_ids]
                 for team_player_ids in self.vars["team"]
-                if player_id in team_player_ids
+                if player.id in team_player_ids
             ]
             self.model.Add(sum(teams_with_player) == 1)
 
@@ -176,7 +171,6 @@ class ScrambleSolver:
                 field = Field(id=i, name=f"Field {i + 1}")
                 match = Match.from_team_player_ids(team_player_ids_list, self._player_lookup, field)
                 matches.append(match)
-            resting_players = [self._player_lookup[player_id] for player_id in self.resting_player_ids]
-            return Round(matches=matches, resting_players=resting_players)
+            return Round(matches=matches, resting_players=self.resting_players)
         else:
             raise RuntimeError("No feasible solution found")
