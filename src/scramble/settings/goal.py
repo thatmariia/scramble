@@ -8,14 +8,14 @@ class Goal(str, Enum):
 
     Attributes:
     ----------
-    BALANCE_LEVEL : str
+    BALANCE_LVL : str
         Ensures that teams in a match are balanced in terms of player level.
     DIVERSIFY_PARTNERS : str
         Ensures that players play with different partners across matches.
     DIVERSIFY_OPPONENTS : str
         Ensures that players play against different opponents across matches.
     """
-    BALANCE_LEVEL = "Teams in a match should be balanced in terms of level."
+    BALANCE_LVL = "Teams in a match should be balanced in terms of level."
     DIVERSIFY_PARTNERS = "Players should play with different partners."
     DIVERSIFY_OPPONENTS = "Players should play against different opponents."
 

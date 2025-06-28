@@ -18,6 +18,38 @@ class PlayerHistory:
     partners: dict[int, int] = field(default_factory=dict)
     opponents: dict[int, int] = field(default_factory=dict)
 
+    def get_partner_frequency(self, other_id: int) -> int:
+        """
+        Gets the frequency of matches where the player played with another player.
+
+        Parameters
+        ----------
+        other_id : int
+            The ID of the other player.
+
+        Returns
+        -------
+        int
+            The number of times the player has played with the other player.
+        """
+        return self.partners.get(other_id, 0)
+
+    def get_opponent_frequency(self, other_id: int) -> int:
+        """
+        Gets the frequency of matches where the player played against another player.
+
+        Parameters
+        ----------
+        other_id : int
+            The ID of the other player.
+
+        Returns
+        -------
+        int
+            The number of times the player has played against the other player.
+        """
+        return self.opponents.get(other_id, 0)
+
     def record_partner(self, other_id: int):
         """
         Records that the player has played with another player.
