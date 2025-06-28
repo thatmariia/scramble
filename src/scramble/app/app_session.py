@@ -48,7 +48,6 @@ class AppSession:
     def get_new_round(self):
         solver = ScrambleSolver(
             active_players=self.player_state.active_list(),
-            resting_players=self.player_state.resting_list(),
             history=self.round_tracker.history_manager,
             courts=self.court_state.courts_list(),
             settings=self.settings,

@@ -19,8 +19,6 @@ class ScrambleSolver:
     ----------
     active_players : list[Player]
         List of players to be assigned to teams and matches.
-    resting_players : list[Player]
-        List of players who are resting and should not be assigned to matches.
     _player_lookup : dict[int, Player]
         Dictionary mapping player IDs to Player objects for quick access.
     history : HistoryManager
@@ -38,7 +36,6 @@ class ScrambleSolver:
     def __init__(
             self,
             active_players: list[Player],
-            resting_players: list[Player],
             history: HistoryManager,
             courts: list[Court],
             settings: Settings,
@@ -50,8 +47,6 @@ class ScrambleSolver:
         ----------
         active_players : list[Player]
             List of players to be assigned to teams and matches.
-        resting_players : list[Player]
-            List of players who are resting and should not be assigned to matches.
         history : HistoryManager
             The history manager containing player histories.
         courts : list[Court]
@@ -60,8 +55,7 @@ class ScrambleSolver:
             The settings for the scramble solver.
         """
         self.active_players = active_players
-        self.resting_players = resting_players
-        self._player_lookup = {player.id: player for player in active_players + resting_players}
+        self._player_lookup = {player.id: player for player in active_players}
         self.history = history
         self.courts = courts
         self.settings = settings
@@ -174,6 +168,6 @@ class ScrambleSolver:
                 court = self.courts[i % len(self.courts)]
                 match = Match.from_team_player_ids(team_player_ids_list, self._player_lookup, court)
                 matches.append(match)
-            return Round(matches=matches, resting_players=self.resting_players)
+            return Round(matches)
         else:
             raise RuntimeError("No feasible solution found")
