@@ -1,10 +1,9 @@
-from itertools import combinations
-
+from scramble.utils import Serializable
 from scramble.core.player_history import PlayerHistory
 from scramble.core.round import Round
 
 
-class HistoryManager:
+class HistoryManager(Serializable):
     """
     Manages the history of all players, including their partners and opponents.
 
@@ -19,6 +18,16 @@ class HistoryManager:
         Initializes the HistoryManager with an empty dictionary for player histories.
         """
         self.player_histories: dict[int, PlayerHistory] = {}
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "HistoryManager":
+        instance = cls()
+        for player_id, history_data in data.get("player_histories", {}).items():
+            instance.player_histories[int(player_id)] = PlayerHistory.from_dict(history_data)
+        return instance
+
+    def to_dict(self) -> dict:
+        return {player_id: history.to_dict() for player_id, history in self.player_histories.items()}
 
     def clear(self):
         """

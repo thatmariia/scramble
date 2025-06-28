@@ -1,10 +1,10 @@
 from collections import deque
-
+from scramble.utils import Serializable
 from scramble.core.round import Round
 from scramble.core.history_manager import HistoryManager
 
 
-class RoundTracker:
+class RoundTracker(Serializable):
     """
     Tracks the sequence of rounds played and manages player histories.
 
@@ -28,6 +28,20 @@ class RoundTracker:
         """
         self.history_manager: HistoryManager = history_manager or HistoryManager()
         self.rounds: deque[Round] = deque()
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "RoundTracker":
+        history_manager = HistoryManager.from_dict(data.get("player_histories", {}))
+        rounds = [Round.from_dict(round_data) for round_data in data.get("rounds", [])]
+        tracker = cls(history_manager=history_manager)
+        tracker.rounds.extend(rounds)
+        return tracker
+
+    def to_dict(self) -> dict:
+        return {
+            "rounds": [game_round.to_dict() for game_round in self.rounds],
+            "player_histories": self.history_manager.to_dict(),
+        }
 
     @property
     def all_rounds(self) -> list[Round]:

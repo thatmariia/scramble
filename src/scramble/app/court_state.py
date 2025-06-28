@@ -1,10 +1,10 @@
 from dataclasses import dataclass, field
-
+from scramble.utils import Serializable
 from scramble.core import Court
 
 
 @dataclass
-class CourtState:
+class CourtState(Serializable):
     """
     Represents the state of courts in the Scramble app.
     This class is used to manage the courts available for matches.
@@ -15,6 +15,14 @@ class CourtState:
         A dictionary mapping court IDs to Court objects.
     """
     courts: dict[int, Court] = field(default_factory=dict)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "CourtState":
+        courts = {court["id"]: Court.from_dict(court) for court in data.get("courts", [])}
+        return cls(courts=courts)
+
+    def to_dict(self) -> dict:
+        return {"courts": [court.to_dict() for court_id, court in self.courts.items()]}
 
     def courts_list(self) -> list[Court]:
         """

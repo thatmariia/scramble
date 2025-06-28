@@ -1,10 +1,10 @@
 from dataclasses import dataclass, field
-
+from scramble.utils import Serializable
 from scramble.core import Player
 
 
 @dataclass
-class PlayerState:
+class PlayerState(Serializable):
     """
     Represents the state of players in the Scramble app.
     This class is used to manage active and resting players during a session.
@@ -18,6 +18,18 @@ class PlayerState:
     """
     active_players: dict[int, Player] = field(default_factory=dict)
     resting_players: dict[int, Player] = field(default_factory=dict)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "PlayerState":
+        active_players = {player["id"]: Player.from_dict(player) for player in data.get("active_players", [])}
+        resting_players = {player["id"]: Player.from_dict(player) for player in data.get("resting_players", [])}
+        return cls(active_players=active_players, resting_players=resting_players)
+
+    def to_dict(self) -> dict:
+        return {
+            "active_players": [player.to_dict() for player in self.active_list()],
+            "resting_players": [player.to_dict() for player in self.resting_list()],
+        }
 
     def active_list(self):
         """

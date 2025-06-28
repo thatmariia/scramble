@@ -1,12 +1,12 @@
 from dataclasses import dataclass, field
 from collections.abc import Iterator
 from itertools import chain
-
+from scramble.utils import Serializable
 from scramble.core.match import Match
 
 
 @dataclass
-class Round:
+class Round(Serializable):
     """
     Represents a full round of play: the matches played in the round, and the resting players.
 
@@ -16,6 +16,14 @@ class Round:
         List of matches played in the round.
     """
     matches: list[Match] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Round":
+        matches = [Match.from_dict(match) for match in data.get("matches", [])]
+        return cls(matches=matches)
+
+    def to_dict(self) -> dict:
+        return {"matches": [match.to_dict() for match in self.matches]}
 
     def partner_pairs(self) -> Iterator[tuple[int, int]]:
         """

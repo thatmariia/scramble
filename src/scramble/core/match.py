@@ -1,14 +1,14 @@
 from dataclasses import dataclass
 from collections.abc import Iterator
 from itertools import combinations, product
-
+from scramble.utils import Serializable
 from scramble.core.player import Player
 from scramble.core.team import Team
 from scramble.core.court import Court
 
 
 @dataclass
-class Match:
+class Match(Serializable):
     """
     Represents a volleyball match with two or more teams on a court.
 
@@ -21,6 +21,18 @@ class Match:
     """
     teams: list[Team]
     court: Court
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Match":
+        teams = [Team.from_dict(team) for team in data.get("teams", [])]
+        court = Court.from_dict(data.get("court", {}))
+        return cls(teams=teams, court=court)
+
+    def to_dict(self) -> dict:
+        return {
+            "teams": [team.to_dict() for team in self.teams],
+            "court": self.court.to_dict(),
+        }
 
     @classmethod
     def from_team_player_ids(

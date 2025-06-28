@@ -1,10 +1,10 @@
 from dataclasses import dataclass
-
+from scramble.utils import Serializable
 from scramble.settings.goal import Goal
 
 
 @dataclass
-class GoalConfig:
+class GoalConfig(Serializable):
     """
     Configuration for a specific optimization goal.
     Contains the goal type, whether it is enabled, and its weight in the optimization process.
@@ -21,6 +21,21 @@ class GoalConfig:
     goal: Goal
     enabled: bool = True
     weight: float = 1.0
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "GoalConfig":
+        return cls(
+            goal=Goal(data["goal"]),
+            enabled=data.get("enabled", True),
+            weight=data.get("weight", 1.0)
+        )
+
+    def to_dict(self) -> dict:
+        return {
+            "goal": self.goal.value,
+            "enabled": self.enabled,
+            "weight": self.weight
+        }
 
 
 DEFAULT_GOAL_CONFIGS = {

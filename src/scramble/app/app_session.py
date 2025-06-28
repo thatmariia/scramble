@@ -21,9 +21,11 @@ class AppSession:
         The state of courts in the Scramble app.
     round_tracker : RoundTracker
         The round tracker for managing rounds played in the Scramble app.
+    session_name : str
+        The name of the session.
     """
 
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, session_name: str):
         """
         Initializes the AppSession with the given settings.
 
@@ -31,11 +33,15 @@ class AppSession:
         ----------
         settings : Settings
             The settings for the Scramble app.
+        session_name : str
+            The name of the session.
         """
         self.settings = settings
         self.player_state = PlayerState()
         self.court_state = CourtState()
         self.round_tracker = RoundTracker()
+
+        self.session_name = session_name
 
     def clear(self):
         """
@@ -65,5 +71,3 @@ class AppSession:
             The round to be started.
         """
         self.round_tracker.add_round(game_round)
-
-

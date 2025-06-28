@@ -1,10 +1,9 @@
 from dataclasses import dataclass, field
-
-from scramble.core.player import Player
+from scramble.utils import Serializable
 
 
 @dataclass
-class PlayerHistory:
+class PlayerHistory(Serializable):
     """
     Keeps track of a player's history: who they played with, who they played against.
 
@@ -17,6 +16,19 @@ class PlayerHistory:
     """
     partners: dict[int, int] = field(default_factory=dict)
     opponents: dict[int, int] = field(default_factory=dict)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "PlayerHistory":
+        return cls(
+            partners=data.get("partners", {}),
+            opponents=data.get("opponents", {})
+        )
+
+    def to_dict(self) -> dict:
+        return {
+            "partners": self.partners,
+            "opponents": self.opponents,
+        }
 
     def get_partner_frequency(self, other_id: int) -> int:
         """

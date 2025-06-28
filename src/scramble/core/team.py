@@ -1,10 +1,10 @@
 from dataclasses import dataclass
-
+from scramble.utils import Serializable
 from scramble.core.player import Player
 
 
 @dataclass
-class Team:
+class Team(Serializable):
     """
     Represents a volleyball team with an ID, name, and a list of players.
 
@@ -14,6 +14,16 @@ class Team:
         List of players in the team.
     """
     players: list[Player] = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Team":
+        players = [Player.from_dict(player) for player in data.get("players", [])]
+        return cls(players=players)
+
+    def to_dict(self) -> dict:
+        return {
+            "players": [player.to_dict() for player in self.players] if self.players else []
+        }
 
     @classmethod
     def from_player_ids(cls, player_ids: list[int], player_lookup: dict[int, Player]) -> "Team":
