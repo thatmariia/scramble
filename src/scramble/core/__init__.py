@@ -1,3 +1,10 @@
+"""
+Core domain models for volleyball scramble logic.
+
+Includes players, teams, matches, rounds, fields, and history tracking.
+These classes are reused across solver, application, and UI layers.
+"""
+
 from .level import Level
 from .player import Player
 from .field import Field
