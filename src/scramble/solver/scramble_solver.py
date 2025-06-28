@@ -83,9 +83,10 @@ class ScrambleSolver:
         self.vars["match"] = {}
 
         # create a variable for each team indicating if they are in a match
-        for team_players in combinations(self.active_players, self.settings.team_size):
-            team_player_ids = tuple(sorted(player.id for player in team_players))
-            self.vars["team"][team_player_ids] = self.model.NewBoolVar(f"team_{team_player_ids}")
+        for nr_players in range(self.settings.min_team_size, len(self.active_players) + 1):
+            for team_players in combinations(self.active_players, nr_players):
+                team_player_ids = tuple(sorted(player.id for player in team_players))
+                self.vars["team"][team_player_ids] = self.model.NewBoolVar(f"team_{team_player_ids}")
 
         # create a variable for each configuration of competing teams
         # indicating if they are in a match

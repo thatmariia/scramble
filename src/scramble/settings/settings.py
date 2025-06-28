@@ -11,7 +11,7 @@ class Settings:
 
     Attributes:
     ----------
-    team_size : int = 2
+    min_team_size : int = 2
         The number of players in each team.
     min_nr_teams_in_match : int = 2
         The minimum number of teams required in a match.
@@ -19,7 +19,7 @@ class Settings:
         A dictionary mapping each optimization goal to its configuration.
         If not provided, defaults to the predefined goal configurations.
     """
-    team_size: int = 2
+    min_team_size: int = 2
     min_nr_teams_in_match: int = 2
     goal_configs: dict[Goal, GoalConfig] = None
 
