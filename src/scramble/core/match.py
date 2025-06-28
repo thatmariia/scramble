@@ -8,7 +8,6 @@ from scramble.core.field import Field
 class Match:
     """
     Represents a volleyball match with two or more teams on a field.
-    TODO: insure there's at least two teams in the match.
 
     Attributes
     ----------

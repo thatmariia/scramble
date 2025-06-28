@@ -7,7 +7,6 @@ from scramble.core.player import Player
 class Team:
     """
     Represents a volleyball team with an ID, name, and a list of players.
-    TODO: insure there's at least one player in the team.
 
     Attributes
     ----------

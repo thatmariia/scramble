@@ -1,8 +1,10 @@
 # external imports
 from ortools.sat.python import cp_model as cp
 
+from itertools import combinations
 from scramble.core import Player, HistoryManager, Round
 from scramble.settings import Settings
+from scramble.solver.utils import are_disjoint
 from scramble.solver.scoring import score_match
 
 
@@ -23,6 +25,8 @@ class ScrambleSolver:
         The settings for the scramble solver.
     resting_player_ids : set[int] | None
         Optional set of player IDs who should not be assigned to matches.
+    nonresting_player_ids : set[int]
+        Set of player IDs who are eligible to play (not resting).
     model : cp.CpModel
         The CP-SAT model for the optimization problem.
     solver : cp.CpSolver
@@ -57,6 +61,9 @@ class ScrambleSolver:
         self.history = history
         self.settings = settings
         self.resting_player_ids = resting_player_ids or set()
+        self.nonresting_player_ids = set(
+            player.id for player in self.players if player.id not in self.resting_player_ids
+        )
 
         self.model = cp.CpModel()
         self.solver = cp.CpSolver()
@@ -65,20 +72,60 @@ class ScrambleSolver:
     def build_model(self):
         """
         Defines decision variables and structure needed for the optimization.
+        Vars:
+        - team: A dictionary mapping team player IDs to a boolean variable
+            indicating if the team is in a match.
+        - match: A dictionary mapping configurations of competing teams to a boolean variable
+            indicating if they are in a match.
         """
-        # TODO: Create boolean/int vars for team memberships, match assignments, etc.
-        pass
+        self.vars["team"] = {}
+        self.vars["match"] = {}
+
+        # create a variable for each team indicating if they are in a match
+        for team_player_ids in combinations(self.nonresting_player_ids, self.settings.team_size):
+            self.vars["team"][team_player_ids] = self.model.NewBoolVar(f"team_{team_player_ids}")
+
+        # create a variable for each configuration of competing teams
+        # indicating if they are in a match
+        team_ids_list = list(self.vars["team"].keys())
+        for nr_teams in range(self.settings.min_nr_teams_in_match, len(self.nonresting_player_ids) + 1):
+            for match_teams in combinations(team_ids_list, nr_teams):
+                if not are_disjoint(match_teams):
+                    continue
+                ordered_match_teams = tuple(sorted(match_teams, key=lambda team: min(team)))
+                if ordered_match_teams not in self.vars["match"]:
+                    self.vars["match"][ordered_match_teams] = self.model.NewBoolVar(f"match_{ordered_match_teams}")
 
     def add_constraints(self):
         """
         Adds constraints to ensure valid match structure.
+        Constraints:
+        - Limit the number of matches to the number of fields.
+        - Ensure each team is part of at most one match.
+        - Ensure each player is in exactly one team.
         """
-        # TODO: Add constraints like:
-        #  - each player plays at most once
-        #  - valid team sizes
-        #  - valid match sizes
-        #  - field limits
-        pass
+
+        # limit number of matches by the number of fields
+        self.model.Add(sum(self.vars["match"].values()) <= self.settings.nr_fields)
+
+        # team variable is True iff it’s part of some match
+        for team_player_ids, team_var in self.vars["team"].items():
+            matches_involving_team = [
+                self.vars["match"][match_teams]
+                for match_teams in self.vars["match"]
+                if team_player_ids in match_teams
+            ]
+            if matches_involving_team:
+                self.model.Add(team_var == sum(matches_involving_team))
+
+        # each player is in exactly one team
+        for player_id in self.nonresting_player_ids:
+            teams_with_player = [
+                self.vars["team"][team_player_ids]
+                for team_player_ids in self.vars["team"]
+                if player_id in team_player_ids
+            ]
+            self.model.Add(sum(teams_with_player) == 1)
 
     def set_objective(self):
         """
