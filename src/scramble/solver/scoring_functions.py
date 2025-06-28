@@ -1,12 +1,12 @@
 from typing import Protocol
-from scramble.settings import Goal
+from scramble.settings import Goal, Settings
 from scramble.core import Match, HistoryManager
 
 
 # --- Scoring function protocol ---
 
 class ScoringFunction(Protocol):
-    def __call__(self, match: Match, history: HistoryManager) -> float:
+    def __call__(self, match: Match, history: HistoryManager, settings: Settings) -> float:
         """
         A scoring function computes a penalty (higher is worse) for a match,
         possibly using the player history.
@@ -17,6 +17,8 @@ class ScoringFunction(Protocol):
             The match to be scored.
         history : HistoryManager
             The history manager containing player histories.
+        settings : Settings
+            The settings for the scramble solver.
 
         Returns
         -------
@@ -28,7 +30,22 @@ class ScoringFunction(Protocol):
 
 # --- Individual goal scoring functions ---
 
-def score_balance_lvl(match: Match, history_manager: HistoryManager) -> float:
+def score_keep_ideal_team_size(match: Match, history_manager: HistoryManager, settings: Settings) -> float:
+    """
+    Penalty for teams not having the ideal number of players.
+    Higher deviation from the ideal team size = higher penalty.
+
+    Conforms to the ScoreFunction protocol.
+    """
+    ideal_team_size = settings.min_team_size
+    score = 0.0
+    for team in match.teams:
+        team_size = len(team.players)
+        score += abs(team_size - ideal_team_size)
+    return score
+
+
+def score_balance_lvl(match: Match, history_manager: HistoryManager, settings: Settings) -> float:
     """
     Penalty for unbalanced teams in terms of player level.
     Higher level difference = higher penalty.
@@ -38,7 +55,7 @@ def score_balance_lvl(match: Match, history_manager: HistoryManager) -> float:
     return match.lvl_range()
 
 
-def score_diversify_partners(match: Match, history_manager: HistoryManager) -> float:
+def score_diversify_partners(match: Match, history_manager: HistoryManager, settings: Settings) -> float:
     """
     Penalty for players playing with the same partner too often.
     Higher frequency of the same partner = higher penalty.
@@ -57,7 +74,7 @@ def score_diversify_partners(match: Match, history_manager: HistoryManager) -> f
     return score
 
 
-def score_diversify_opponents(match: Match, history_manager: HistoryManager) -> float:
+def score_diversify_opponents(match: Match, history_manager: HistoryManager, settings: Settings) -> float:
     """
     Penalty for players playing against the same opponent too often.
     Higher frequency of the same opponent = higher penalty.

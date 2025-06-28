@@ -24,6 +24,7 @@ class GoalConfig:
 
 
 DEFAULT_GOAL_CONFIGS = {
+    Goal.KEEP_IDEAL_TEAM_SIZE: GoalConfig(goal=Goal.KEEP_IDEAL_TEAM_SIZE, enabled=True, weight=1.0),
     Goal.BALANCE_LVL: GoalConfig(goal=Goal.BALANCE_LVL, enabled=True, weight=1.0),
     Goal.DIVERSIFY_PARTNERS: GoalConfig(goal=Goal.DIVERSIFY_PARTNERS, enabled=True, weight=1.0),
     Goal.DIVERSIFY_OPPONENTS: GoalConfig(goal=Goal.DIVERSIFY_OPPONENTS, enabled=True, weight=1.0),
