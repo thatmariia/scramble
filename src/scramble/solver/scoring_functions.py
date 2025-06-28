@@ -96,6 +96,7 @@ def score_diversify_opponents(match: Match, history_manager: HistoryManager, set
 # --- Scoring dispatch map ---
 
 SCORING_FUNCTIONS: dict[Goal, ScoringFunction] = {
+    Goal.KEEP_IDEAL_TEAM_SIZE: score_keep_ideal_team_size,
     Goal.BALANCE_LVL: score_balance_lvl,
     Goal.DIVERSIFY_PARTNERS: score_diversify_partners,
     Goal.DIVERSIFY_OPPONENTS: score_diversify_opponents,
