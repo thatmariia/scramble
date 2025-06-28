@@ -16,16 +16,17 @@ class RoundTracker:
         A deque of rounds, where each round contains matches and resting players.
     """
 
-    def __init__(self, history_manager: HistoryManager):
+    def __init__(self, history_manager: HistoryManager | None = None):
         """
         Initializes the RoundTracker with a history manager.
 
         Parameters
         ----------
-        history_manager : HistoryManager
+        history_manager : HistoryManager | None = None
             The history manager containing player histories.
+            If None, a new HistoryManager instance will be created.
         """
-        self.history_manager: HistoryManager = history_manager
+        self.history_manager: HistoryManager = history_manager or HistoryManager()
         self.rounds: deque[Round] = deque()
 
     @property

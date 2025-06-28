@@ -4,30 +4,30 @@ from itertools import combinations, product
 
 from scramble.core.player import Player
 from scramble.core.team import Team
-from scramble.core.field import Field
+from scramble.core.court import Court
 
 
 @dataclass
 class Match:
     """
-    Represents a volleyball match with two or more teams on a field.
+    Represents a volleyball match with two or more teams on a court.
 
     Attributes
     ----------
     teams : list[Team]
         List of teams participating in the match.
-    field : Field
-        The field on which the match is played.
+    court : Court
+        The court on which the match is played.
     """
     teams: list[Team]
-    field: Field
+    court: Court
 
     @classmethod
     def from_team_player_ids(
         cls,
         team_player_ids: list[list[int]],
         player_lookup: dict[int, Player],
-        field: Field | None = None
+        court: Court | None = None
     ) -> "Match":
         """
         Creates a Match instance from a list of team player IDs and a player lookup dictionary.
@@ -38,18 +38,18 @@ class Match:
             List of lists, where each inner list contains player IDs for a team.
         player_lookup : dict[int, Player]
             Dictionary mapping player IDs to Player objects.
-        field : Field | None = None
-            Optional field on which the match is played. If None, a dummy field is used.
+        court : Court | None = None
+            Optional court on which the match is played. If None, a dummy court is used.
 
         Returns
         -------
         Match
-            A new Match instance containing the specified teams and field.
+            A new Match instance containing the specified teams and court.
         """
         teams = [Team.from_player_ids(player_ids, player_lookup) for player_ids in team_player_ids]
-        if not field:
-            field = Field.dummy()
-        return cls(teams=teams, field=field)
+        if not court:
+            court = Court.dummy()
+        return cls(teams=teams, court=court)
 
     def all_player_ids(self) -> set[int]:
         """
