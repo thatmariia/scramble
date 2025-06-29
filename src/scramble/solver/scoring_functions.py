@@ -82,14 +82,14 @@ def score_diversify_opponents(match: Match, history_manager: HistoryManager, set
     Conforms to the ScoreFunction protocol.
     """
     score = 0.0
-    for team in match.teams:
-        player_ids = team.player_ids()
-        for pid1 in player_ids:
-            for pid2 in player_ids:
-                if pid1 != pid2:
-                    # count how many times pid1 and pid2 played against each other
+    for team1_idx, team1 in enumerate(match.teams):
+        players1 = team1.player_ids()
+        for team2 in match.teams[team1_idx + 1:]:
+            players2 = team2.player_ids()
+            for pid1 in players1:
+                for pid2 in players2:
                     freq = history_manager.get_opponent_frequency(pid1, pid2)
-                    score += max(0, freq - 1)  # penalize if they played against each other more than once
+                    score += max(0, freq - 1)
     return score
 
 
