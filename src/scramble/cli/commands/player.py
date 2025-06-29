@@ -23,10 +23,7 @@ def add_player(
     """
     session = require_session()
 
-    existing_ids = session.player_state.all_players_ids()
-    player_id = max(existing_ids) + 1 if existing_ids else 1
-
-    player = Player(id=player_id, name=name, level=level)
+    player = Player(name=name, level=level)
     session.player_state.add(player)
     typer.secho(f"Added player #{player.id}: {player.name} ({player.level})", fg=typer.colors.GREEN)
 

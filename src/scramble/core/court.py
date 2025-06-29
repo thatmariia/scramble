@@ -1,4 +1,5 @@
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
+import uuid
 from scramble.utils import Serializable
 
 
@@ -14,8 +15,8 @@ class Court(Serializable):
     name : str
         Name of the court.
     """
-    id: int
     name: str
+    id: int = field(default_factory=lambda: uuid.uuid4().int)
 
     def __str__(self):
         return f"Court #{self.id}: {self.name}"

@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+import uuid
 from scramble.utils import Serializable
 from scramble.core.level import Level
 
@@ -19,10 +20,10 @@ class Player(Serializable):
     assignment : str = ""
         The assignment (a number) for the player in the scramble.
     """
-    id: int
     name: str
     level: Level
     assignment: str = ""
+    id: int = field(default_factory=lambda: uuid.uuid4().int)
 
     def __str__(self):
         return f"Player #{self.id}: {self.name} ({self.level}) - Assignment: {self.assignment or 'None'}"

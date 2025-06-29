@@ -18,10 +18,7 @@ def add_court(name: str):
     """
     session = require_session()
 
-    existing_ids = session.court_state.courts.keys()
-    court_id = max(existing_ids) + 1 if existing_ids else 1
-
-    court = Court(id=court_id, name=name)
+    court = Court(name=name)
     session.court_state.add(court)
     typer.secho(f"Added court #{court.id}: {court.name}", fg=typer.colors.GREEN)
 
