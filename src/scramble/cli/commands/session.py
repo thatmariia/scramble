@@ -10,7 +10,7 @@ from scramble.cli.utils import require_session
 session_app = typer.Typer(help="Manage application sessions")
 
 
-@app.command("new")
+@session_app.command("new")
 def new_session(
     name: str = typer.Option(None, help="Optional name for the new session."),
     settings_path: Path = typer.Option(None, help="Path to a JSON settings file.")
@@ -40,7 +40,7 @@ def new_session(
     typer.secho(f"Started new session: {session.session_name}", fg=typer.colors.GREEN)
 
 
-@app.command("load")
+@session_app.command("load")
 def load_session(
     name: str = typer.Option(None, help="Name of the session to load. If omitted, loads the latest.")
 ):
@@ -60,7 +60,7 @@ def load_session(
     typer.secho(f"Loaded session: {session.session_name}", fg=typer.colors.GREEN)
 
 
-@app.command("save")
+@session_app.command("save")
 def save_session():
     """
     Save the current session to disk.
@@ -70,7 +70,7 @@ def save_session():
     typer.secho(f"Session '{session.session_name}' saved successfully.", fg=typer.colors.GREEN)
 
 
-@app.command("default_settings")
+@session_app.command("default_settings")
 def export_default_settings(path: Path = typer.Argument(..., help="Where to write the settings JSON")):
     """
     Export default settings to a JSON file.

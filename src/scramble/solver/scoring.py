@@ -1,4 +1,4 @@
-from scoring_functions import SCORING_FUNCTIONS
+from scramble.solver.scoring_functions import SCORING_FUNCTIONS
 from scramble.settings import Goal, GoalConfig
 from scramble.core import Match, HistoryManager
 
