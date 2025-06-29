@@ -28,16 +28,29 @@ This installs all dependencies in a virtual environment managed by Poetry.
 Development code is located in the `dev` branch.
 The `main` branch contains the latest stable version of the code.
 
---
+---
 
 ## Using with CLI
 
-You can run the code using:
+Use Poetry to run the CLI commands:
 ```sh
-poetry run scramble
+poetry run scramble [OPTIONS] COMMAND [ARGS]...
 ```
 
---
+Run the following to see the available commands:
+```sh
+poetry run scramble --help
+```
+To see the available subcommands for a specific command and the arguments they accept, run:
+```sh
+poetry run scramble COMMAND --help
+```
+For example, to see the parameters for `add` in the `player`, run:
+```sh
+poetry run scramble player add --help
+```
+
+---
 
 ## License
 
