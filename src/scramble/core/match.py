@@ -22,6 +22,10 @@ class Match(Serializable):
     teams: list[Team]
     court: Court
 
+    def __str__(self):
+        team_strs = "\n".join(str(team) for team in self.teams)
+        return f"Match on {self.court}:\n{team_strs}"
+
     @classmethod
     def from_dict(cls, data: dict) -> "Match":
         teams = [Team.from_dict(team) for team in data.get("teams", [])]

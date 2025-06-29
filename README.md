@@ -28,6 +28,17 @@ This installs all dependencies in a virtual environment managed by Poetry.
 Development code is located in the `dev` branch.
 The `main` branch contains the latest stable version of the code.
 
+--
+
+## Using with CLI
+
+You can run the code using:
+```sh
+poetry run scramble
+```
+
+--
+
 ## License
 
 This project is licensed under the Apache-2.0 License. See the [LICENSE](LICENSE) file for details.

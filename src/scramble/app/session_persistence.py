@@ -44,7 +44,7 @@ class SessionPersistence:
         SessionNameManager.set_latest(session.session_name)
 
     @staticmethod
-    def load(session_name: str | None = None) -> AppSession:
+    def load(session_name: str | None = None) -> AppSession | None:
         """
         Loads an AppSession from disk.
 
@@ -56,18 +56,13 @@ class SessionPersistence:
 
         Returns
         -------
-        AppSession
-            The loaded AppSession object.
-
-        Raises
-        ------
-        FileNotFoundError
-            If the specified session does not exist.
+        AppSession | None
+            The loaded AppSession object, or None if the session does not exist.
         """
         session_name = session_name or SessionNameManager.get_latest()
         path = SESSIONS_DIR / session_name
         if not path.exists():
-            raise FileNotFoundError(f"Session {session_name} does not exist in {SESSIONS_DIR}.")
+            return None
 
         with open(path / "settings.json", "r") as f:
             settings = Settings.from_dict(json.load(f))

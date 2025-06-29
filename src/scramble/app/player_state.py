@@ -31,6 +31,17 @@ class PlayerState(Serializable):
             "resting_players": [player.to_dict() for player in self.resting_list()],
         }
 
+    def all_players_ids(self):
+        """
+        Returns a list of all player IDs, both active and resting.
+
+        Returns
+        -------
+        list[int]
+            A list of player IDs.
+        """
+        return list(self.active_players.keys()) + list(self.resting_players.keys())
+
     def active_list(self):
         """
         Returns a list of active players.

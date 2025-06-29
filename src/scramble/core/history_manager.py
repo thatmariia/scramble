@@ -1,3 +1,4 @@
+import pandas as pd
 from scramble.utils import Serializable
 from scramble.core.player_history import PlayerHistory
 from scramble.core.round import Round
@@ -18,6 +19,19 @@ class HistoryManager(Serializable):
         Initializes the HistoryManager with an empty dictionary for player histories.
         """
         self.player_histories: dict[int, PlayerHistory] = {}
+
+    def __str__(self):
+        partner_data = {pid: history.partners for pid, history in self.player_histories.items()}
+        opponent_data = {pid: history.opponents for pid, history in self.player_histories.items()}
+        partner_df = pd.DataFrame(partner_data).fillna(0).astype(int)
+        opponent_df = pd.DataFrame(opponent_data).fillna(0).astype(int)
+        return (
+            "Player Partner History:\n"
+            f"{partner_df.to_string()}\n"
+            "Player Opponent History:\n"
+            f"{opponent_df.to_string()}"
+        )
+
 
     @classmethod
     def from_dict(cls, data: dict) -> "HistoryManager":

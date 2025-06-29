@@ -15,6 +15,10 @@ class Team(Serializable):
     """
     players: list[Player] = None
 
+    def __str__(self):
+        player_names = "\n".join(" - " + str(player) for player in self.players) if self.players else "No players"
+        return f"Team:\n{player_names}"
+
     @classmethod
     def from_dict(cls, data: dict) -> "Team":
         players = [Player.from_dict(player) for player in data.get("players", [])]

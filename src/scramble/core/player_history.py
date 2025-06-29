@@ -1,3 +1,4 @@
+import pandas as pd
 from dataclasses import dataclass, field
 from scramble.utils import Serializable
 
@@ -16,6 +17,17 @@ class PlayerHistory(Serializable):
     """
     partners: dict[int, int] = field(default_factory=dict)
     opponents: dict[int, int] = field(default_factory=dict)
+
+    def __str__(self):
+        partner_df = pd.DataFrame.from_dict(self.partners, orient='index', columns=['Frequency']).fillna(0).astype(int)
+        opponent_df = pd.DataFrame.from_dict(self.opponents, orient='index', columns=['Frequency']).fillna(0).astype(int)
+        combined_df = pd.concat([partner_df, opponent_df], axis=1, keys=['Partners', 'Opponents'])
+        return (
+            f"Player History:\n"
+            f"{combined_df.to_string()}\n"
+        )
+
+
 
     @classmethod
     def from_dict(cls, data: dict) -> "PlayerHistory":

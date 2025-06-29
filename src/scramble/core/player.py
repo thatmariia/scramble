@@ -24,6 +24,9 @@ class Player(Serializable):
     level: Level
     assignment: str = ""
 
+    def __str__(self):
+        return f"Player #{self.id}: {self.name} ({self.level}) - Assignment: {self.assignment or 'None'}"
+
     @classmethod
     def from_dict(cls, data: dict) -> "Player":
         return cls(

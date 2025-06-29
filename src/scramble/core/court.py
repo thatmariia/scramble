@@ -17,6 +17,9 @@ class Court(Serializable):
     id: int
     name: str
 
+    def __str__(self):
+        return f"Court #{self.id}: {self.name}"
+
     @classmethod
     def from_dict(cls, data: dict) -> "Court":
         return cls(**data)

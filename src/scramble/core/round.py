@@ -17,6 +17,12 @@ class Round(Serializable):
     """
     matches: list[Match] = field(default_factory=list)
 
+    def __str__(self):
+        separator = "-" * 40
+        match_strs = f"\n{separator}\n".join(str(match) for match in self.matches)
+        return f"Round:\n{match_strs}\n{separator}"
+
+
     @classmethod
     def from_dict(cls, data: dict) -> "Round":
         matches = [Match.from_dict(match) for match in data.get("matches", [])]
