@@ -1,12 +1,9 @@
-from scramble.app import AppSession
-
-_current_session: AppSession | None = None
+from scramble.app.session_persistence import SessionPersistence
 
 
 def get_current_session():
-    return _current_session
+    return SessionPersistence.load()
 
 
 def set_current_session(session):
-    global _current_session
-    _current_session = session
+    SessionPersistence.save(session)

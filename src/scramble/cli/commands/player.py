@@ -1,6 +1,7 @@
 import typer
 from scramble.core import Player, Level
 from scramble.cli.utils import require_session
+from scramble.cli.state import set_current_session
 
 player_app = typer.Typer(help="Manage players")
 
@@ -29,6 +30,8 @@ def add_player(
     session.player_state.add(player)
     typer.secho(f"Added player #{player.id}: {player.name} ({player.level})", fg=typer.colors.GREEN)
 
+    set_current_session(session)
+
 
 @player_app.command("remove")
 def remove_player(player_id: int):
@@ -43,6 +46,7 @@ def remove_player(player_id: int):
     session = require_session()
     session.player_state.remove(player_id)
     typer.secho(f"Removed player with ID {player_id}", fg=typer.colors.YELLOW)
+    set_current_session(session)
 
 
 @player_app.command("list")
@@ -80,6 +84,7 @@ def toggle_rest(player_id: int):
     session = require_session()
     session.player_state.toggle_rest(player_id)
     typer.secho(f"Toggled rest state of player #{player_id}", fg=typer.colors.MAGENTA)
+    set_current_session(session)
 
 
 @player_app.command("clear")
@@ -90,3 +95,4 @@ def clear_players():
     session = require_session()
     session.player_state.clear()
     typer.secho("All players have been cleared", fg=typer.colors.YELLOW)
+    set_current_session(session)

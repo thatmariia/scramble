@@ -1,6 +1,7 @@
 import typer
 from scramble.core import Court
 from scramble.cli.utils import require_session
+from scramble.cli.state import set_current_session
 
 court_app = typer.Typer(help="Manage courts")
 
@@ -24,6 +25,8 @@ def add_court(name: str):
     session.court_state.add(court)
     typer.secho(f"Added court #{court.id}: {court.name}", fg=typer.colors.GREEN)
 
+    set_current_session(session)
+
 
 @court_app.command("remove")
 def remove_court(court_id: int):
@@ -38,6 +41,8 @@ def remove_court(court_id: int):
     session = require_session()
     session.court_state.remove(court_id)
     typer.secho(f"Removed court with ID {court_id}", fg=typer.colors.YELLOW)
+
+    set_current_session(session)
 
 
 @court_app.command("list")
@@ -65,3 +70,5 @@ def clear_courts():
     session = require_session()
     session.court_state.clear()
     typer.secho("All courts have been cleared.", fg=typer.colors.YELLOW)
+
+    set_current_session(session)

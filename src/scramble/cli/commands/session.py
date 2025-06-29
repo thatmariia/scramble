@@ -70,7 +70,7 @@ def save_session():
     typer.secho(f"Session '{session.session_name}' saved successfully.", fg=typer.colors.GREEN)
 
 
-@session_app.command("default_settings")
+@session_app.command("default-settings")
 def export_default_settings(path: Path = typer.Argument(..., help="Where to write the settings JSON")):
     """
     Export default settings to a JSON file.
@@ -81,6 +81,9 @@ def export_default_settings(path: Path = typer.Argument(..., help="Where to writ
         The file path where the default settings will be written.
     """
     settings = Settings()
+    ROOT = Path(__file__).resolve().parents[4]
+    path = ROOT / path
+    path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
         json.dump(settings.to_dict(), f, indent=4)
     typer.echo(f"Default settings written to {path}")

@@ -134,7 +134,7 @@ class ScrambleSolver:
             # create a Match object from the team player IDs
             match = Match.from_team_player_ids(team_player_ids_list, self._player_lookup)
             # score the match using the scoring function
-            score = score_match(match, self.history, self.settings.goal_configs)
+            score = score_match(match, self.history, self.settings)
             # add the score multiplied by the match variable to the objective
             objective_terms.append(score * match_var)
 
