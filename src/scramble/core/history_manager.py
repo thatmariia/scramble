@@ -10,7 +10,7 @@ class HistoryManager(Serializable):
 
     Attributes
     ----------
-    player_histories : dict[int, PlayerHistory]
+    player_histories : dict[str, PlayerHistory]
         Dictionary mapping player IDs to their PlayerHistory.
     """
 
@@ -18,7 +18,7 @@ class HistoryManager(Serializable):
         """
         Initializes the HistoryManager with an empty dictionary for player histories.
         """
-        self.player_histories: dict[int, PlayerHistory] = {}
+        self.player_histories: dict[str, PlayerHistory] = {}
 
     def __str__(self):
         partner_data = {pid: history.partners for pid, history in self.player_histories.items()}
@@ -37,7 +37,7 @@ class HistoryManager(Serializable):
     def from_dict(cls, data: dict) -> "HistoryManager":
         instance = cls()
         for player_id, history_data in data.items():
-            instance.player_histories[int(player_id)] = PlayerHistory.from_dict(history_data)
+            instance.player_histories[player_id] = PlayerHistory.from_dict(history_data)
         return instance
 
     def to_dict(self) -> dict:
@@ -49,13 +49,13 @@ class HistoryManager(Serializable):
         """
         self.player_histories.clear()
 
-    def get_player_history(self, player_id: int) -> PlayerHistory:
+    def get_player_history(self, player_id: str) -> PlayerHistory:
         """
         Retrieves the PlayerHistory for the given player ID.
 
         Parameters
         ----------
-        player_id : int
+        player_id : str
             The ID of the player whose history is to be retrieved.
 
         Returns
@@ -65,15 +65,15 @@ class HistoryManager(Serializable):
         """
         return self.player_histories.get(player_id, PlayerHistory())
 
-    def get_partner_frequency(self, player_id1: int, player_id2: int) -> int:
+    def get_partner_frequency(self, player_id1: str, player_id2: str) -> int:
         """
         Gets the frequency of matches where player_id1 and player_id2 played together.
 
         Parameters
         ----------
-        player_id1 : int
+        player_id1 : str
             The ID of the first player.
-        player_id2 : int
+        player_id2 : str
             The ID of the second player.
 
         Returns
@@ -84,15 +84,15 @@ class HistoryManager(Serializable):
         history1 = self.get_player_history(player_id1)
         return history1.get_partner_frequency(player_id2)
 
-    def get_opponent_frequency(self, player_id1: int, player_id2: int) -> int:
+    def get_opponent_frequency(self, player_id1: str, player_id2: str) -> int:
         """
         Gets the frequency of matches where player_id1 and player_id2 played against each other.
 
         Parameters
         ----------
-        player_id1 : int
+        player_id1 : str
             The ID of the first player.
-        player_id2 : int
+        player_id2 : str
             The ID of the second player.
 
         Returns
@@ -103,13 +103,13 @@ class HistoryManager(Serializable):
         history1 = self.get_player_history(player_id1)
         return history1.get_opponent_frequency(player_id2)
 
-    def ensure_player(self, player_id: int):
+    def ensure_player(self, player_id: str):
         """
         Ensures that a PlayerHistory exists for the given player ID.
 
         Parameters
         ----------
-        player_id : int
+        player_id : str
             The ID of the player to ensure history for.
         """
         if player_id not in self.player_histories:

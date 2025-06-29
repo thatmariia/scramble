@@ -26,13 +26,13 @@ def add_court(name: str):
 
 
 @court_app.command("remove")
-def remove_court(court_id: int):
+def remove_court(court_id: str):
     """
     Remove a court by ID.
 
     Parameters
     ----------
-    court_id : int
+    court_id : str
         ID of the court to remove.
     """
     session = require_session()

@@ -11,7 +11,7 @@ class Player(Serializable):
 
     Attributes
     ----------
-    id : int
+    id : str
         Unique identifier for the player.
     name : str
         Name of the player.
@@ -23,7 +23,7 @@ class Player(Serializable):
     name: str
     level: Level
     assignment: str = ""
-    id: int = field(default_factory=lambda: uuid.uuid4().int)
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
     def __str__(self):
         return f"Player #{self.id}: {self.name} ({self.level}) - Assignment: {self.assignment or 'None'}"

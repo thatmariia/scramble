@@ -11,13 +11,13 @@ class PlayerState(Serializable):
 
     Attributes
     ----------
-    active_players : dict[int, Player]
+    active_players : dict[str, Player]
         A dictionary mapping player IDs to Player objects for active players.
-    resting_players : dict[int, Player]
+    resting_players : dict[str, Player]
         A dictionary mapping player IDs to Player objects for resting players.
     """
-    active_players: dict[int, Player] = field(default_factory=dict)
-    resting_players: dict[int, Player] = field(default_factory=dict)
+    active_players: dict[str, Player] = field(default_factory=dict)
+    resting_players: dict[str, Player] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: dict) -> "PlayerState":
@@ -37,7 +37,7 @@ class PlayerState(Serializable):
 
         Returns
         -------
-        list[int]
+        list[str]
             A list of player IDs.
         """
         return list(self.active_players.keys()) + list(self.resting_players.keys())
@@ -83,7 +83,7 @@ class PlayerState(Serializable):
         """
         self.active_players[player.id] = player
 
-    def remove(self, player_id: int):
+    def remove(self, player_id: str):
         """
         Removes a player from the active or resting players.
 
@@ -92,7 +92,7 @@ class PlayerState(Serializable):
 
         Parameters
         ----------
-        player_id : int
+        player_id : str
             The ID of the player to be removed.
         """
         if player_id in self.active_players:
@@ -100,7 +100,7 @@ class PlayerState(Serializable):
         elif player_id in self.resting_players:
             del self.resting_players[player_id]
 
-    def toggle_rest(self, player_id: int):
+    def toggle_rest(self, player_id: str):
         """
         Toggles the resting state of a player.
 
@@ -109,7 +109,7 @@ class PlayerState(Serializable):
 
         Parameters
         ----------
-        player_id : int
+        player_id : str
             The ID of the player whose resting state is to be toggled.
         """
         if player_id in self.active_players:

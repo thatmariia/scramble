@@ -31,13 +31,13 @@ def add_player(
 
 
 @player_app.command("remove")
-def remove_player(player_id: int):
+def remove_player(player_id: str):
     """
     Remove a player by ID from the current session.
 
     Parameters
     ----------
-    player_id : int
+    player_id : str
         The ID of the player to remove.
     """
     session = require_session()
@@ -69,13 +69,13 @@ def list_players():
 
 
 @player_app.command("toggle-rest")
-def toggle_rest(player_id: int):
+def toggle_rest(player_id: str):
     """
     Toggle resting state of a player.
 
     Parameters
     ----------
-    player_id : int
+    player_id : str
         The ID of the player whose resting state to toggle.
     """
     session = require_session()

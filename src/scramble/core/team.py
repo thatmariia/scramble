@@ -30,15 +30,15 @@ class Team(Serializable):
         }
 
     @classmethod
-    def from_player_ids(cls, player_ids: list[int], player_lookup: dict[int, Player]) -> "Team":
+    def from_player_ids(cls, player_ids: list[str], player_lookup: dict[str, Player]) -> "Team":
         """
         Creates a Team instance from a list of player IDs and a player lookup dictionary.
 
         Parameters
         ----------
-        player_ids : list[int]
+        player_ids : list[str]
             List of player IDs to include in the team.
-        player_lookup : dict[int, Player]
+        player_lookup : dict[str, Player]
             Dictionary mapping player IDs to Player objects.
 
         Returns
@@ -49,7 +49,7 @@ class Team(Serializable):
         players = [player_lookup[pid] for pid in player_ids if pid in player_lookup]
         return cls(players=players)
 
-    def player_ids(self) -> set[int]:
+    def player_ids(self) -> set[str]:
         """
         Returns a set of player IDs in the team.
 

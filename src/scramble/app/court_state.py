@@ -11,10 +11,10 @@ class CourtState(Serializable):
 
     Attributes
     ----------
-    courts : dict[int, Court]
+    courts : dict[str, Court]
         A dictionary mapping court IDs to Court objects.
     """
-    courts: dict[int, Court] = field(default_factory=dict)
+    courts: dict[str, Court] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: dict) -> "CourtState":
@@ -53,13 +53,13 @@ class CourtState(Serializable):
         """
         self.courts[court.id] = court
 
-    def remove(self, court_id: int):
+    def remove(self, court_id: str):
         """
         Removes a court from the courts dictionary.
 
         Parameters
         ----------
-        court_id : int
+        court_id : str
             The ID of the court to be removed.
         """
         if court_id in self.courts:

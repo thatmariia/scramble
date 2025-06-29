@@ -10,13 +10,13 @@ class PlayerHistory(Serializable):
 
     Attributes
     ----------
-    partners : dict[int, int]
+    partners : dict[str, int]
         Dictionary mapping player IDs to the number of matches played with them.
-    opponents : dict[int, int]
+    opponents : dict[str, int]
         Dictionary mapping player IDs to the number of matches played against them.
     """
-    partners: dict[int, int] = field(default_factory=dict)
-    opponents: dict[int, int] = field(default_factory=dict)
+    partners: dict[str, int] = field(default_factory=dict)
+    opponents: dict[str, int] = field(default_factory=dict)
 
     def __str__(self):
         partner_df = pd.DataFrame.from_dict(self.partners, orient='index', columns=['Frequency']).fillna(0).astype(int)
@@ -42,13 +42,13 @@ class PlayerHistory(Serializable):
             "opponents": self.opponents,
         }
 
-    def get_partner_frequency(self, other_id: int) -> int:
+    def get_partner_frequency(self, other_id: str) -> int:
         """
         Gets the frequency of matches where the player played with another player.
 
         Parameters
         ----------
-        other_id : int
+        other_id : str
             The ID of the other player.
 
         Returns
@@ -58,13 +58,13 @@ class PlayerHistory(Serializable):
         """
         return self.partners.get(other_id, 0)
 
-    def get_opponent_frequency(self, other_id: int) -> int:
+    def get_opponent_frequency(self, other_id: str) -> int:
         """
         Gets the frequency of matches where the player played against another player.
 
         Parameters
         ----------
-        other_id : int
+        other_id : str
             The ID of the other player.
 
         Returns
@@ -74,35 +74,35 @@ class PlayerHistory(Serializable):
         """
         return self.opponents.get(other_id, 0)
 
-    def record_partner(self, other_id: int):
+    def record_partner(self, other_id: str):
         """
         Records that the player has played with another player.
 
         Parameters
         ----------
-        other_id : int
+        other_id : str
             The ID of the other player.
         """
         self.partners[other_id] = self.partners.get(other_id, 0) + 1
 
-    def record_opponent(self, other_id: int):
+    def record_opponent(self, other_id: str):
         """
         Records that the player has played against another player.
 
         Parameters
         ----------
-        other_id : int
+        other_id : str
             The ID of the other player.
         """
         self.opponents[other_id] = self.opponents.get(other_id, 0) + 1
 
-    def remove_partner(self, other_id: int):
+    def remove_partner(self, other_id: str):
         """
         Removes the record of a partnership with another player (reduces by 1).
 
         Parameters
         ----------
-        other_id : int
+        other_id : str
             The ID of the other player.
         """
         if other_id in self.partners:
@@ -110,13 +110,13 @@ class PlayerHistory(Serializable):
             if self.partners[other_id] <= 0:
                 del self.partners[other_id]
 
-    def remove_opponent(self, other_id: int):
+    def remove_opponent(self, other_id: str):
         """
         Removes the record of an opponent (reduces by 1).
 
         Parameters
         ----------
-        other_id : int
+        other_id : str
             The ID of the other player.
         """
         if other_id in self.opponents:

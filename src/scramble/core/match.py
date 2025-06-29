@@ -41,8 +41,8 @@ class Match(Serializable):
     @classmethod
     def from_team_player_ids(
         cls,
-        team_player_ids: list[list[int]],
-        player_lookup: dict[int, Player],
+        team_player_ids: list[list[str]],
+        player_lookup: dict[str, Player],
         court: Court | None = None
     ) -> "Match":
         """
@@ -50,9 +50,9 @@ class Match(Serializable):
 
         Parameters
         ----------
-        team_player_ids : list[list[int]]
+        team_player_ids : list[list[str]]
             List of lists, where each inner list contains player IDs for a team.
-        player_lookup : dict[int, Player]
+        player_lookup : dict[str, Player]
             Dictionary mapping player IDs to Player objects.
         court : Court | None = None
             Optional court on which the match is played. If None, a dummy court is used.
@@ -67,13 +67,13 @@ class Match(Serializable):
             court = Court.dummy()
         return cls(teams=teams, court=court)
 
-    def all_player_ids(self) -> set[int]:
+    def all_player_ids(self) -> set[str]:
         """
         Returns a set of all player IDs across all teams in the match.
 
         Returns
         -------
-        set[int]
+        set[str]
             Set of all player IDs.
         """
         return set(player_id for team in self.teams for player_id in team.player_ids())
@@ -93,13 +93,13 @@ class Match(Serializable):
         levels = [team.avg_level() for team in self.teams]
         return max(levels) - min(levels)
 
-    def partner_pairs(self) -> Iterator[tuple[int, int]]:
+    def partner_pairs(self) -> Iterator[tuple[str, str]]:
         """
         Generates all pairs of player IDs that are partners in the match.
 
         Yields
         -------
-        tuple[int, int]
+        tuple[str, str]
             A tuple of player IDs (player_id, partner_id) representing partners in the match.
         """
         for team in self.teams:
@@ -108,13 +108,13 @@ class Match(Serializable):
                 yield a, b
                 yield b, a
 
-    def opponent_pairs(self) -> Iterator[tuple[int, int]]:
+    def opponent_pairs(self) -> Iterator[tuple[str, str]]:
         """
         Generates all pairs of player IDs that are opponents in the match.
 
         Yields
         -------
-        tuple[int, int]
+        tuple[str, str]
             A tuple of player IDs (player_id, opponent_id) representing opponents in the match.
         """
         for team1, team2 in combinations(self.teams, 2):

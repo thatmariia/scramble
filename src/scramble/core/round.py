@@ -31,24 +31,24 @@ class Round(Serializable):
     def to_dict(self) -> dict:
         return {"matches": [match.to_dict() for match in self.matches]}
 
-    def partner_pairs(self) -> Iterator[tuple[int, int]]:
+    def partner_pairs(self) -> Iterator[tuple[str, str]]:
         """
         Iterates through all partners in the matches of the round.
 
         Yields
         -------
-        tuple[int, int]
+        tuple[str, str]
             A tuple containing the IDs of two players who are partners in a match.
         """
         return chain.from_iterable(match.partner_pairs() for match in self.matches)
 
-    def opponent_pairs(self) -> Iterator[tuple[int, int]]:
+    def opponent_pairs(self) -> Iterator[tuple[str, str]]:
         """
         Iterates through all opponents in the matches of the round.
 
         Yields
         -------
-        tuple[int, int]
+        tuple[str, str]
             A tuple containing the IDs of two players who are opponents in a match.
         """
         return chain.from_iterable(match.opponent_pairs() for match in self.matches)

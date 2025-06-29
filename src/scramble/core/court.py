@@ -16,7 +16,7 @@ class Court(Serializable):
         Name of the court.
     """
     name: str
-    id: int = field(default_factory=lambda: uuid.uuid4().int)
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
     def __str__(self):
         return f"Court #{self.id}: {self.name}"
@@ -38,5 +38,5 @@ class Court(Serializable):
         Court
             A new Court instance with ID -1 and name "Dummy Court".
         """
-        return cls(id=-1, name="Dummy Court")
+        return cls(id="-1", name="Dummy Court")
 

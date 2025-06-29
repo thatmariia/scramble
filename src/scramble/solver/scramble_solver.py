@@ -19,7 +19,7 @@ class ScrambleSolver:
     ----------
     active_players : list[Player]
         List of players to be assigned to teams and matches.
-    _player_lookup : dict[int, Player]
+    _player_lookup : dict[str, Player]
         Dictionary mapping player IDs to Player objects for quick access.
     history : HistoryManager
         The history manager containing player histories.
