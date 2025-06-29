@@ -36,7 +36,7 @@ class HistoryManager(Serializable):
     @classmethod
     def from_dict(cls, data: dict) -> "HistoryManager":
         instance = cls()
-        for player_id, history_data in data.get("player_histories", {}).items():
+        for player_id, history_data in data.items():
             instance.player_histories[int(player_id)] = PlayerHistory.from_dict(history_data)
         return instance
 
