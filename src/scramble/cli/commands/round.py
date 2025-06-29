@@ -34,6 +34,25 @@ def undo_round():
     set_current_session(session)
 
 
+@round_app.command("undo-and-start")
+def undo_and_start_new_round():
+    """
+    Undo the last round and start a new one.
+    """
+    session = require_session()
+    session.round_tracker.undo_last_round()
+    game_round = session.get_new_round()
+    session.start_round(game_round)
+
+    typer.secho("Last round undone and new round started:", fg=typer.colors.GREEN, bold=True)
+    separator = "~" * 40
+    typer.secho(separator, fg=typer.colors.BLUE)
+    typer.secho(game_round, fg=typer.colors.BLUE)
+    typer.secho(separator, fg=typer.colors.BLUE)
+
+    set_current_session(session)
+
+
 @round_app.command("history")
 def show_round_history():
     """
