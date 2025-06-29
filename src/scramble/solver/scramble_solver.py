@@ -113,6 +113,8 @@ class ScrambleSolver:
             ]
             if matches_involving_team:
                 self.model.Add(team_var == sum(matches_involving_team))
+            else:
+                self.model.Add(team_var == 0)
 
         # each player is in exactly one team
         for player in self.active_players:
