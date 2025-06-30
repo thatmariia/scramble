@@ -1,6 +1,11 @@
 from scramble.solver.scoring_functions import SCORING_FUNCTIONS
-from scramble.settings import Goal, GoalConfig, Settings
-from scramble.core import Match, HistoryManager
+from scramble.settings import Settings
+from scramble.core import Match, HistoryManager, Player, Team, Court
+
+
+def score_team(players: list[Player], history: HistoryManager, settings: Settings) -> float:
+    match = Match([Team(players)], Court.dummy())  # use Match constructor to reuse scoring
+    return score_match(match, history, settings)
 
 
 def score_match(match: Match, history: HistoryManager, settings: Settings) -> float:
