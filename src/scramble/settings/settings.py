@@ -22,6 +22,8 @@ class Settings(Serializable):
     min_team_size: int = 2
     min_nr_teams_in_match: int = 2
     goal_configs: dict[Goal, GoalConfig] = None
+    log_enabled: bool = True
+    log_verbose: bool = True
 
     def __post_init__(self):
         if self.goal_configs is None:
@@ -38,14 +40,18 @@ class Settings(Serializable):
         return cls(
             min_team_size=data.get("min_team_size", 2),
             min_nr_teams_in_match=data.get("min_nr_teams_in_match", 2),
-            goal_configs=goal_configs
+            goal_configs=goal_configs,
+            log_enabled=data.get("log_enabled", 2),
+            log_verbose=data.get("log_verbose", 2)
         )
 
     def to_dict(self) -> dict:
         return {
             "min_team_size": self.min_team_size,
             "min_nr_teams_in_match": self.min_nr_teams_in_match,
-            "goal_configs": {goal.value: config.to_dict() for goal, config in self.goal_configs.items()}
+            "goal_configs": {goal.value: config.to_dict() for goal, config in self.goal_configs.items()},
+            "log_enabled": self.log_enabled,
+            "log_verbose": self.log_verbose
         }
 
 

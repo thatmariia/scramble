@@ -1,6 +1,7 @@
 # external imports
 from ortools.sat.python import cp_model as cp
 
+import logging
 import heapq
 import math
 from itertools import combinations
@@ -9,6 +10,7 @@ from scramble.settings import Settings
 from scramble.solver.utils import are_disjoint
 from scramble.solver.scoring import score_match, score_team
 
+LOGGER = logging.getLogger(__name__)
 
 class ScrambleSolver:
     """
@@ -93,13 +95,18 @@ class ScrambleSolver:
         team_ids_list = list(self.vars["team"].keys())
         min_nr_teams = self.settings.min_nr_teams_in_match
         max_nr_teams = math.ceil(len(self.active_players) / min_nr_teams)
+
+        LOGGER.debug(f"team_ids_list={len(team_ids_list)}")
+
         for nr_teams in range(min_nr_teams, max_nr_teams + 1):
+            LOGGER.debug(f"building match nr_teams={nr_teams}, combinations={math.comb(len(team_ids_list), nr_teams)}")
             for match_teams in combinations(team_ids_list, nr_teams):
                 if not are_disjoint(match_teams):
                     continue
                 ordered_match_teams = tuple(sorted(match_teams, key=lambda team: min(team)))
                 if ordered_match_teams not in self.vars["match"]:
                     self.vars["match"][ordered_match_teams] = self.model.NewBoolVar(f"match_{ordered_match_teams}")
+
 
     def _build_team_vars(self):
         """
@@ -135,11 +142,13 @@ class ScrambleSolver:
             for score, team_player_ids in top_k_heap:
                 self.vars["team"][team_player_ids] = self.model.NewBoolVar(f"team_{team_player_ids}")
 
+        LOGGER.debug(f"build team vars: num_team_vars={len(self.vars["team"])}")
+
     @staticmethod
     def _try_add_team_to_heap(
             player_team_counts: dict[str, int],
             score: float,
-            team_player_ids: tuple[int, ...],
+            team_player_ids: tuple[str, ...],
             top_k_heap: list[tuple[float, tuple[str, ...]]]
     ):
         """
@@ -167,7 +176,7 @@ class ScrambleSolver:
             player_team_counts[pid] >= MAX_TEAMS_PER_PLAYER
             for pid in team_player_ids
         )
-        if not team_limit_reached and not any_player_at_limit:
+        if len(top_k_heap) == 0 or (not team_limit_reached and not any_player_at_limit):
             # push if we don't yet have K teams
             heapq.heappush(top_k_heap, (-score, team_player_ids))
             for pid in team_player_ids:
