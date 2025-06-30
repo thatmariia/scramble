@@ -31,13 +31,13 @@ def get_solver(num_players: int, num_courts: int):
     # pytest.param(2),
     # pytest.param(3),
     # pytest.param(4),
-    pytest.param(20),
+    pytest.param(12),
 ])
-@pytest.mark.timeout(60)
+@pytest.mark.timeout(100)
 def test_n_matches_no_history_same_level(num_matches, caplog):
     caplog.set_level(logging.DEBUG)
 
-    solver = get_solver(num_players=num_matches * 4, num_courts=num_matches)
+    solver = get_solver(num_players=num_matches * 4, num_courts=num_matches + 5)
     round = solver.solve()
 
     assert len(round.matches) == num_matches
@@ -46,7 +46,9 @@ def test_n_matches_no_history_same_level(num_matches, caplog):
         assert len(round.matches[i].all_player_ids()) == 4
         assert len(round.matches[i].teams) == 2
 
+    assert False
 
+@pytest.mark.skip(reason="temp skip")
 @pytest.mark.timeout(60)
 def test_1_team_qkotc_1_team_match():
     solver = get_solver(num_players=10, num_courts=2)

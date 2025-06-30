@@ -2,17 +2,13 @@
 from ortools.sat.python import cp_model as cp
 
 import logging
-import heapq
-import math
 from itertools import combinations
 from scramble.core import Player, HistoryManager, Match, Court, Round, Team
 from scramble.settings import Settings
-from scramble.solver.utils import are_disjoint
-from scramble.solver.scoring import score_match, score_team
 
 LOGGER = logging.getLogger(__name__)
 
-MAX_SCORE = 1_000_000
+MAX_SCORE = 100
 
 class ScrambleSolver:
     """
@@ -85,21 +81,25 @@ class ScrambleSolver:
         self.vars["partner_history"] = {}
         self.vars["opponent_history"] = {}
         self.vars["match"] = {}
+        self.vars["constants"] = {}
 
         # add a match var for each court
         for i, court in self.num_to_court.items():
             self.vars["match"][i] = {}
-            self.vars["match"][i]["uses_sum"] = self.model.NewIntVar(0, 6, f"match_{i}_uses_sum")
-            self.vars["match"][i]["used_ok"] = self.model.NewBoolVar(f"match_{i}_used_ok")
-            self.vars["match"][i]["unused_ok"] = self.model.NewBoolVar(f"match_{i}_unused_ok")
+            self.vars["match"][i]["num_teams"] = self.model.NewIntVar(0, 3, f"match_{i}_num_teams")
+            self.vars["match"][i]["num_teams_ok"] = self.model.NewBoolVar(f"match_{i}_num_teams_ok")
+            self.vars["match"][i]["num_teams_empty"] = self.model.NewBoolVar(f"match_{i}_num_teams_empty")
 
             self.vars["match"][i]["score"] = self.model.NewIntVar(0, MAX_SCORE, f"match_{i}_score")
+            self.vars["match"][i]["size_score"] = self.model.NewIntVar(0, 2, f"match_{i}_size_score")
             self.vars["match"][i]["teams"] = {}
 
             # max 3 teams per match?
             for j in range(3):
                 self.vars["match"][i]["teams"][j] = {}
                 self.vars["match"][i]["teams"][j]["use"] = self.model.NewBoolVar(f"match_{i}_teams_{j}_use")
+                self.vars["match"][i]["teams"][j]["num_players"] = self.model.NewIntVar(0, 3, f"match_{i}_teams_{j}_num_players")
+                self.vars["match"][i]["teams"][j]["size_score"] = self.model.NewIntVar(0, 1, f"match_{i}_teams_{j}_size_score")
                 self.vars["match"][i]["teams"][j]["players"] = {}
 
                 # max 3 players per team?
@@ -112,17 +112,18 @@ class ScrambleSolver:
                     for q in range(3):
                         self.vars["match"][i]["teams"][j]["players"][p][f"div_score_opponent_{q}"] = self.model.NewIntVar(0, MAX_SCORE, f"match_{i}_team_{j}_player_{p}_div_score_opponent")
 
+        # add partner history
         self.partner_history = []
         self.opponent_history = []
         for p1, p2 in combinations(self.num_to_player.items(), 2):
             p1_id, p1 = p1
             p2_id, p2 = p2
 
-            self.vars["partner_history"][(p1_id, p2_id)] = self.model.NewIntVar(0, MAX_SCORE, f"partner_history_{i}_{j}")
-            self.vars["partner_history"][(p2_id, p1_id)] = self.model.NewIntVar(0, MAX_SCORE, f"partner_history_{j}_{i}")
+            self.vars["partner_history"][(p1_id, p2_id)] = self.model.NewIntVar(0, 1, f"partner_history_{i}_{j}")
+            self.vars["partner_history"][(p2_id, p1_id)] = self.model.NewIntVar(0, 1, f"partner_history_{j}_{i}")
 
-            self.vars["opponent_history"][(p1_id, p2_id)] = self.model.NewIntVar(0, MAX_SCORE, f"opponent_history_{i}_{j}")
-            self.vars["opponent_history"][(p2_id, p1_id)] = self.model.NewIntVar(0, MAX_SCORE, f"opponent_history_{i}_{j}")
+            self.vars["opponent_history"][(p1_id, p2_id)] = self.model.NewIntVar(0, 1, f"opponent_history_{i}_{j}")
+            self.vars["opponent_history"][(p2_id, p1_id)] = self.model.NewIntVar(0, 1, f"opponent_history_{i}_{j}")
 
             self.partner_history.append((p1_id, p2_id, self.history.get_partner_frequency(p1.id, p2.id)))
             self.partner_history.append((p2_id, p1_id, self.history.get_partner_frequency(p1.id, p2.id)))
@@ -138,6 +139,10 @@ class ScrambleSolver:
             self.opponent_history.append((0, p_id, 0))
         self.partner_history.append((0, 0, 0))
         self.opponent_history.append((0, 0, 0))
+
+        # add constants
+        self.vars["constants"]["ideal_team_size"] = self.model.NewConstant(2)
+        self.vars["constants"]["ideal_match_size"] = self.model.NewConstant(2)
 
         LOGGER.debug(f"build match vars, len={ScrambleSolver.count_vars(self.vars)}")
 
@@ -173,6 +178,7 @@ class ScrambleSolver:
                 use = team["use"]
                 self.model.Add(sum(players) >= 2).OnlyEnforceIf(use)
                 self.model.Add(sum(players) == 0).OnlyEnforceIf(use.Not())
+                self.model.Add(team["num_players"] == sum(players))
 
         all_players =  [
                 player
@@ -189,8 +195,6 @@ class ScrambleSolver:
         all_player_ids = [player["id"] for player in all_players]
         self.model.Add(sum(all_player_ids) == expected_sum)
 
-        LOGGER.debug(f"num_players={len(self.active_players)}, expected_sum={expected_sum}")
-
         # every team has at least 2 teams
         for match in self.vars["match"].values():
             team_uses = [
@@ -198,23 +202,22 @@ class ScrambleSolver:
                 for team in match["teams"].values()
             ]
 
-            self.model.Add(match["uses_sum"] == sum(team_uses))
+            self.model.Add(match["num_teams"] == sum(team_uses))
 
             # Reify the conditions
-            self.model.Add(match["uses_sum"] == 0).OnlyEnforceIf(match["unused_ok"])
-            self.model.Add(match["uses_sum"] != 0).OnlyEnforceIf(match["unused_ok"].Not())
+            self.model.Add(match["num_teams"] == 0).OnlyEnforceIf(match["num_teams_empty"])
+            self.model.Add(match["num_teams"] != 0).OnlyEnforceIf(match["num_teams_empty"].Not())
 
-            self.model.Add(match["uses_sum"] >= 2).OnlyEnforceIf(match["used_ok"])
-            self.model.Add(match["uses_sum"] < 2).OnlyEnforceIf(match["used_ok"].Not())
+            self.model.Add(match["num_teams"] >= 2).OnlyEnforceIf(match["num_teams_ok"])
+            self.model.Add(match["num_teams"] < 2).OnlyEnforceIf(match["num_teams_ok"].Not())
 
             # Enforce match not used or >= 2 teams
-            self.model.AddBoolOr([match["unused_ok"], match["used_ok"]])
+            self.model.AddBoolOr([match["num_teams_empty"], match["num_teams_ok"]])
 
     def set_objective(self):
         """
         Sets the weighted sum of scoring functions as the objective to minimize.
         """
-
         for match in self.vars["match"].values():
             teams = match["teams"]
 
@@ -223,6 +226,15 @@ class ScrambleSolver:
                 for team in teams.values()
                 for player in team["players"].values()
                 ]
+
+            # match size of 2 teams is prefered
+            self.model.Add(match["size_score"] == match["num_teams"] - self.vars["constants"]["ideal_match_size"]).OnlyEnforceIf(match["num_teams_ok"])
+            self.model.Add(match["size_score"] == 0).OnlyEnforceIf(match["num_teams_empty"])
+
+            # team size of 2 players is prefered
+            for team in teams.values():
+                self.model.Add(team["size_score"] == team["num_players"] - self.vars["constants"]["ideal_team_size"]).OnlyEnforceIf(team["use"])
+                self.model.Add(team["size_score"] == 0).OnlyEnforceIf(team["use"].Not())
 
             # diversity partner score:
             for team in teams.values():
@@ -235,9 +247,16 @@ class ScrambleSolver:
                     for i, p2 in t2["players"].items():
                         self.model.AddAllowedAssignments([p1["id"], p2["id"], p1[f"div_score_opponent_{i}"]], self.opponent_history)
 
+            num_teams_score = match["size_score"]
+            team_size_score = [team["size_score"] for team in teams.values()]
             div_score_partner = [player["div_score_partner"] for player in players]
             div_score_opponent = [player[f"div_score_opponent_{i}"] for player in players for i in range(3)]
-            self.model.Add(match["score"] == sum([sum(div_score_partner), sum(div_score_opponent)]))
+            self.model.Add(match["score"] == sum([
+                sum(div_score_partner),
+                sum(div_score_opponent),
+                sum(team_size_score),
+                num_teams_score
+            ]))
 
         score = [match["score"] for match in self.vars["match"].values()]
         self.model.Minimize(sum(score))
@@ -269,6 +288,10 @@ class ScrambleSolver:
 
                 teams = []
                 for team in match["teams"].values():
+                    num_players = self.solver.Value(team["num_players"])
+                    if num_players:
+                       print('', 'num_players', num_players)
+
                     players = []
                     for player in team["players"].values():
                         add_if_exists(players, self.solver.Value(player["id"]))
