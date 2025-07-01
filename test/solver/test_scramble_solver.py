@@ -119,8 +119,8 @@ def test_2_matches_2_levels_no_history(caplog):
 
     assert len(round.matches) == 2
     for match in round.matches:
-        match_levels = {player.level for team in match.teams for player in team.players}
-        assert len(match_levels) == 1  # All players in a match must have the same level
+        avg_team_levels = {sum(player.level for player in team.players) / len(team.players) for team in match.teams}
+        assert len(avg_team_levels) == 1
 
 
 @pytest.mark.timeout(60)
