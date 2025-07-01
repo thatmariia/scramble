@@ -4,8 +4,9 @@ from ortools.sat.python import cp_model as cp
 import logging
 import math
 from scramble.core import Player, Team, HistoryManager, Match, Court, Round
-from scramble.settings import Settings
+from scramble.settings import Settings, Goal
 from scramble.solver.model_variables import ModelVariables
+from scramble.solver.hints import add_hints
 from scramble.solver.constraints import add_constraints, add_symmetry_breaking
 from scramble.solver.objective import score_round
 
@@ -65,11 +66,12 @@ class ScrambleSolver:
 
         self.model = cp.CpModel()
         self.solver = cp.CpSolver()
+        # self.solver.parameters.num_search_workers = 4
+        # self.solver.parameters.max_time_in_seconds = 60.0
         self.vars = {}
-        max_nr_teams_on_court = math.ceil(len(self.active_players) / self.settings.min_team_size)
         self.nr_teams = max(
             self.settings.min_nr_teams_in_match,
-            len(self.courts) * max_nr_teams_on_court
+            math.ceil(len(self.active_players) / self.settings.min_team_size)
         )
         LOGGER.debug(f"number of teams: {self.nr_teams}")
 
@@ -106,9 +108,19 @@ class ScrambleSolver:
 
         LOGGER.debug(f"number of vars: {self.nr_teams * (len(self.active_players) + len(self.courts) + 1) + len(self.courts)}")
 
-        # LOGGER.debug(f"vars: player_in_team={self.vars['player_in_team']}, ")
-        # LOGGER.debug(f"vars: team_on_court={self.vars['team_on_court']}, ")
-        # LOGGER.debug(f"vars: team_active={self.vars['team_active']}")
+    def add_hints(self):
+        mv = ModelVariables(
+            player_in_team=self.vars["player_in_team"],
+            team_on_court=self.vars["team_on_court"],
+            team_active=self.vars["team_active"],
+            court_active=self.vars["court_active"],
+            nr_teams=self.nr_teams,
+            active_players=self.active_players,
+            courts=self.courts,
+            history=self.history,
+            settings=self.settings,
+        )
+        add_hints(self.model, mv)
 
     def add_constraints(self):
         """
@@ -126,7 +138,7 @@ class ScrambleSolver:
             settings=self.settings,
         )
         add_constraints(self.model, mv)
-        add_symmetry_breaking(self.model, mv)
+        # add_symmetry_breaking(self.model, mv)
 
     def set_objective(self):
         """
@@ -196,6 +208,7 @@ class ScrambleSolver:
             A Round object containing the matches and resting players based on the optimized schedule.
         """
         self.build_model()
+        # self.add_hints()
         self.add_constraints()
         self.set_objective()
 

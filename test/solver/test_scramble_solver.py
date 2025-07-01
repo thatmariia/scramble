@@ -25,10 +25,11 @@ def get_solver(num_players: int, num_courts: int):
 
 
 @pytest.mark.parametrize("num_matches", [
-    pytest.param(1),
-    pytest.param(2),
+    # pytest.param(1),
+    # pytest.param(2),
     # pytest.param(3),
-    # pytest.param(10),
+    # pytest.param(4),
+    pytest.param(50),
 ])
 # @pytest.mark.timeout(60)
 def test_n_matches_no_history_same_level(num_matches, caplog):

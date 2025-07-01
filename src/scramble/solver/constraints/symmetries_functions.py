@@ -47,10 +47,6 @@ def symmetry_teams(mdl: CpModel, mv: ModelVariables):
         mdl.add_bool_and([mv.team_active[t], mv.team_active[t + 1]]).only_enforce_if(both_active)
         mdl.add(min_id[t] < min_id[t + 1]).only_enforce_if(both_active)
 
-    # force the first player (lowest index) to be in team 0
-    first_player = mv.active_players[0].id
-    mdl.add(mv.player_in_team[(first_player, 0)] == 1).only_enforce_if(mv.team_active[0])
-
 
 def symmetry_courts(mdl: CpModel, mv: ModelVariables):
     """
@@ -96,9 +92,27 @@ def symmetry_courts(mdl: CpModel, mv: ModelVariables):
         mdl.add_bool_and([mv.court_active[c1], mv.court_active[c2]]).only_enforce_if(both_active)
         mdl.add(min_team_on_court[c1] < min_team_on_court[c2]).only_enforce_if(both_active)
 
-    # force the first team (lowest index) to be on the first court
-    first_court_id = sorted_court_ids[0]
-    mdl.add(mv.team_on_court[(0, first_court_id)] == 1).only_enforce_if(mv.court_active[first_court_id])
+
+def symmetry_anchor_first_player(mdl: CpModel, mv: ModelVariables):
+    """
+    Anchors the first player (player 0) to be in team 0.
+    This is a specific symmetry-breaking constraint that ensures player 0 is always assigned to team 0.
+
+    Conforms to the ConstraintFunction protocol.
+    """
+    if mv.active_players and mv.nr_teams > 0:
+        mdl.add(mv.player_in_team[(mv.active_players[0].id, 0)] == 1).only_enforce_if(mv.team_active[0])
+
+
+def symmetry_anchor_first_team(mdl: CpModel, mv: ModelVariables):
+    """
+    Anchors the first team (team 0) to be on the first court (court 0).
+    This is a specific symmetry-breaking constraint that ensures team 0 is always assigned to court 0.
+
+    Conforms to the ConstraintFunction protocol.
+    """
+    if mv.courts and mv.nr_teams > 0:
+        mdl.add(mv.team_on_court[(0, mv.courts[0].id)] == 1).only_enforce_if(mv.court_active[mv.courts[0].id])
 
 
 def symmetry_team_groups(mdl: CpModel, mv: ModelVariables):
@@ -130,6 +144,8 @@ def symmetry_court_groups(mdl: CpModel, mv: ModelVariables):
 SYMMETRY_FUNCTIONS: list[ConstraintFunction] = [
     symmetry_teams,
     symmetry_courts,
+    # symmetry_anchor_first_player,
+    # symmetry_anchor_first_team,
     symmetry_team_groups,
     symmetry_court_groups
 ]
