@@ -11,6 +11,7 @@ from scramble.solver.model_variables import ModelVariables
 from scramble.solver.hints import add_hints
 from scramble.solver.constraints import add_constraints, add_symmetry_breaking
 from scramble.solver.objective import score_round
+from scramble.solver.utils import define_and_var
 
 LOGGER = logging.getLogger(__name__)
 
@@ -68,8 +69,9 @@ class ScrambleSolver:
 
         self.model = cp.CpModel()
         self.solver = cp.CpSolver()
-        # self.solver.parameters.log_search_progress = True
+        self.solver.parameters.log_search_progress = True
         self.solver.parameters.num_search_workers = min(4, multiprocessing.cpu_count())
+        self.solver.parameters.linearization_level = 1
         # self.solver.parameters.max_time_in_seconds = 60.0
         self.vars = {}
         self.nr_teams = max(
@@ -113,32 +115,47 @@ class ScrambleSolver:
         LOGGER.debug(f"number of vars: {self.nr_teams * (len(self.active_players) + len(self.courts) + 1) + len(self.courts)}")
 
     def build_mv(self):
-        # map teams to courts
-        court_id2idx = {court.id: i for i, court in enumerate(self.courts)}
-        nr_courts = len(self.courts)
+        if self.settings.goal_configs[Goal.DIVERSIFY_PARTNERS].enabled or self.settings.goal_configs[Goal.DIVERSIFY_OPPONENTS].enabled:
+            court_id2idx = {court.id: i for i, court in enumerate(self.courts)}
+            nr_courts = len(self.courts)
 
-        # create a variable for each team to track which court they are assigned to
-        court_idx_of_team: list[IntVar] = []
-        for team_id in range(self.nr_teams):
-            cidx = self.model.new_int_var(0, nr_courts - 1, f"court_idx_t{team_id}")
-            court_idx_of_team.append(cidx)
-            for cid, idx in court_id2idx.items():
-                self.model.add(cidx == idx).only_enforce_if(self.vars["team_on_court"][(team_id, cid)])
+            # create a variable for each team to track which court they are assigned to
+            court_idx_of_team: list[IntVar] = []
+            for team_id in range(self.nr_teams):
+                court_idx = self.model.new_int_var(0, nr_courts - 1, f"court_idx_t{team_id}")
+                court_idx_of_team.append(court_idx)
+                for court_id, idx in court_id2idx.items():
+                    self.model.add(court_idx == idx).only_enforce_if(self.vars["team_on_court"][(team_id, court_id)])
 
-        # map players to their teams
-        team_of_player: dict[str, IntVar] = {}
-        for player in self.active_players:
-            tid = self.model.new_int_var(0, self.nr_teams - 1, f"team_of_{player.id}")
-            team_of_player[player.id] = tid
-            for t in range(self.nr_teams):
-                self.model.add(tid == t).only_enforce_if(self.vars["player_in_team"][(player.id, t)])
+            # map players to their teams
+            team_of_player: dict[str, IntVar] = {}
+            for player in self.active_players:
+                tid = self.model.new_int_var(0, self.nr_teams - 1, f"team_of_{player.id}")
+                team_of_player[player.id] = tid
+                for team_id in range(self.nr_teams):
+                    self.model.add(tid == team_id).only_enforce_if(self.vars["player_in_team"][(player.id, team_id)])
 
-        # map players to their courts
-        court_of_player: dict[str, IntVar] = {}
-        for player in self.active_players:
-            cvar = self.model.new_int_var(0, nr_courts - 1, f"court_of_{player.id}")
-            court_of_player[player.id] = cvar
-            self.model.add_element(team_of_player[player.id], court_idx_of_team, cvar)
+            # map players to their courts
+            court_of_player: dict[str, IntVar] = {}
+            for player in self.active_players:
+                cvar = self.model.new_int_var(0, nr_courts - 1, f"court_of_{player.id}")
+                court_of_player[player.id] = cvar
+                # self.model.add_element(team_of_player[player.id], court_idx_of_team, cvar)
+                for team_id in range(self.nr_teams):
+                    for court_id, court_idx in court_id2idx.items():
+                        # player p is in team t AND team t is on court cid → p is on that court
+                        cond = define_and_var(
+                            self.model,
+                            f"{player.id}_in_t{team_id}_on_c{court_id}",
+                            [
+                                self.vars["player_in_team"][(player.id, team_id)],
+                                self.vars["team_on_court"][(team_id, court_id)]
+                                ]
+                        )
+                        self.model.add(cvar == court_idx).only_enforce_if(cond)
+        else:
+            team_of_player = {}
+            court_of_player = {}
 
         self._mv = ModelVariables(
             player_in_team=self.vars["player_in_team"],
