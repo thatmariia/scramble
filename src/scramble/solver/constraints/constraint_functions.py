@@ -1,23 +1,6 @@
-from typing import Protocol
-from ortools.sat.python.cp_model import CpModel, IntVar, LinearExpr
+from ortools.sat.python.cp_model import CpModel
 from scramble.solver.model_variables import ModelVariables
-
-
-# --- Constraint function protocol ---
-
-class ConstraintFunction(Protocol):
-    def __call__(self, mdl: CpModel, mv: ModelVariables):
-        """
-        Adds a constraint expression for the given model and variables.
-
-        Parameters
-        ----------
-        mdl : CpModel
-            The CP model to which the constraint is applied.
-        mv : ModelVariables
-            The model variables containing decision variables and other relevant data.
-        """
-        ...
+from scramble.solver.constraints.function_protocol import ConstraintFunction
 
 
 # --- Individual constraint functions ---
