@@ -38,35 +38,6 @@ class Match(Serializable):
             "court": self.court.to_dict(),
         }
 
-    @classmethod
-    def from_team_player_ids(
-        cls,
-        team_player_ids: list[list[str]],
-        player_lookup: dict[str, Player],
-        court: Court | None = None
-    ) -> "Match":
-        """
-        Creates a Match instance from a list of team player IDs and a player lookup dictionary.
-
-        Parameters
-        ----------
-        team_player_ids : list[list[str]]
-            List of lists, where each inner list contains player IDs for a team.
-        player_lookup : dict[str, Player]
-            Dictionary mapping player IDs to Player objects.
-        court : Court | None = None
-            Optional court on which the match is played. If None, a dummy court is used.
-
-        Returns
-        -------
-        Match
-            A new Match instance containing the specified teams and court.
-        """
-        teams = [Team.from_player_ids(player_ids, player_lookup) for player_ids in team_player_ids]
-        if not court:
-            court = Court.dummy()
-        return cls(teams=teams, court=court)
-
     def all_player_ids(self) -> set[str]:
         """
         Returns a set of all player IDs across all teams in the match.
@@ -77,21 +48,6 @@ class Match(Serializable):
             Set of all player IDs.
         """
         return set(player_id for team in self.teams for player_id in team.player_ids())
-
-    def lvl_range(self) -> float:
-        """
-        Calculates the max difference in average skill level among all teams.
-
-        Returns
-        -------
-        float
-            The difference between the highest and lowest average team level.
-            Returns 0.0 if there are fewer than two teams.
-        """
-        if len(self.teams) < 2:
-            return 0.0
-        levels = [team.avg_level() for team in self.teams]
-        return max(levels) - min(levels)
 
     def partner_pairs(self) -> Iterator[tuple[str, str]]:
         """

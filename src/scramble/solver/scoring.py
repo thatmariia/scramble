@@ -1,36 +1,38 @@
-from scramble.solver.scoring_functions import SCORING_FUNCTIONS
-from scramble.settings import Settings
-from scramble.core import Match, HistoryManager, Player, Team, Court
+from ortools.sat.python.cp_model import CpModel, IntVar, LinearExpr
+from scramble.solver.scoring_functions import SCORING_FUNCTIONS, ModelVariables
 
 
-def score_team(players: list[Player], history: HistoryManager, settings: Settings) -> float:
-    match = Match([Team(players)], Court.dummy())  # use Match constructor to reuse scoring
-    return score_match(match, history, settings)
-
-
-def score_match(match: Match, history: HistoryManager, settings: Settings) -> float:
+def score_round(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
     """
-    Computes the total weighted penalty score for a match based on active goals.
+    Computes the total weighted penalty score for a round based on active goals.
     Lower scores are better.
 
     Parameters
     ----------
-    match : Match
-        The match to be scored.
-    history : HistoryManager
-        The history manager containing player histories.
-    settings : Settings
-        The settings for the scramble solver.
+    mdl : CpModel
+        The CP model to which the scoring function is applied.
+    mv : ModelVariables
+        The model variables containing decision variables and other relevant data.
 
     Returns
     -------
     float
-        The total penalty score for the match.
+        The total penalty score for the round.
     """
-    total_score = 0.0
-    for goal, config in settings.goal_configs.items():
-        if config.enabled:
-            scoring_fn = SCORING_FUNCTIONS.get(goal)
-            if scoring_fn:
-                total_score += scoring_fn(match, history, settings) * config.weight
-    return total_score
+    terms = []
+
+    for goal, cfg in mv.settings.goal_configs.items():
+        if not cfg.enabled or goal not in SCORING_FUNCTIONS:
+            continue
+
+        # symbolic penalty expression for this goal
+        expr = SCORING_FUNCTIONS[goal](mdl, mv)
+
+        terms.append(cfg.weight * expr)
+
+    if not terms:
+        # Return a constant zero IntVar if no goals enabled
+        zero = mdl.NewIntVar(0, 0, "zero_obj")
+        return zero
+
+    return sum(terms)

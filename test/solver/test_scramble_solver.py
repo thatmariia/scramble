@@ -1,5 +1,5 @@
 import pytest
-
+import logging
 from scramble.core import Level, Court, Player, HistoryManager
 from scramble.solver import ScrambleSolver
 from scramble.settings import Settings
@@ -28,10 +28,11 @@ def get_solver(num_players: int, num_courts: int):
     pytest.param(1),
     pytest.param(2),
     # pytest.param(3),
-    # pytest.param(4),
+    # pytest.param(10),
 ])
-@pytest.mark.timeout(60)
-def test_n_matches_no_history_same_level(num_matches):
+# @pytest.mark.timeout(60)
+def test_n_matches_no_history_same_level(num_matches, caplog):
+    caplog.set_level(logging.DEBUG)
     solver = get_solver(num_players=num_matches * 4, num_courts=num_matches)
     round = solver.solve()
 

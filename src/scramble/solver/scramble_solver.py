@@ -2,15 +2,13 @@
 from ortools.sat.python import cp_model as cp
 
 import logging
-import heapq
 import math
-from itertools import combinations
-from scramble.core import Player, HistoryManager, Match, Court, Round
+from scramble.core import Player, Team, HistoryManager, Match, Court, Round
 from scramble.settings import Settings
-from scramble.solver.utils import are_disjoint
-from scramble.solver.scoring import score_match, score_team
+from scramble.solver.scoring import score_round, ModelVariables
 
 LOGGER = logging.getLogger(__name__)
+
 
 class ScrambleSolver:
     """
@@ -23,8 +21,6 @@ class ScrambleSolver:
     ----------
     active_players : list[Player]
         List of players to be assigned to teams and matches.
-    _player_lookup : dict[str, Player]
-        Dictionary mapping player IDs to Player objects for quick access.
     history : HistoryManager
         The history manager containing player histories.
     settings : Settings
@@ -35,6 +31,8 @@ class ScrambleSolver:
         The CP-SAT solver instance used to solve the model.
     vars : dict
         Dictionary to hold decision variables for the model.
+    nr_teams : int
+        The max number of teams to be created based on the number of players and settings.
     """
 
     def __init__(
@@ -59,7 +57,6 @@ class ScrambleSolver:
             The settings for the scramble solver.
         """
         self.active_players = active_players
-        self._player_lookup = {player.id: player for player in active_players}
         self.history = history
         self.courts = courts
         self.settings = settings
@@ -67,179 +64,178 @@ class ScrambleSolver:
         self.model = cp.CpModel()
         self.solver = cp.CpSolver()
         self.vars = {}
+        max_nr_teams_on_court = math.ceil(len(self.active_players) / self.settings.min_team_size)
+        self.nr_teams = max(
+            self.settings.min_nr_teams_in_match,
+            len(self.courts) * max_nr_teams_on_court
+        )
+        LOGGER.debug(f"number of teams: {self.nr_teams}")
 
     def build_model(self):
         """
         Defines decision variables and structure needed for the optimization.
         Vars:
-        - team: A dictionary mapping team player IDs to a boolean variable
-            indicating if the team is in a match.
-        - match: A dictionary mapping configurations of competing teams to a boolean variable
-            indicating if they are in a match.
+        - player_in_team[(player_id, team_id)]: Bool var indicating if player is in a team.
+        - team_on_court[(team_id, court_id)]: Bool var indicating if a team is on a court.
+        - team_active[team_id]: Bool var indicating if a team is active (has players).
         """
-        self.vars["team"] = {}
-        self.vars["match"] = {}
+        self.vars["player_in_team"] = {}
+        self.vars["team_on_court"] = {}
+        self.vars["team_active"] = {}
+        self.vars["court_active"] = {}
 
-        # create a variable for each team indicating if they are in a match
-        self._build_team_vars()
+        for team_id in range(self.nr_teams):
+            for player in self.active_players:
+                self.vars["player_in_team"][(player.id, team_id)] = self.model.new_bool_var(
+                    f"player_{player.id}_in_team_{team_id}"
+                )
+            for court in self.courts:
+                self.vars["team_on_court"][(team_id, court.id)] = self.model.new_bool_var(
+                    f"team_{team_id}_on_court_{court.id}"
+                )
+            self.vars["team_active"][team_id] = self.model.new_bool_var(
+                f"team_{team_id}_active"
+            )
 
-        # create a variable for each configuration of competing teams indicating if they are in a match
-        self._build_match_vars()
+        for court in self.courts:
+            self.vars["court_active"][court.id] = self.model.new_bool_var(
+                f"court_{court.id}_active"
+            )
 
-    def _build_match_vars(self):
-        """
-        Creates match variables for each possible configuration of teams.
-        Match variables are created for combinations of teams that are disjoint,
-        meaning no player is in more than one team in the match.
-        """
-        team_ids_list = list(self.vars["team"].keys())
-        min_nr_teams = self.settings.min_nr_teams_in_match
-        max_nr_teams = math.ceil(len(self.active_players) / min_nr_teams)
+        LOGGER.debug(f"number of vars: {self.nr_teams * (len(self.active_players) + len(self.courts) + 1) + len(self.courts)}")
 
-        LOGGER.debug(f"team_ids_list={len(team_ids_list)}")
-
-        for nr_teams in range(min_nr_teams, max_nr_teams + 1):
-            LOGGER.debug(f"building match nr_teams={nr_teams}, combinations={math.comb(len(team_ids_list), nr_teams)}")
-            for match_teams in combinations(team_ids_list, nr_teams):
-                if not are_disjoint(match_teams):
-                    continue
-                ordered_match_teams = tuple(sorted(match_teams, key=lambda team: min(team)))
-                if ordered_match_teams not in self.vars["match"]:
-                    self.vars["match"][ordered_match_teams] = self.model.NewBoolVar(f"match_{ordered_match_teams}")
-
-
-    def _build_team_vars(self):
-        """
-        Creates team variables for each possible player configuration
-        based on the active players and their team sizes.
-        Teams are pruned using a max-heap to keep only the best scoring teams.
-        Teams are limited by:
-        - Maximum number of teams per team size (MAX_TEAMS_PER_TEAM_SIZE).
-        - Maximum number of teams per player (MAX_TEAMS_PER_PLAYER).
-        """
-        player_team_counts = {p.id: 0 for p in self.active_players}
-        min_team_size = max(
-            math.ceil(
-                math.ceil(
-                    len(self.active_players) / len(self.courts)
-                ) / self.settings.min_nr_teams_in_match
-            ),
-            self.settings.min_team_size
-        )
-        max_team_size = min(
-            math.ceil(len(self.active_players) / self.settings.min_nr_teams_in_match),
-            2 * self.settings.min_team_size - 1
-        )
-        for nr_players in range(min_team_size, max_team_size + 1):
-            top_k_heap = []  # max-heap for worst-first pruning
-
-            for team_players in combinations(self.active_players, nr_players):
-                score = score_team(list(team_players), self.history, self.settings)
-                team_player_ids = tuple(sorted(player.id for player in team_players))
-
-                self._try_add_team_to_heap(player_team_counts, score, team_player_ids, top_k_heap)
-
-            for score, team_player_ids in top_k_heap:
-                self.vars["team"][team_player_ids] = self.model.NewBoolVar(f"team_{team_player_ids}")
-
-        LOGGER.debug(f"build team vars: num_team_vars={len(self.vars["team"])}")
-
-    @staticmethod
-    def _try_add_team_to_heap(
-            player_team_counts: dict[str, int],
-            score: float,
-            team_player_ids: tuple[str, ...],
-            top_k_heap: list[tuple[float, tuple[str, ...]]]
-    ):
-        """
-        Attempts to add a team to the max-heap of top K teams.
-        If the heap is full or any player in the team has reached their maximum number of teams,
-        it checks if the new team is better than the worst team in the heap.
-        If so, it replaces the worst team with the new one.
-
-        Parameters
-        ----------
-        player_team_counts : dict[str, int]
-            Dictionary mapping player IDs to the number of teams they are part of.
-        score : float
-            The score of the team being considered for addition to the heap.
-        team_player_ids : tuple[int, ...]
-            Tuple of player IDs representing the team.
-        top_k_heap : list[tuple[float, tuple[str, ...]]]
-            The max-heap containing the top K teams, where each entry is a tuple of (score, team_player_ids).
-        """
-        MAX_TEAMS_PER_TEAM_SIZE = 1000
-        MAX_TEAMS_PER_PLAYER = 30
-
-        team_limit_reached = len(top_k_heap) >= MAX_TEAMS_PER_TEAM_SIZE
-        any_player_at_limit = any(
-            player_team_counts[pid] >= MAX_TEAMS_PER_PLAYER
-            for pid in team_player_ids
-        )
-        if len(top_k_heap) == 0 or (not team_limit_reached and not any_player_at_limit):
-            # push if we don't yet have K teams
-            heapq.heappush(top_k_heap, (-score, team_player_ids))
-            for pid in team_player_ids:
-                player_team_counts[pid] += 1
-        else:
-            # check if this team is better than the current worst
-            if score < -top_k_heap[0][0]:  # note: top_k_heap[0][0] is negative
-                # pop the worst team and push the new one
-                _, worst_team = heapq.heappushpop(top_k_heap, (-score, team_player_ids))
-                for pid in worst_team:
-                    player_team_counts[pid] -= 1
-                for pid in team_player_ids:
-                    player_team_counts[pid] += 1
+        # LOGGER.debug(f"vars: player_in_team={self.vars['player_in_team']}, ")
+        # LOGGER.debug(f"vars: team_on_court={self.vars['team_on_court']}, ")
+        # LOGGER.debug(f"vars: team_active={self.vars['team_active']}")
 
     def add_constraints(self):
         """
         Adds constraints to ensure valid match structure.
         Constraints:
-        - Limit the number of matches to the number of courts.
-        - Ensure each team is part of at most one match.
+        - Ensure each active team has at least the minimum number of players.
+        - Ensure each court has at least the minimum number of teams.
         - Ensure each player is in exactly one team.
+        - Ensure each team is active if it has players.
+        - Ensure each court is active if it has teams.
+        - Ensure each active team is on exactly one court.
         """
-        # limit number of matches by the number of courts
-        self.model.Add(sum(self.vars["match"].values()) <= len(self.courts))
 
-        # team variable is True iff it’s part of some match
-        for team_player_ids, team_var in self.vars["team"].items():
-            matches_involving_team = [
-                self.vars["match"][match_teams]
-                for match_teams in self.vars["match"]
-                if team_player_ids in match_teams
+        # min team size constraint in an active team
+        for team_id in range(self.nr_teams):
+            team_players = [
+                self.vars["player_in_team"][(player.id, team_id)]
+                for player in self.active_players
             ]
-            if matches_involving_team:
-                self.model.Add(team_var == sum(matches_involving_team))
-            else:
-                self.model.Add(team_var == 0)
+            self.model.add(sum(team_players) >= self.settings.min_team_size).only_enforce_if(self.vars["team_active"][team_id])
+
+        # min number of teams in match (active court) constraint
+        for court in self.courts:
+            teams_on_court = [
+                self.vars["team_on_court"][(team_id, court.id)]
+                for team_id in range(self.nr_teams)
+            ]
+            self.model.add(sum(teams_on_court) >= self.settings.min_nr_teams_in_match).only_enforce_if(self.vars["court_active"][court.id])
 
         # each player is in exactly one team
         for player in self.active_players:
             teams_with_player = [
-                self.vars["team"][team_player_ids]
-                for team_player_ids in self.vars["team"]
-                if player.id in team_player_ids
+                self.vars["player_in_team"][(player.id, team_id)]
+                for team_id in range(self.nr_teams)
             ]
-            self.model.Add(sum(teams_with_player) == 1)
+            self.model.add(sum(teams_with_player) == 1)
+
+        # each team is active if it has players
+        for team_id in range(self.nr_teams):
+            team_players = [
+                self.vars["player_in_team"][(player.id, team_id)]
+                for player in self.active_players
+            ]
+
+            size = self.model.new_int_var(0, len(self.active_players), f"size_t{team_id}")
+            self.model.add(size == sum(team_players))
+
+            self.model.add(size >= 1).only_enforce_if(self.vars["team_active"][team_id])
+            self.model.add(size == 0).only_enforce_if(self.vars["team_active"][team_id].Not())
+
+        # each active team is on exactly one court
+        for team_id in range(self.nr_teams):
+            team_on_courts = [
+                self.vars["team_on_court"][(team_id, court.id)]
+                for court in self.courts
+            ]
+
+            self.model.add(sum(team_on_courts) == 1).only_enforce_if(self.vars["team_active"][team_id])
+
+        # each court is active if it has teams
+        for court in self.courts:
+            teams_on_court = [
+                self.vars["team_on_court"][(team_id, court.id)]
+                for team_id in range(self.nr_teams)
+            ]
+
+            size = self.model.new_int_var(0, self.nr_teams, f"size_court_{court.id}")
+            self.model.add(size == sum(teams_on_court))
+
+            self.model.add(size >= 1).only_enforce_if(self.vars["court_active"][court.id])
+            self.model.add(size == 0).only_enforce_if(self.vars["court_active"][court.id].Not())
 
     def set_objective(self):
         """
         Sets the weighted sum of scoring functions as the objective to minimize.
         """
-        objective_terms = []
-        for match_teams, match_var in self.vars["match"].items():
-            # get the player IDs for the teams in this match
-            team_player_ids_list = [list(team_player_ids) for team_player_ids in match_teams]
-            # create a Match object from the team player IDs
-            match = Match.from_team_player_ids(team_player_ids_list, self._player_lookup)
-            # score the match using the scoring function
-            score = score_match(match, self.history, self.settings)
-            # add the score multiplied by the match variable to the objective
-            objective_terms.append(score * match_var)
+        self.model.Minimize(score_round(
+            self.model,
+            ModelVariables(
+                player_in_team=self.vars["player_in_team"],
+                team_on_court=self.vars["team_on_court"],
+                team_active=self.vars["team_active"],
+                court_active=self.vars["court_active"],
+                nr_teams=self.nr_teams,
+                active_players=self.active_players,
+                courts=self.courts,
+                history=self.history,
+                settings=self.settings,
+            )
+        ))
 
-        # set the objective to minimize the total score
-        self.model.Minimize(sum(objective_terms))
+    def _matches_from_solutions(self) -> list[Match]:
+        """
+        Constructs Match objects based on the solved variables.
+
+        Returns
+        -------
+        list[Match]
+            List of matches created from selected teams and players.
+        """
+        # collect players into teams
+        all_teams: dict[int, Team] = {}
+
+        for team_id in range(self.nr_teams):
+            team_players = [
+                player for player in self.active_players
+                if self.solver.Value(self.vars["player_in_team"][player.id, team_id])
+            ]
+            if team_players:
+                all_teams[team_id] = Team(team_players)
+
+        # group teams by court assignment
+        teams_on_courts: dict[str, list[Team]] = {}
+        courts_lookup = {court.id: court for court in self.courts}
+
+        for court in self.courts:
+            court_teams = [
+                team for team_id, team in all_teams.items()
+                if self.solver.Value(self.vars["team_on_court"][team_id, court.id])
+            ]
+            if court_teams:
+                teams_on_courts[court.id] = court_teams
+
+        # build Match objects
+        matches = [
+            Match(teams, courts_lookup[court_id]) for court_id, teams in teams_on_courts.items()
+        ]
+
+        return matches
 
     def solve(self) -> Round:
         """
@@ -257,17 +253,9 @@ class ScrambleSolver:
         status = self.solver.Solve(self.model)
 
         if status in [cp.OPTIMAL, cp.FEASIBLE]:
-            selected_matches = [
-                match_teams
-                for match_teams, match_var in self.vars["match"].items()
-                if self.solver.Value(match_var) == 1
-            ]
-            matches = []
-            for i, match_teams in enumerate(selected_matches):
-                team_player_ids_list = [list(team_player_ids) for team_player_ids in match_teams]
-                court = self.courts[i % len(self.courts)]
-                match = Match.from_team_player_ids(team_player_ids_list, self._player_lookup, court)
-                matches.append(match)
-            return Round(matches)
+            matches = self._matches_from_solutions()
+            game_round = Round(matches)
+            LOGGER.debug(f"Solution found:\n{game_round}")
+            return game_round
         else:
             raise RuntimeError("No feasible solution found")
