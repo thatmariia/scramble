@@ -1,8 +1,10 @@
 # external imports
 from ortools.sat.python import cp_model as cp
+from ortools.sat.python.cp_model import IntVar
 
 import logging
 import math
+import multiprocessing
 from scramble.core import Player, Team, HistoryManager, Match, Court, Round
 from scramble.settings import Settings, Goal
 from scramble.solver.model_variables import ModelVariables
@@ -67,13 +69,14 @@ class ScrambleSolver:
         self.model = cp.CpModel()
         self.solver = cp.CpSolver()
         self.solver.parameters.log_search_progress = True
-        # self.solver.parameters.num_search_workers = 4
+        self.solver.parameters.num_search_workers = min(4, multiprocessing.cpu_count())
         # self.solver.parameters.max_time_in_seconds = 60.0
         self.vars = {}
         self.nr_teams = max(
             self.settings.min_nr_teams_in_match,
             math.ceil(len(self.active_players) / self.settings.min_team_size)
         )
+        self._mv = None
         LOGGER.debug(f"number of teams: {self.nr_teams}")
 
     def build_model(self):
@@ -109,56 +112,63 @@ class ScrambleSolver:
 
         LOGGER.debug(f"number of vars: {self.nr_teams * (len(self.active_players) + len(self.courts) + 1) + len(self.courts)}")
 
-    def add_hints(self):
-        mv = ModelVariables(
+    def build_mv(self):
+        # map teams to courts
+        court_id2idx = {court.id: i for i, court in enumerate(self.courts)}
+        nr_courts = len(self.courts)
+
+        # create a variable for each team to track which court they are assigned to
+        court_idx_of_team: list[IntVar] = []
+        for team_id in range(self.nr_teams):
+            cidx = self.model.new_int_var(0, nr_courts - 1, f"court_idx_t{team_id}")
+            court_idx_of_team.append(cidx)
+            for cid, idx in court_id2idx.items():
+                self.model.add(cidx == idx).only_enforce_if(self.vars["team_on_court"][(team_id, cid)])
+
+        # map players to their teams
+        team_of_player: dict[str, IntVar] = {}
+        for player in self.active_players:
+            tid = self.model.new_int_var(0, self.nr_teams - 1, f"team_of_{player.id}")
+            team_of_player[player.id] = tid
+            for t in range(self.nr_teams):
+                self.model.add(tid == t).only_enforce_if(self.vars["player_in_team"][(player.id, t)])
+
+        # map players to their courts
+        court_of_player: dict[str, IntVar] = {}
+        for player in self.active_players:
+            cvar = self.model.new_int_var(0, nr_courts - 1, f"court_of_{player.id}")
+            court_of_player[player.id] = cvar
+            self.model.add_element(team_of_player[player.id], court_idx_of_team, cvar)
+
+        self._mv = ModelVariables(
             player_in_team=self.vars["player_in_team"],
             team_on_court=self.vars["team_on_court"],
             team_active=self.vars["team_active"],
             court_active=self.vars["court_active"],
+            team_of_player=team_of_player,
+            court_of_player=court_of_player,
             nr_teams=self.nr_teams,
             active_players=self.active_players,
             courts=self.courts,
             history=self.history,
             settings=self.settings,
         )
-        add_hints(self.model, mv)
+
+    def add_hints(self):
+        add_hints(self.model, self._mv)
 
     def add_constraints(self):
         """
         Adds constraints to ensure valid match structure.
         """
-        mv = ModelVariables(
-            player_in_team=self.vars["player_in_team"],
-            team_on_court=self.vars["team_on_court"],
-            team_active=self.vars["team_active"],
-            court_active=self.vars["court_active"],
-            nr_teams=self.nr_teams,
-            active_players=self.active_players,
-            courts=self.courts,
-            history=self.history,
-            settings=self.settings,
-        )
-        add_constraints(self.model, mv)
+        add_constraints(self.model, self._mv)
         # add_symmetry_breaking(self.model, mv)
 
     def set_objective(self):
         """
         Sets the weighted sum of scoring functions as the objective to minimize.
         """
-        self.model.Minimize(score_round(
-            self.model,
-            ModelVariables(
-                player_in_team=self.vars["player_in_team"],
-                team_on_court=self.vars["team_on_court"],
-                team_active=self.vars["team_active"],
-                court_active=self.vars["court_active"],
-                nr_teams=self.nr_teams,
-                active_players=self.active_players,
-                courts=self.courts,
-                history=self.history,
-                settings=self.settings,
-            )
-        ))
+        self.model.Minimize(score_round(self.model, self._mv))
 
     def _matches_from_solutions(self) -> list[Match]:
         """
@@ -209,6 +219,7 @@ class ScrambleSolver:
             A Round object containing the matches and resting players based on the optimized schedule.
         """
         self.build_model()
+        self.build_mv()
         # self.add_hints()
         self.add_constraints()
         self.set_objective()

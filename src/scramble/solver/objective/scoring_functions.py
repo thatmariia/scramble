@@ -17,20 +17,16 @@ def score_keep_ideal_team_size(mdl: CpModel, mv: ModelVariables) -> LinearExpr |
     ideal_team_size = mv.settings.min_team_size
     terms: list[IntVar] = []
     for team_id in range(mv.nr_teams):
-        # calculate team size of the current team
-        team_size = mdl.new_int_var(0, len(mv.active_players), f"size_t{team_id}")
-        mdl.add(team_size == sum(mv.player_in_team[player.id, team_id] for player in mv.active_players))
-
         # calculate the deviation from the ideal team size
         dev = mdl.new_int_var(0, len(mv.active_players), f"dev_t{team_id}")
+        team_size = sum(mv.player_in_team[player.id, team_id] for player in mv.active_players)
         mdl.add_abs_equality(dev, team_size - ideal_team_size)
 
-        # multiply by the team active variable to only count if the team is active
-        dev_if_used = mdl.new_int_var(0, len(mv.active_players), f"dev_used_t{team_id}")
-        mdl.add(dev_if_used == dev).only_enforce_if(mv.team_active[team_id])
-        mdl.add(dev_if_used == 0).only_enforce_if(mv.team_active[team_id].Not())
+        # only count if the team is active
+        mdl.add(dev == dev).only_enforce_if(mv.team_active[team_id])
+        mdl.add(dev == 0).only_enforce_if(mv.team_active[team_id].Not())
 
-        terms.append(dev_if_used)
+        terms.append(dev)
     return sum(terms)
 
 
@@ -89,11 +85,10 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
                 diff = mdl.new_int_var(0, max_total * max_players, f"avg_diff_t{team1_id}_t{team2_id}_c{court.id}")
                 mdl.add_abs_equality(diff, left - right)
 
-                diff_if_used = mdl.new_int_var(0, max_total * max_players, f"avg_diff_used_t{team1_id}_t{team2_id}_c{court.id}")
-                mdl.add(diff_if_used == diff).only_enforce_if(both_on_court)
-                mdl.add(diff_if_used == 0).only_enforce_if(both_on_court.Not())
+                mdl.add(diff == diff).only_enforce_if(both_on_court)
+                mdl.add(diff == 0).only_enforce_if(both_on_court.Not())
 
-                terms.append(diff_if_used)
+                terms.append(diff)
     return sum(terms)
 
 
@@ -106,29 +101,21 @@ def score_diversify_partners(mdl: CpModel, mv: ModelVariables) -> LinearExpr | I
     """
     terms: list[IntVar] = []
 
-    # map players to their teams
-    team_of_player: dict[str, IntVar] = {}
-    for player in mv.active_players:
-        team_var = mdl.new_int_var(0, mv.nr_teams - 1, f"team_of_{player.id}")
-        team_of_player[player.id] = team_var
-        for team_id in range(mv.nr_teams):
-            mdl.add(team_var == team_id).only_enforce_if(mv.player_in_team[(player.id, team_id)])
-
     for player_i_id, player_j_id in mv.history.partner_tuples:
         freq = mv.history.get_partner_frequency(player_i_id, player_j_id)
 
         same_team = mdl.new_bool_var(f"same_team_{player_i_id}_{player_j_id}")
 
         # same_team is true iff both players are on same team
-        mdl.add(team_of_player[player_i_id] == team_of_player[player_j_id]).only_enforce_if(same_team)
-        mdl.add(team_of_player[player_i_id] != team_of_player[player_j_id]).only_enforce_if(same_team.Not())
+        mdl.add(mv.team_of_player[player_i_id] == mv.team_of_player[player_j_id]).only_enforce_if(same_team)
+        mdl.add(mv.team_of_player[player_i_id] != mv.team_of_player[player_j_id]).only_enforce_if(same_team.Not())
 
-        # penalty = freq * same_team
-        penalty_if_used = mdl.new_int_var(0, freq, f"penalty_{player_i_id}_{player_j_id}")
-        mdl.add(penalty_if_used == freq).only_enforce_if(same_team)
-        mdl.add(penalty_if_used == 0).only_enforce_if(same_team.Not())
+        # penalty
+        freq = mdl.new_int_var(0, freq, f"freq_{player_i_id}_{player_j_id}")
+        mdl.add(freq == freq).only_enforce_if(same_team)
+        mdl.add(freq == 0).only_enforce_if(same_team.Not())
 
-        terms.append(penalty_if_used)
+        terms.append(freq)
     return sum(terms)
 
 
@@ -141,48 +128,20 @@ def score_diversify_opponents(mdl: CpModel, mv: ModelVariables) -> LinearExpr | 
     """
     terms: list[IntVar] = []
 
-    # map team to courts
-    court_ids = [c.id for c in mv.courts]
-    court_id2idx = {cid: i for i, cid in enumerate(court_ids)}
-    nr_courts = len(court_ids)
-
-    # create a variable for each team to track which court they are assigned to
-    court_idx_of_team: list[IntVar] = []
-    for team_id in range(mv.nr_teams):
-        cidx = mdl.new_int_var(0, nr_courts - 1, f"court_idx_t{team_id}")
-        court_idx_of_team.append(cidx)
-        for cid, idx in court_id2idx.items():
-            mdl.add(cidx == idx).only_enforce_if(mv.team_on_court[(team_id, cid)])
-
-    # map players to their teams
-    team_of_player: dict[str, IntVar] = {}
-    for player in mv.active_players:
-        tid = mdl.new_int_var(0, mv.nr_teams - 1, f"team_of_{player.id}")
-        team_of_player[player.id] = tid
-        for t in range(mv.nr_teams):
-            mdl.add(tid == t).only_enforce_if(mv.player_in_team[(player.id, t)])
-
-    # map players to their courts
-    court_of_player: dict[str, IntVar] = {}
-    for player in mv.active_players:
-        cvar = mdl.new_int_var(0, nr_courts - 1, f"court_of_{player.id}")
-        court_of_player[player.id] = cvar
-        mdl.add_element(team_of_player[player.id], court_idx_of_team, cvar)
-
     for player_i_id, player_j_id in mv.history.opponent_tuples:
         freq = mv.history.get_opponent_frequency(player_i_id, player_j_id)
 
         same_court = mdl.new_bool_var(f"same_court_{player_i_id}_{player_j_id}")
 
         # same_court is true iff both players are on the same court
-        mdl.add(court_of_player[player_i_id] == court_of_player[player_j_id]).only_enforce_if(same_court)
-        mdl.add(court_of_player[player_i_id] != court_of_player[player_j_id]).only_enforce_if(same_court.Not())
+        mdl.add(mv.court_of_player[player_i_id] == mv.court_of_player[player_j_id]).only_enforce_if(same_court)
+        mdl.add(mv.court_of_player[player_i_id] != mv.court_of_player[player_j_id]).only_enforce_if(same_court.Not())
 
         different_team = mdl.new_bool_var(f"different_team_{player_i_id}_{player_j_id}")
 
         # different_team is true iff both players are on different teams
-        mdl.add(team_of_player[player_i_id] != team_of_player[player_j_id]).only_enforce_if(different_team)
-        mdl.add(team_of_player[player_i_id] == team_of_player[player_j_id]).only_enforce_if(different_team.Not())
+        mdl.add(mv.team_of_player[player_i_id] != mv.team_of_player[player_j_id]).only_enforce_if(different_team)
+        mdl.add(mv.team_of_player[player_i_id] == mv.team_of_player[player_j_id]).only_enforce_if(different_team.Not())
 
         valid_pair = define_and_var(
             mdl,
@@ -190,11 +149,12 @@ def score_diversify_opponents(mdl: CpModel, mv: ModelVariables) -> LinearExpr | 
             [same_court, different_team]
         )
 
-        penalty_if_used = mdl.new_int_var(0, freq, f"penalty_{player_i_id}_{player_j_id}")
-        mdl.add(penalty_if_used == freq).only_enforce_if(valid_pair)
-        mdl.add(penalty_if_used == 0).only_enforce_if(valid_pair.Not())
+        # penalty
+        freq = mdl.new_int_var(0, freq, f"freq_{player_i_id}_{player_j_id}")
+        mdl.add(freq == freq).only_enforce_if(valid_pair)
+        mdl.add(freq == 0).only_enforce_if(valid_pair.Not())
 
-        terms.append(penalty_if_used)
+        terms.append(freq)
     return sum(terms)
 
 

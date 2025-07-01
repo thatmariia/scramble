@@ -43,6 +43,8 @@ def test_n_matches_no_history_same_level(num_matches, caplog):
         assert len(round.matches[i].all_player_ids()) == 4
         assert len(round.matches[i].teams) == 2
 
+    # assert 1 == 2
+
 @pytest.mark.timeout(60)
 @pytest.mark.skip(reason="RuntimeError: No feasible solution found")
 def test_1_team_qkotc_1_team_match():
