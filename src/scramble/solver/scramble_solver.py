@@ -5,7 +5,9 @@ import logging
 import math
 from scramble.core import Player, Team, HistoryManager, Match, Court, Round
 from scramble.settings import Settings
-from scramble.solver.scoring import score_round, ModelVariables
+from scramble.solver.model_variables import ModelVariables
+from scramble.solver.constraints import add_constraints
+from scramble.solver.objective import score_round
 
 LOGGER = logging.getLogger(__name__)
 
@@ -111,73 +113,21 @@ class ScrambleSolver:
     def add_constraints(self):
         """
         Adds constraints to ensure valid match structure.
-        Constraints:
-        - Ensure each active team has at least the minimum number of players.
-        - Ensure each court has at least the minimum number of teams.
-        - Ensure each player is in exactly one team.
-        - Ensure each team is active if it has players.
-        - Ensure each court is active if it has teams.
-        - Ensure each active team is on exactly one court.
         """
-
-        # min team size constraint in an active team
-        for team_id in range(self.nr_teams):
-            team_players = [
-                self.vars["player_in_team"][(player.id, team_id)]
-                for player in self.active_players
-            ]
-            self.model.add(sum(team_players) >= self.settings.min_team_size).only_enforce_if(self.vars["team_active"][team_id])
-
-        # min number of teams in match (active court) constraint
-        for court in self.courts:
-            teams_on_court = [
-                self.vars["team_on_court"][(team_id, court.id)]
-                for team_id in range(self.nr_teams)
-            ]
-            self.model.add(sum(teams_on_court) >= self.settings.min_nr_teams_in_match).only_enforce_if(self.vars["court_active"][court.id])
-
-        # each player is in exactly one team
-        for player in self.active_players:
-            teams_with_player = [
-                self.vars["player_in_team"][(player.id, team_id)]
-                for team_id in range(self.nr_teams)
-            ]
-            self.model.add(sum(teams_with_player) == 1)
-
-        # each team is active if it has players
-        for team_id in range(self.nr_teams):
-            team_players = [
-                self.vars["player_in_team"][(player.id, team_id)]
-                for player in self.active_players
-            ]
-
-            size = self.model.new_int_var(0, len(self.active_players), f"size_t{team_id}")
-            self.model.add(size == sum(team_players))
-
-            self.model.add(size >= 1).only_enforce_if(self.vars["team_active"][team_id])
-            self.model.add(size == 0).only_enforce_if(self.vars["team_active"][team_id].Not())
-
-        # each active team is on exactly one court
-        for team_id in range(self.nr_teams):
-            team_on_courts = [
-                self.vars["team_on_court"][(team_id, court.id)]
-                for court in self.courts
-            ]
-
-            self.model.add(sum(team_on_courts) == 1).only_enforce_if(self.vars["team_active"][team_id])
-
-        # each court is active if it has teams
-        for court in self.courts:
-            teams_on_court = [
-                self.vars["team_on_court"][(team_id, court.id)]
-                for team_id in range(self.nr_teams)
-            ]
-
-            size = self.model.new_int_var(0, self.nr_teams, f"size_court_{court.id}")
-            self.model.add(size == sum(teams_on_court))
-
-            self.model.add(size >= 1).only_enforce_if(self.vars["court_active"][court.id])
-            self.model.add(size == 0).only_enforce_if(self.vars["court_active"][court.id].Not())
+        add_constraints(
+            self.model,
+            ModelVariables(
+                player_in_team=self.vars["player_in_team"],
+                team_on_court=self.vars["team_on_court"],
+                team_active=self.vars["team_active"],
+                court_active=self.vars["court_active"],
+                nr_teams=self.nr_teams,
+                active_players=self.active_players,
+                courts=self.courts,
+                history=self.history,
+                settings=self.settings,
+            )
+        )
 
     def set_objective(self):
         """

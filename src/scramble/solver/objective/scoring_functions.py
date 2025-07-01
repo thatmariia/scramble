@@ -1,28 +1,8 @@
 from typing import Protocol
 from ortools.sat.python.cp_model import CpModel, IntVar, LinearExpr
-from dataclasses import dataclass
-from scramble.settings import Goal, Settings
-from scramble.core import Player, HistoryManager, Court
+from scramble.solver.model_variables import ModelVariables
+from scramble.settings import Goal
 from scramble.solver.utils import define_and_var, define_or_var
-
-
-# --- CP collection relevant variables ---
-
-@dataclass
-class ModelVariables:
-    """
-    A collection of decision variables used in the CP model and other variables.
-    This class holds all the necessary variables for the objective function.
-    """
-    player_in_team: dict
-    team_on_court: dict
-    team_active: dict
-    court_active: dict
-    nr_teams: int
-    active_players: list[Player]
-    courts: list[Court]
-    history: HistoryManager
-    settings: Settings
 
 
 # --- Scoring function protocol ---
@@ -232,14 +212,6 @@ def score_maximize_courts_usage(mdl: CpModel, mv: ModelVariables) -> LinearExpr 
 
     Conforms to the ScoreFunction protocol.
     """
-    # terms: list[IntVar] = []
-    # for court in mv.courts:
-    #     # if the court is not used, add a penalty
-    #     penalty_if_unused = mdl.new_int_var(0, 1, f"penalty_unused_{court.id}")
-    #     mdl.add(penalty_if_unused == 1 - mv.court_active[court.id])
-    #
-    #     terms.append(penalty_if_unused)
-    # return sum(terms)
     terms: list[IntVar] = []
     min_teams = mv.settings.min_nr_teams_in_match
 

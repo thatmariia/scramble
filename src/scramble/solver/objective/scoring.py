@@ -1,5 +1,6 @@
 from ortools.sat.python.cp_model import CpModel, IntVar, LinearExpr
-from scramble.solver.scoring_functions import SCORING_FUNCTIONS, ModelVariables
+from scramble.solver.objective.scoring_functions import SCORING_FUNCTIONS
+from scramble.solver.model_variables import ModelVariables
 
 
 def score_round(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
