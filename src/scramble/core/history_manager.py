@@ -19,6 +19,12 @@ class HistoryManager(Serializable):
         Initializes the HistoryManager with an empty dictionary for player histories.
         """
         self.player_histories: dict[str, PlayerHistory] = {}
+        self.partner_tuples = []
+        self.opponent_tuples = []
+
+    def __post_init__(self):
+        self.partner_tuples = self.get_partner_tuples()
+        self.opponent_tuples = self.get_opponent_tuples()
 
     def __str__(self):
         partner_data = {pid: history.partners for pid, history in self.player_histories.items()}
@@ -31,7 +37,6 @@ class HistoryManager(Serializable):
             "Player Opponent History:\n"
             f"{opponent_df.to_string()}"
         )
-
 
     @classmethod
     def from_dict(cls, data: dict) -> "HistoryManager":
@@ -163,6 +168,8 @@ class HistoryManager(Serializable):
         for player_id, opponent_id in game_round.opponent_pairs():
             self.ensure_player(player_id)
             self.player_histories[player_id].record_opponent(opponent_id)
+
+        self.__post_init__()
 
     def remove_round(self, game_round: Round):
         """

@@ -27,7 +27,8 @@ def score_keep_ideal_team_size(mdl: CpModel, mv: ModelVariables) -> LinearExpr |
 
         # multiply by the team active variable to only count if the team is active
         dev_if_used = mdl.new_int_var(0, len(mv.active_players), f"dev_used_t{team_id}")
-        mdl.add_multiplication_equality(dev_if_used, [dev, mv.team_active[team_id]])
+        mdl.add(dev_if_used == dev).only_enforce_if(mv.team_active[team_id])
+        mdl.add(dev_if_used == 0).only_enforce_if(mv.team_active[team_id].Not())
 
         terms.append(dev_if_used)
     return sum(terms)
@@ -89,7 +90,8 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
                 mdl.add_abs_equality(diff, left - right)
 
                 diff_if_used = mdl.new_int_var(0, max_total * max_players, f"avg_diff_used_t{team1_id}_t{team2_id}_c{court.id}")
-                mdl.add_multiplication_equality(diff_if_used, [diff, both_on_court])
+                mdl.add(diff_if_used == diff).only_enforce_if(both_on_court)
+                mdl.add(diff_if_used == 0).only_enforce_if(both_on_court.Not())
 
                 terms.append(diff_if_used)
     return sum(terms)
@@ -112,7 +114,7 @@ def score_diversify_partners(mdl: CpModel, mv: ModelVariables) -> LinearExpr | I
         for team_id in range(mv.nr_teams):
             mdl.add(team_var == team_id).only_enforce_if(mv.player_in_team[(player.id, team_id)])
 
-    for player_i_id, player_j_id in mv.history.get_partner_tuples():
+    for player_i_id, player_j_id in mv.history.partner_tuples:
         freq = mv.history.get_partner_frequency(player_i_id, player_j_id)
 
         same_team = mdl.new_bool_var(f"same_team_{player_i_id}_{player_j_id}")
@@ -123,7 +125,8 @@ def score_diversify_partners(mdl: CpModel, mv: ModelVariables) -> LinearExpr | I
 
         # penalty = freq * same_team
         penalty_if_used = mdl.new_int_var(0, freq, f"penalty_{player_i_id}_{player_j_id}")
-        mdl.add_multiplication_equality(penalty_if_used, [freq, same_team])
+        mdl.add(penalty_if_used == freq).only_enforce_if(same_team)
+        mdl.add(penalty_if_used == 0).only_enforce_if(same_team.Not())
 
         terms.append(penalty_if_used)
     return sum(terms)
@@ -166,7 +169,7 @@ def score_diversify_opponents(mdl: CpModel, mv: ModelVariables) -> LinearExpr | 
         court_of_player[player.id] = cvar
         mdl.add_element(team_of_player[player.id], court_idx_of_team, cvar)
 
-    for player_i_id, player_j_id in mv.history.get_opponent_tuples():
+    for player_i_id, player_j_id in mv.history.opponent_tuples:
         freq = mv.history.get_opponent_frequency(player_i_id, player_j_id)
 
         same_court = mdl.new_bool_var(f"same_court_{player_i_id}_{player_j_id}")
@@ -188,7 +191,9 @@ def score_diversify_opponents(mdl: CpModel, mv: ModelVariables) -> LinearExpr | 
         )
 
         penalty_if_used = mdl.new_int_var(0, freq, f"penalty_{player_i_id}_{player_j_id}")
-        mdl.add_multiplication_equality(penalty_if_used, [freq, valid_pair])
+        mdl.add(penalty_if_used == freq).only_enforce_if(valid_pair)
+        mdl.add(penalty_if_used == 0).only_enforce_if(valid_pair.Not())
+
         terms.append(penalty_if_used)
     return sum(terms)
 
