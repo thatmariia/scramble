@@ -65,6 +65,38 @@ class HistoryManager(Serializable):
         """
         return self.player_histories.get(player_id, PlayerHistory())
 
+    def get_partner_tuples(self) -> list[tuple[str, str]]:
+        """
+        Gets a list of tuples containing player IDs of partners.
+
+        Returns
+        -------
+        list[tuple[str, str]]
+            A list of tuples where each tuple contains two player IDs that have played together.
+        """
+        partner_tuples = []
+        for player_id, history in self.player_histories.items():
+            for partner_id, frequency in history.partners.items():
+                if frequency > 0:
+                    partner_tuples.append((player_id, partner_id))
+        return partner_tuples
+
+    def get_opponent_tuples(self) -> list[tuple[str, str]]:
+        """
+        Gets a list of tuples containing player IDs of opponents.
+
+        Returns
+        -------
+        list[tuple[str, str]]
+            A list of tuples where each tuple contains two player IDs that have played against each other.
+        """
+        opponent_tuples = []
+        for player_id, history in self.player_histories.items():
+            for opponent_id, frequency in history.opponents.items():
+                if frequency > 0:
+                    opponent_tuples.append((player_id, opponent_id))
+        return opponent_tuples
+
     def get_partner_frequency(self, player_id1: str, player_id2: str) -> int:
         """
         Gets the frequency of matches where player_id1 and player_id2 played together.
