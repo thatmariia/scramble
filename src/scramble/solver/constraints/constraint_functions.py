@@ -18,7 +18,7 @@ def constraint_nr_active_teams(mdl: CpModel, mv: ModelVariables):
         mdl.add(sum(mv.team_active.values()) >= min_nr_active_teams)
 
         max_nr_active_teams = math.ceil(len(mv.active_players) / mv.settings.min_team_size)
-        mdl.add(sum(mv.team_active.values()) >= max_nr_active_teams)
+        mdl.add(sum(mv.team_active.values()) <= max_nr_active_teams)
 
 
 def constraint_nr_active_courts(mdl: CpModel, mv: ModelVariables):
@@ -55,6 +55,7 @@ def constraint_min_team_size(mdl: CpModel, mv: ModelVariables):
             for player in mv.active_players
         ]
         mdl.add(sum(team_players) >= mv.settings.min_team_size).only_enforce_if(mv.team_active[team_id])
+        mdl.add(sum(team_players) == 0).only_enforce_if(mv.team_active[team_id].Not())
 
 
 def constraint_min_nr_teams_on_court(mdl: CpModel, mv: ModelVariables):
@@ -69,6 +70,7 @@ def constraint_min_nr_teams_on_court(mdl: CpModel, mv: ModelVariables):
             for team_id in range(mv.nr_teams)
         ]
         mdl.add(sum(teams_on_court) >= mv.settings.min_nr_teams_in_match).only_enforce_if(mv.court_active[court.id])
+        mdl.add(sum(teams_on_court) == 0).only_enforce_if(mv.court_active[court.id].Not())
 
 
 def constraint_player_mapping(mdl: CpModel, mv: ModelVariables):
@@ -117,6 +119,7 @@ def constraint_team_mapping(mdl: CpModel, mv: ModelVariables):
         ]
 
         mdl.add(sum(team_on_courts) == 1).only_enforce_if(mv.team_active[team_id])
+        mdl.add(sum(team_on_courts) == 0).only_enforce_if(mv.team_active[team_id].Not())
 
 
 def constraint_court_active(mdl: CpModel, mv: ModelVariables):

@@ -144,29 +144,33 @@ def score_diversify_opponents(mdl: CpModel, mv: ModelVariables) -> LinearExpr | 
     """
     terms: list[IntVar] = []
 
-    # map players to their teams and courts
+    # map team to courts
+    court_ids = [c.id for c in mv.courts]
+    court_id2idx = {cid: i for i, cid in enumerate(court_ids)}
+    nr_courts = len(court_ids)
+
+    # create a variable for each team to track which court they are assigned to
+    court_idx_of_team: list[IntVar] = []
+    for team_id in range(mv.nr_teams):
+        cidx = mdl.new_int_var(0, nr_courts - 1, f"court_idx_t{team_id}")
+        court_idx_of_team.append(cidx)
+        for cid, idx in court_id2idx.items():
+            mdl.add(cidx == idx).only_enforce_if(mv.team_on_court[(team_id, cid)])
+
+    # map players to their teams
     team_of_player: dict[str, IntVar] = {}
+    for player in mv.active_players:
+        tid = mdl.new_int_var(0, mv.nr_teams - 1, f"team_of_{player.id}")
+        team_of_player[player.id] = tid
+        for t in range(mv.nr_teams):
+            mdl.add(tid == t).only_enforce_if(mv.player_in_team[(player.id, t)])
+
+    # map players to their courts
     court_of_player: dict[str, IntVar] = {}
     for player in mv.active_players:
-        team_var = mdl.new_int_var(0, mv.nr_teams - 1, f"team_of_{player.id}")
-        team_of_player[player.id] = team_var
-        for team_id in range(mv.nr_teams):
-            mdl.add(team_var == team_id).only_enforce_if(mv.player_in_team[(player.id, team_id)])
-
-        court_ids = [court.id for court in mv.courts]
-        team_to_court_index = []
-
-        for team_id in range(mv.nr_teams):
-            # figure out which court each team is on
-            court_index_for_team = mdl.new_int_var(0, len(court_ids) - 1, f"court_index_for_team_{team_id}")
-            court_bools = [mv.team_on_court[(team_id, cid)] for cid in court_ids]
-            mdl.add_element(court_index_for_team, court_bools, 1)
-            team_to_court_index.append(court_index_for_team)
-
-        # player’s court is determined by their team's assigned court index
-        court_var = mdl.new_int_var(0, len(court_ids) - 1, f"court_of_{player.id}")
-        court_of_player[player.id] = court_var
-        mdl.add_element(team_of_player[player.id], team_to_court_index, court_var)
+        cvar = mdl.new_int_var(0, nr_courts - 1, f"court_of_{player.id}")
+        court_of_player[player.id] = cvar
+        mdl.add_element(team_of_player[player.id], court_idx_of_team, cvar)
 
     for i in range(len(mv.active_players)):
         for j in range(i + 1, len(mv.active_players)):
