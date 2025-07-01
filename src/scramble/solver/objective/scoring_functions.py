@@ -3,6 +3,7 @@ from scramble.solver.model_variables import ModelVariables
 from scramble.solver.objective.function_protocol import ScoringFunction
 from scramble.settings import Goal
 from scramble.solver.utils import define_and_var, define_or_var
+from scramble.solver.objective.utils import map_players_to_teams, map_players_to_courts
 
 
 # --- Individual goal scoring functions ---
@@ -101,6 +102,9 @@ def score_diversify_partners(mdl: CpModel, mv: ModelVariables) -> LinearExpr | I
     """
     terms: list[IntVar] = []
 
+    if not mv.team_of_player:
+        mv.team_of_player = map_players_to_teams(mdl, mv)
+
     for player_i_id, player_j_id in mv.history.partner_tuples:
         freq = mv.history.get_partner_frequency(player_i_id, player_j_id)
 
@@ -127,6 +131,11 @@ def score_diversify_opponents(mdl: CpModel, mv: ModelVariables) -> LinearExpr | 
     Conforms to the ScoreFunction protocol.
     """
     terms: list[IntVar] = []
+
+    if not mv.team_of_player:
+        mv.team_of_player = map_players_to_teams(mdl, mv)
+    if not mv.court_of_player:
+        mv.court_of_player = map_players_to_courts(mdl, mv)
 
     for player_i_id, player_j_id in mv.history.opponent_tuples:
         freq = mv.history.get_opponent_frequency(player_i_id, player_j_id)
