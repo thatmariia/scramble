@@ -42,10 +42,20 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
     """
     max_lvl = max(p.level.value for p in mv.active_players)
     max_total = max_lvl * len(mv.active_players)
+    max_players = len(mv.active_players)
 
     # pre-compute each team's total level
     total_lvl: dict[int, IntVar] = {}
+    team_size: dict[int, IntVar] = {}
     for team_id in range(mv.nr_teams):
+        team_size[team_id] = mdl.new_int_var(0, max_players, f"team_size_t{team_id}")
+        mdl.add(
+            team_size[team_id] == sum(
+                mv.player_in_team[(player.id, team_id)]
+                for player in mv.active_players
+            )
+        )
+
         total_lvl[team_id] = mdl.new_int_var(0, max_total, f"total_lvl_t{team_id}")
         mdl.add(
             total_lvl[team_id] == sum(
@@ -69,15 +79,16 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
                     ]
                 )
 
-                # calculate the absolute difference in total level
-                diff = mdl.new_int_var(0, max_total, f"diff_t{team1_id}_t{team2_id}")
-                mdl.add_abs_equality(
-                    diff,
-                    total_lvl[team1_id] - total_lvl[team2_id]
-                )
+                left = mdl.new_int_var(0, max_total * max_players, f"left_t{team1_id}_t{team2_id}_c{court.id}")
+                right = mdl.new_int_var(0, max_total * max_players, f"right_t{team1_id}_t{team2_id}_c{court.id}")
 
-                # multiply by the boolean variable to only count when both teams are on the court
-                diff_if_used = mdl.new_int_var(0, max_total, f"diff_used_t{team1_id}_t{team2_id}")
+                mdl.add_multiplication_equality(left, [total_lvl[team1_id], team_size[team2_id]])
+                mdl.add_multiplication_equality(right, [total_lvl[team2_id], team_size[team1_id]])
+
+                diff = mdl.new_int_var(0, max_total * max_players, f"avg_diff_t{team1_id}_t{team2_id}_c{court.id}")
+                mdl.add_abs_equality(diff, left - right)
+
+                diff_if_used = mdl.new_int_var(0, max_total * max_players, f"avg_diff_used_t{team1_id}_t{team2_id}_c{court.id}")
                 mdl.add_multiplication_equality(diff_if_used, [diff, both_on_court])
 
                 terms.append(diff_if_used)
