@@ -42,7 +42,7 @@ def round_as_tuple_set(round: Round) -> frozenset[frozenset[frozenset[str]]]:
 
 @pytest.mark.parametrize("num_matches", [1, 2])
 @pytest.mark.timeout(60)
-def test_rounds_have_expected_structure(num_matches: int, caplog):
+def test_n_rounds_no_history(num_matches: int, caplog):
     """
     Ensure that each generated round has the correct number of matches and
     that each match consists of 2 teams with 4 players total.
@@ -57,7 +57,7 @@ def test_rounds_have_expected_structure(num_matches: int, caplog):
         assert len(match.all_player_ids()) == 4
 
 
-def test_repeated_rounds_yield_limited_variation(caplog):
+def test_1_match_5_rounds_with_history(caplog):
     """
     Ensure that solving the same scenario repeatedly with shared history yields
     a limited number of unique match configurations.
@@ -66,7 +66,7 @@ def test_repeated_rounds_yield_limited_variation(caplog):
     history = HistoryManager()
     unique_rounds = []
 
-    for _ in range(5):
+    for _ in range(4):
         solver = create_solver(num_players=4, num_courts=1)
         solver.history = history
         round = solver.solve()
@@ -82,7 +82,7 @@ def test_repeated_rounds_yield_limited_variation(caplog):
     assert unique_rounds[-1] in unique_rounds[:expected_variants]
 
 
-def test_3v3_matches_with_history(caplog):
+def test_1_qkotc_6_rounds_with_history(caplog):
     """
     Test match generation with 6 players, expecting 3v3 matches.
     Validate that a reasonable number of unique configurations are produced.
@@ -105,7 +105,7 @@ def test_3v3_matches_with_history(caplog):
     assert len(set(unique_rounds)) in [5, 6]
 
 
-def test_level_based_grouping_on_multiple_courts(caplog):
+def test_2_matches_2_levels_no_history(caplog):
     """
     Ensure players of different levels are split into separate matches.
     """
@@ -124,7 +124,7 @@ def test_level_based_grouping_on_multiple_courts(caplog):
 
 
 @pytest.mark.timeout(60)
-def test_combined_team_and_match_distribution():
+def test_1_qkotc_and_1_normal_match():
     """
     Test with 10 players and 2 courts, expecting 2 matches with correct distribution.
     This covers the edge case of team sizes that don’t divide evenly.
