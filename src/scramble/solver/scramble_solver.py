@@ -6,7 +6,7 @@ import math
 from scramble.core import Player, Team, HistoryManager, Match, Court, Round
 from scramble.settings import Settings
 from scramble.solver.model_variables import ModelVariables
-from scramble.solver.constraints import add_constraints
+from scramble.solver.constraints import add_constraints, add_symmetry_breaking
 from scramble.solver.objective import score_round
 
 LOGGER = logging.getLogger(__name__)
@@ -114,20 +114,26 @@ class ScrambleSolver:
         """
         Adds constraints to ensure valid match structure.
         """
-        add_constraints(
-            self.model,
-            ModelVariables(
-                player_in_team=self.vars["player_in_team"],
-                team_on_court=self.vars["team_on_court"],
-                team_active=self.vars["team_active"],
-                court_active=self.vars["court_active"],
-                nr_teams=self.nr_teams,
-                active_players=self.active_players,
-                courts=self.courts,
-                history=self.history,
-                settings=self.settings,
-            )
+        mv = ModelVariables(
+            player_in_team=self.vars["player_in_team"],
+            team_on_court=self.vars["team_on_court"],
+            team_active=self.vars["team_active"],
+            court_active=self.vars["court_active"],
+            nr_teams=self.nr_teams,
+            active_players=self.active_players,
+            courts=self.courts,
+            history=self.history,
+            settings=self.settings,
         )
+        add_constraints(self.model, mv)
+        add_symmetry_breaking(self.model, mv)
+
+    def break_symmetries(self):
+        """
+        Adds symmetry-breaking constraints to reduce the search space.
+        Symmetries:
+        """
+        pass
 
     def set_objective(self):
         """
