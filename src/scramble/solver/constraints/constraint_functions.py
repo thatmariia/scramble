@@ -1,9 +1,47 @@
 from ortools.sat.python.cp_model import CpModel
+import math
 from scramble.solver.model_variables import ModelVariables
 from scramble.solver.constraints.function_protocol import ConstraintFunction
+from scramble.settings import Settings, Goal
 
 
 # --- Individual constraint functions ---
+
+def constraint_nr_active_teams(mdl: CpModel, mv: ModelVariables):
+    """
+    Ensures that the number of active teams is within the limits defined by the settings.
+
+    Conforms to the ConstraintFunction protocol.
+    """
+    if mv.settings.goal_configs[Goal.KEEP_IDEAL_TEAM_SIZE].enabled:
+        min_nr_active_teams = len(mv.active_players) // mv.settings.min_team_size
+        mdl.add(sum(mv.team_active.values()) >= min_nr_active_teams)
+
+        max_nr_active_teams = math.ceil(len(mv.active_players) / mv.settings.min_team_size)
+        mdl.add(sum(mv.team_active.values()) >= max_nr_active_teams)
+
+
+def constraint_nr_active_courts(mdl: CpModel, mv: ModelVariables):
+    """
+    Ensures that the number of active courts is within the limits defined by the settings.
+
+    Conforms to the ConstraintFunction protocol.
+    """
+    if mv.settings.goal_configs[Goal.MAXIMIZE_COURTS_USAGE].enabled:
+        min_nr_active_teams = len(mv.active_players) // mv.settings.min_team_size if mv.settings.goal_configs[Goal.KEEP_IDEAL_TEAM_SIZE].enabled else 0
+        min_nr_active_courts = min(
+            len(mv.courts),
+            min_nr_active_teams // mv.settings.min_nr_teams_in_match
+        )
+        mdl.add(sum(mv.court_active.values()) >= min_nr_active_courts)
+
+        max_nr_active_teams = math.ceil(len(mv.active_players) / mv.settings.min_team_size) if mv.settings.goal_configs[Goal.KEEP_IDEAL_TEAM_SIZE].enabled else mv.nr_teams
+        max_nr_active_courts = min(
+            len(mv.courts),
+            math.ceil(max_nr_active_teams / mv.settings.min_nr_teams_in_match)
+        )
+        mdl.add(sum(mv.court_active.values()) <= max_nr_active_courts)
+
 
 def constraint_min_team_size(mdl: CpModel, mv: ModelVariables):
     """
@@ -103,6 +141,8 @@ def constraint_court_active(mdl: CpModel, mv: ModelVariables):
 # --- Constraint function registry ---
 
 CONSTRAINT_FUNCTIONS: list[ConstraintFunction] = [
+    constraint_nr_active_teams,
+    constraint_nr_active_courts,
     constraint_min_team_size,
     constraint_min_nr_teams_on_court,
     constraint_player_mapping,

@@ -4,7 +4,7 @@ from ortools.sat.python import cp_model as cp
 import logging
 import math
 from scramble.core import Player, Team, HistoryManager, Match, Court, Round
-from scramble.settings import Settings, Goal
+from scramble.settings import Settings
 from scramble.solver.model_variables import ModelVariables
 from scramble.solver.constraints import add_constraints, add_symmetry_breaking
 from scramble.solver.objective import score_round
