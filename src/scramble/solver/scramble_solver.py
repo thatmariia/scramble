@@ -73,7 +73,7 @@ class ScrambleSolver:
 
         self.model = cp.CpModel()
         self.solver = cp.CpSolver()
-        self.solver.parameters.log_search_progress = self.settings.log_verbose
+        # self.solver.parameters.log_search_progress = self.settings.log_verbose
         self.solver.parameters.num_search_workers = min(4, multiprocessing.cpu_count())
         # self.solver.parameters.linearization_level = 1
         # self.solver.parameters.max_presolve_iterations = 2
@@ -206,9 +206,7 @@ class ScrambleSolver:
         """
         self.build_model()
         self.build_mv()
-        print("started adding hints")
         self.add_hints()
-        print("finished adding hints")
         self.add_constraints()
         self.set_objective()
 

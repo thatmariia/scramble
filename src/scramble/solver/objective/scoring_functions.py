@@ -158,12 +158,7 @@ def score_diversify_partners(mdl: CpModel, mv: ModelVariables) -> LinearExpr | I
         mdl.add(mv.team_of_player[player_i_id] == mv.team_of_player[player_j_id]).only_enforce_if(same_team)
         mdl.add(mv.team_of_player[player_i_id] != mv.team_of_player[player_j_id]).only_enforce_if(same_team.Not())
 
-        # penalty
-        penalty = mdl.new_int_var(0, freq, f"freq_{player_i_id}_{player_j_id}")
-        mdl.add(penalty == freq).only_enforce_if(same_team)
-        mdl.add(penalty == 0).only_enforce_if(same_team.Not())
-
-        terms.append(penalty)
+        terms.append(same_team * freq)
     return sum(terms)
 
 
@@ -202,12 +197,7 @@ def score_diversify_opponents(mdl: CpModel, mv: ModelVariables) -> LinearExpr | 
             [same_court, different_team]
         )
 
-        # penalty
-        penalty = mdl.new_int_var(0, freq, f"freq_{player_i_id}_{player_j_id}")
-        mdl.add(penalty == freq).only_enforce_if(valid_pair)
-        mdl.add(penalty == 0).only_enforce_if(valid_pair.Not())
-
-        terms.append(penalty)
+        terms.append(valid_pair * freq)
     return sum(terms)
 
 
