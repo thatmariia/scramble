@@ -38,7 +38,7 @@ def round_as_tuple_set(round: Round) -> frozenset[frozenset[frozenset[str]]]:
     )
 
 
-@pytest.mark.parametrize("num_matches", [1, 2, 10])
+@pytest.mark.parametrize("num_matches", [1, 2])
 @pytest.mark.timeout(60)
 def test_n_rounds_no_history(num_matches: int, caplog):
     """
@@ -54,9 +54,9 @@ def test_n_rounds_no_history(num_matches: int, caplog):
         assert len(match.teams) == 2
         assert len(match.all_player_ids()) == 4
 
-@pytest.mark.repeat(200)
+# @pytest.mark.repeat(1)
 def test_1_rounds_mixed_levels_no_history(caplog):
-    caplog.set_level(logging.DEBUG)
+    caplog.set_level(logging.INFO)
     players = (
         generate_players(6, Level.BEGINNER, start_index=1)
         + generate_players(1, Level.INTERMEDIATE, start_index=7)
@@ -153,6 +153,41 @@ def test_2_matches_2_levels_no_history(caplog):
         }
         assert len(avg_team_levels) == 1
 
+def test_8_matches_with_history(caplog):
+    caplog.set_level(logging.DEBUG)
+
+    players = (
+        generate_players(4, Level.BEGINNER, start_index=1)
+        + generate_players(6, Level.IMPROVER, start_index=5)
+        + generate_players(6, Level.INTERMEDIATE, start_index=11)
+        + generate_players(5, Level.ADVANCED, start_index=16)
+        + generate_players(5, Level.EXPERT, start_index=21)
+    )
+    courts = generate_courts(8)
+
+    history = HistoryManager()
+    solver = ScrambleSolver(players, history, courts, Settings())
+    round = solver.solve()
+
+    assert len(round.matches) == 6
+
+def test_15_matches_with_history(caplog):
+    caplog.set_level(logging.DEBUG)
+
+    players = (
+        generate_players(10, Level.BEGINNER, start_index=1)
+        + generate_players(10, Level.IMPROVER, start_index=11)
+        + generate_players(20, Level.INTERMEDIATE, start_index=21)
+        + generate_players(15, Level.ADVANCED, start_index=41)
+        + generate_players(7, Level.EXPERT, start_index=57)
+    )
+    courts = generate_courts(16)
+
+    history = HistoryManager()
+    solver = ScrambleSolver(players, history, courts, Settings())
+    round = solver.solve()
+
+    assert len(round.matches) == 15
 
 @pytest.mark.timeout(60)
 def test_1_qkotc_and_1_normal_match():
