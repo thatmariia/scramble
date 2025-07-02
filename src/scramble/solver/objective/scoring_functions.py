@@ -1,4 +1,4 @@
-from ortools.sat.python.cp_model import CpModel, IntVar, LinearExpr
+from ortools.sat.python.cp_model import CpModel, IntVar, LinearExpr, Domain
 from scramble.core import Level
 from scramble.settings import Goal
 from scramble.solver.model_variables import ModelVariables
@@ -47,6 +47,7 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
     max_lvl = max(p.level.value for p in mv.active_players)
     max_total = max_lvl * len(mv.active_players)
 
+    allowed_scores = sorted(set(score for (_, _), score in mv.settings.team_lvl_scores.items()))
     max_score = Level.max_value() * mv.settings.max_team_size
     team_lvl: dict[int, IntVar] = {}
 
@@ -69,20 +70,19 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
         mdl.add(lvl_sum == 0).only_enforce_if(mv.team_active[team_id].Not())
 
         # create score var and link via allowed assignments
-        score_var = mdl.new_int_var(0, max_score, f"team_lvl_score_t{team_id}")
+        score_var = mdl.new_int_var_from_domain(
+            Domain.FromValues(allowed_scores),
+            f"team_lvl_score_t{team_id}"
+        )
         mdl.add(score_var == 0).only_enforce_if(mv.team_active[team_id].Not())
         team_lvl[team_id] = score_var
 
-        # FIXME: this is reverted cod
         # allowed mapping: sum, size -> score
-        # allowed = [
-        #     [lvl_sum_val, team_size_val, score]
-        #     for (lvl_sum_val, team_size_val), score in mv.settings.team_lvl_scores.items()
-        # ]
-        # mdl.add_allowed_assignments([lvl_sum, team_size, score_var], allowed).only_enforce_if(mv.team_active[team_id])
-        tuples = [[s, v] for s, v in mv.settings.team_lvl_scores.items()]
-        print(tuples)
-        mdl.add_allowed_assignments([lvl_sum, score_var], tuples)
+        allowed = [
+            [lvl_sum_val, team_size_val, score]
+            for (lvl_sum_val, team_size_val), score in mv.settings.team_lvl_scores.items()
+        ]
+        mdl.add_allowed_assignments([lvl_sum, team_size, score_var], allowed).only_enforce_if(mv.team_active[team_id])
 
     # build pairwise imbalance only when teams share a court
     for court in mv.courts:

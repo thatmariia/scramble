@@ -70,7 +70,7 @@ def test_1_rounds_mixed_levels_no_history(caplog):
 
     match_levels = []
     for match in round.matches:
-        teams_levels = [sorted([player.level for player in team.players]) for team in match.teams]
+        teams_levels = sorted([sorted([player.level for player in team.players]) for team in match.teams])
         match_levels.append(teams_levels)
 
     # Sort match_levels so we can reliably compare, regardless of match order
