@@ -54,7 +54,7 @@ def test_n_rounds_no_history(num_matches: int, caplog):
         assert len(match.teams) == 2
         assert len(match.all_player_ids()) == 4
 
-
+@pytest.mark.repeat(200)
 def test_1_rounds_mixed_levels_no_history(caplog):
     caplog.set_level(logging.DEBUG)
     players = (
@@ -66,15 +66,22 @@ def test_1_rounds_mixed_levels_no_history(caplog):
 
     solver = ScrambleSolver(players, HistoryManager(), courts, Settings())
     round = solver.solve()
-
     assert len(round.matches) == 2
-    for match in round.matches:
-        levels = [player.level for team in match.teams for player in team.players]
 
-        expected_beginners = [Level.BEGINNER] * 3
-        expected_group_1 = expected_beginners + [Level.INTERMEDIATE]
-        expected_group_2 = expected_beginners + [Level.EXPERT]
-        assert levels == expected_group_1 or levels == expected_group_2
+    match_levels = []
+    for match in round.matches:
+        teams_levels = [sorted([player.level for player in team.players]) for team in match.teams]
+        match_levels.append(teams_levels)
+
+    # Sort match_levels so we can reliably compare, regardless of match order
+    match_levels = sorted(match_levels)
+
+    expected = sorted([
+        [ [Level.BEGINNER, Level.BEGINNER], [Level.BEGINNER, Level.BEGINNER] ],
+        [ [Level.BEGINNER, Level.INTERMEDIATE], [Level.BEGINNER, Level.EXPERT] ],
+    ])
+
+    assert match_levels == expected
 
 
 def test_1_match_5_rounds_with_history(caplog):
