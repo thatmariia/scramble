@@ -41,6 +41,22 @@ class Settings(Serializable):
             for goal in DEFAULT_GOAL_CONFIGS:
                 if goal not in self.goal_configs:
                     self.goal_configs[goal] = DEFAULT_GOAL_CONFIGS[goal]
+        # print(self)
+
+    def __str__(self):
+        goal_configs_str = "None"
+        lvl_scores_str = "None"
+        if self.goal_configs is not None:
+            goal_configs_str = "\n - ".join(f"{goal.value}: {config}" for goal, config in self.goal_configs.items())
+        if self.team_lvl_scores is not None:
+            lvl_scores_str = "\n - ".join(f"{key}: {value}" for key, value in self.team_lvl_scores.items())
+        return "Settings:\n" + "\n" + \
+                f"Team size: {self.min_team_size}-{self.max_team_size}\n" + \
+                f"Min teams in match: {self.min_nr_teams_in_match}\n" + \
+                f"Goal configs: {goal_configs_str}\n" + \
+                f"Log enabled: {self.log_enabled}\n" + \
+                f"Log verbose: {self.log_verbose}\n" + \
+                f"Team level scores: {lvl_scores_str}\n"
 
     @classmethod
     def from_dict(cls, data: dict) -> "Settings":
@@ -69,7 +85,7 @@ class Settings(Serializable):
         Creates a dictionary to hold team level scores based on the goal configurations.
         This method is called to initialize the team_lvl_scores attribute.
         """
-        self.team_lvl_scores = {}
+        self.team_lvl_scores = {(0, 0): 0}
         scale = self.min_team_size * self.max_team_size
         all_levels = Level.all_values()
         for team_size in range(self.min_team_size, self.max_team_size + 1):
