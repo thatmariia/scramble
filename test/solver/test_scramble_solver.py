@@ -33,14 +33,12 @@ def create_solver(num_players: int, num_courts: int) -> ScrambleSolver:
 def round_as_tuple_set(round: Round) -> frozenset[frozenset[frozenset[str]]]:
     """Convert a round into a nested frozenset structure to detect unique match configurations."""
     return frozenset(
-        frozenset(
-            frozenset(team.player_ids()) for team in match.teams
-        )
+        frozenset(frozenset(team.player_ids()) for team in match.teams)
         for match in round.matches
     )
 
 
-@pytest.mark.parametrize("num_matches", [1, 2])
+@pytest.mark.parametrize("num_matches", [1, 2, 10])
 @pytest.mark.timeout(60)
 def test_n_rounds_no_history(num_matches: int, caplog):
     """
@@ -55,6 +53,28 @@ def test_n_rounds_no_history(num_matches: int, caplog):
     for match in round.matches:
         assert len(match.teams) == 2
         assert len(match.all_player_ids()) == 4
+
+
+def test_1_rounds_mixed_levels_no_history(caplog):
+    caplog.set_level(logging.DEBUG)
+    players = (
+        generate_players(6, Level.BEGINNER, start_index=1)
+        + generate_players(1, Level.INTERMEDIATE, start_index=7)
+        + generate_players(1, Level.EXPERT, start_index=8)
+    )
+    courts = generate_courts(2)
+
+    solver = ScrambleSolver(players, HistoryManager(), courts, Settings())
+    round = solver.solve()
+
+    assert len(round.matches) == 2
+    for match in round.matches:
+        levels = [player.level for team in match.teams for player in team.players]
+
+        expected_beginners = [Level.BEGINNER] * 3
+        expected_group_1 = expected_beginners + [Level.INTERMEDIATE]
+        expected_group_2 = expected_beginners + [Level.EXPERT]
+        assert levels == expected_group_1 or levels == expected_group_2
 
 
 def test_1_match_5_rounds_with_history(caplog):
@@ -110,8 +130,9 @@ def test_2_matches_2_levels_no_history(caplog):
     Ensure players of different levels are split into separate matches.
     """
     caplog.set_level(logging.DEBUG)
-    players = generate_players(4, Level.BEGINNER, start_index=1) + \
-              generate_players(4, Level.INTERMEDIATE, start_index=5)
+    players = generate_players(4, Level.BEGINNER, start_index=1) + generate_players(
+        4, Level.INTERMEDIATE, start_index=5
+    )
     courts = generate_courts(2)
 
     solver = ScrambleSolver(players, HistoryManager(), courts, Settings())
@@ -119,7 +140,10 @@ def test_2_matches_2_levels_no_history(caplog):
 
     assert len(round.matches) == 2
     for match in round.matches:
-        avg_team_levels = {sum(player.level for player in team.players) / len(team.players) for team in match.teams}
+        avg_team_levels = {
+            sum(player.level for player in team.players) / len(team.players)
+            for team in match.teams
+        }
         assert len(avg_team_levels) == 1
 
 
