@@ -1,5 +1,6 @@
 import logging
 import pytest
+import time
 
 from scramble.core import Level, Court, Player, Round, HistoryManager
 from scramble.solver import ScrambleSolver
@@ -89,12 +90,12 @@ def test_1_match_5_rounds_with_history(caplog):
     a limited number of unique match configurations.
     """
     caplog.set_level(logging.DEBUG)
-    unique_rounds = []
+    rounds = []
     solver = create_solver(num_players=4, num_courts=1)
 
     for _ in range(4):
         round = solver.solve()
-        unique_rounds.append(round_as_tuple_set(round))
+        rounds.append(round_as_tuple_set(round))
         solver.history.update_from_round(round)
 
         assert len(round.matches) == 1
@@ -102,8 +103,8 @@ def test_1_match_5_rounds_with_history(caplog):
         assert len(round.matches[0].all_player_ids()) == 4
 
     expected_variants = 3
-    assert len(set(unique_rounds)) == expected_variants
-    assert unique_rounds[-1] in unique_rounds[:expected_variants]
+    assert len(set(rounds)) == expected_variants
+    assert rounds[-1] in rounds[:expected_variants]
 
 
 def test_1_qkotc_6_rounds_with_history(caplog):
@@ -153,18 +154,30 @@ def test_8_matches_with_history(caplog):
 
     players = (
         generate_players(4, Level.BEGINNER, start_index=1)
-        + generate_players(6, Level.IMPROVER, start_index=5)
-        + generate_players(6, Level.INTERMEDIATE, start_index=11)
-        + generate_players(5, Level.ADVANCED, start_index=16)
-        + generate_players(5, Level.EXPERT, start_index=21)
+        + generate_players(6, Level.IMPROVER, start_index=11)
+        + generate_players(6, Level.INTERMEDIATE, start_index=21)
+        + generate_players(5, Level.ADVANCED, start_index=31)
+        + generate_players(5, Level.EXPERT, start_index=41)
     )
     courts = generate_courts(8)
 
     history = HistoryManager()
     solver = ScrambleSolver(players, history, courts, Settings())
-    round = solver.solve()
 
-    assert len(round.matches) == 6
+    rounds = []
+    num_rounds = 2
+    for i in range(num_rounds):
+        start = time.time()
+        round = solver.solve()
+        rounds.append(round_as_tuple_set(round))
+        solver.history.update_from_round(round)
+        end = time.time()
+        print(f"[{test_8_matches_with_history.__name__}] num_histories: {i} time: {end - start}")
+
+        assert len(round.matches) == 6
+
+    expected_variants = num_rounds
+    assert len(set(rounds)) == expected_variants
 
 def test_15_matches_with_history(caplog):
     caplog.set_level(logging.DEBUG)
@@ -174,16 +187,27 @@ def test_15_matches_with_history(caplog):
         + generate_players(10, Level.IMPROVER, start_index=11)
         + generate_players(20, Level.INTERMEDIATE, start_index=21)
         + generate_players(15, Level.ADVANCED, start_index=41)
-        + generate_players(7, Level.EXPERT, start_index=57)
+        + generate_players(7, Level.EXPERT, start_index=51)
     )
     courts = generate_courts(16)
 
     history = HistoryManager()
     solver = ScrambleSolver(players, history, courts, Settings())
-    round = solver.solve()
 
-    print("len matches:", len(round.matches))
-    assert len(round.matches) == 15
+    rounds = []
+    num_rounds = 2
+    for i in range(num_rounds):
+        start = time.time()
+        round = solver.solve()
+        rounds.append(round_as_tuple_set(round))
+        solver.history.update_from_round(round)
+        end = time.time()
+        print(f"[{test_15_matches_with_history.__name__}] num_histories: {i} time: {end - start}")
+
+        assert len(round.matches) == 15
+
+    expected_variants = num_rounds
+    assert len(set(rounds)) == expected_variants
 
 @pytest.mark.timeout(60)
 def test_1_qkotc_and_1_normal_match():
