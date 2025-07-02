@@ -4,7 +4,7 @@ from scramble.settings import Goal
 from scramble.solver.model_variables import ModelVariables
 from scramble.solver.objective.function_protocol import ScoringFunction
 from scramble.solver.utils import define_and_var, define_or_var
-from scramble.solver.objective.utils import map_players_to_teams, map_players_to_courts
+from scramble.solver.objective.utils import map_players_to_teams, map_players_to_courts, map_teams_to_courts
 
 
 # --- Individual goal scoring functions ---
@@ -45,70 +45,94 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
     terms: list[IntVar] = []
 
     max_lvl = max(p.level.value for p in mv.active_players)
-    max_total = max_lvl * len(mv.active_players)
+    max_total = max_lvl * mv.settings.max_team_size
+    max_players = len(mv.active_players)
 
-    allowed_scores = sorted(set(score for (_, _), score in mv.settings.team_lvl_scores.items()))
-    allowed_lvl_sums = sorted(set(lvl_sum for (lvl_sum, _), _ in mv.settings.team_lvl_scores.items()))
-    team_lvl: dict[int, IntVar] = {}
-
+    total_lvl: dict[int, IntVar] = {}
+    team_size: dict[int, IntVar] = {}
     for team_id in range(mv.nr_teams):
-        # compute team size
-        team_size = mdl.new_int_var(0, mv.settings.max_team_size, f"team_size_t{team_id}")
+        team_size[team_id] = mdl.new_int_var(0, mv.settings.max_team_size, f"team_size_t{team_id}")
         mdl.add(
-            team_size == sum(mv.player_in_team[(player.id, team_id)] for player in mv.active_players)
-        ).only_enforce_if(mv.team_active[team_id])
-        mdl.add(team_size == 0).only_enforce_if(mv.team_active[team_id].Not())
-
-        # compute sum of levels in team
-        lvl_sum = mdl.new_int_var_from_domain(
-            Domain.FromValues(allowed_lvl_sums),
-            f"team_lvl_sum_t{team_id}"
-        )
-        mdl.add(
-            lvl_sum == sum(
-                player.level.value * mv.player_in_team[(player.id, team_id)]
+            team_size[team_id] == sum(
+                mv.player_in_team[(player.id, team_id)]
                 for player in mv.active_players
             )
-        ).only_enforce_if(mv.team_active[team_id])
-        mdl.add(lvl_sum == 0).only_enforce_if(mv.team_active[team_id].Not())
-
-        # create score var and link via allowed assignments
-        score_var = mdl.new_int_var_from_domain(
-            Domain.FromValues(allowed_scores),
-            f"team_lvl_score_t{team_id}"
         )
-        mdl.add(score_var == 0).only_enforce_if(mv.team_active[team_id].Not())
-        team_lvl[team_id] = score_var
 
-        # allowed mapping: sum, size -> score
-        allowed = [
-            [lvl_sum_val, team_size_val, score]
-            for (lvl_sum_val, team_size_val), score in mv.settings.team_lvl_scores.items()
-        ]
-        mdl.add_allowed_assignments([lvl_sum, team_size, score_var], allowed).only_enforce_if(mv.team_active[team_id])
+        total_lvl[team_id] = mdl.new_int_var(0, max_total, f"total_lvl_t{team_id}")
+        mdl.add(
+            total_lvl[team_id] == sum(
+                player.level * mv.player_in_team[(player.id, team_id)]
+                for player in mv.active_players
+            )
+        )
 
-    # build pairwise imbalance only when teams share a court
-    for court in mv.courts:
-        for team1_id in range(mv.nr_teams):
-            for team2_id in range(team1_id + 1, mv.nr_teams):
-                both_on_court_and_active = define_and_var(
-                    mdl,
-                    f"both_on_court_active_t{team1_id}_t{team2_id}_c{court.id}",
-                    [
-                        mv.team_on_court[(team1_id, court.id)],
-                        mv.team_on_court[(team2_id, court.id)],
-                        mv.team_active[team1_id],
-                        mv.team_active[team2_id],
-                    ],
-                )
-                diff = mdl.new_int_var(-max_total, max_total, f"avg_diff_t{team1_id}_t{team2_id}_c{court.id}")
-                abs_diff = mdl.new_int_var(0, max_total, f"abs_avg_diff_t{team1_id}_t{team2_id}_c{court.id}")
+    if not mv.court_of_team:
+        mv.court_of_team = map_teams_to_courts(mdl, mv)
 
-                mdl.add(diff == team_lvl[team1_id] - team_lvl[team2_id]).only_enforce_if(both_on_court_and_active)
-                mdl.add(diff == 0).only_enforce_if(both_on_court_and_active.Not())
-                mdl.add_abs_equality(abs_diff, diff)
+    # build penalty terms for each pair of teams
+    # abs_diffs: dict[tuple[int, int], IntVar] = {}
+    for team1_id in range(mv.nr_teams):
+        for team2_id in range(team1_id + 1, mv.nr_teams):
+            same_court = mdl.new_bool_var(f"same_court_{team1_id}_{team2_id}")
+            mdl.add(mv.court_of_team[team1_id] == mv.court_of_team[team2_id]).only_enforce_if(same_court)
+            mdl.add(mv.court_of_team[team1_id] != mv.court_of_team[team2_id]).only_enforce_if(same_court.Not())
 
-                terms.append(abs_diff)
+            both_on_court_and_active = define_and_var(
+                mdl,
+                f"both_on_court_active_t{team1_id}_t{team2_id}",
+                [
+                    same_court,
+                    mv.team_active[team1_id],
+                    mv.team_active[team2_id],
+                ],
+            )
+
+            left = mdl.new_int_var(0, max_total * max_players, f"left_t{team1_id}_t{team2_id}")
+            right = mdl.new_int_var(0, max_total * max_players, f"right_t{team1_id}_t{team2_id}")
+
+            mdl.add_multiplication_equality(left, [total_lvl[team1_id], team_size[team2_id]])
+            mdl.add_multiplication_equality(right, [total_lvl[team2_id], team_size[team1_id]])
+
+            diff = mdl.new_int_var(-max_total, max_total, f"avg_diff_t{team1_id}_t{team2_id}")
+            abs_diff = mdl.new_int_var(0, max_total, f"abs_avg_diff_t{team1_id}_t{team2_id}")
+
+            mdl.add(diff == left - right).only_enforce_if(both_on_court_and_active)
+            mdl.add(diff == 0).only_enforce_if(both_on_court_and_active.Not())
+            mdl.add_abs_equality(abs_diff, diff)
+
+            terms.append(abs_diff)
+
+            # abs_diffs[(team1_id, team2_id)] = abs_diff
+
+    # # build pairwise imbalance only when teams share a court
+    # for court in mv.courts:
+    #     for team1_id in range(mv.nr_teams):
+    #         for team2_id in range(team1_id + 1, mv.nr_teams):
+    #             both_on_court_and_active = define_and_var(
+    #                 mdl,
+    #                 f"both_on_court_active_t{team1_id}_t{team2_id}_c{court.id}",
+    #                 [
+    #                     mv.team_on_court[(team1_id, court.id)],
+    #                     mv.team_on_court[(team2_id, court.id)],
+    #                     mv.team_active[team1_id],
+    #                     mv.team_active[team2_id],
+    #                 ],
+    #             )
+    #             left = mdl.new_int_var(0, max_total * max_players, f"left_t{team1_id}_t{team2_id}_c{court.id}")
+    #             right = mdl.new_int_var(0, max_total * max_players, f"right_t{team1_id}_t{team2_id}_c{court.id}")
+    #
+    #             mdl.add_multiplication_equality(left, [total_lvl[team1_id], team_size[team2_id]])
+    #             mdl.add_multiplication_equality(right, [total_lvl[team2_id], team_size[team1_id]])
+    #
+    #             diff = mdl.new_int_var(-max_total, max_total, f"avg_diff_t{team1_id}_t{team2_id}_c{court.id}")
+    #             abs_diff = mdl.new_int_var(0, max_total, f"abs_avg_diff_t{team1_id}_t{team2_id}_c{court.id}")
+    #
+    #             mdl.add(diff == left - right).only_enforce_if(both_on_court_and_active)
+    #             mdl.add(diff == 0).only_enforce_if(both_on_court_and_active.Not())
+    #             mdl.add_abs_equality(abs_diff, diff)
+    #
+    #             terms.append(abs_diff)
 
     return sum(terms)
 

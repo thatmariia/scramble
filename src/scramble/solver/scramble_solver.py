@@ -123,6 +123,7 @@ class ScrambleSolver:
             court_active=self.vars["court_active"],
             team_of_player={},  # filled in later on as needed
             court_of_player={},  # filled in later on as needed
+            court_of_team=[],  # filled in later on as needed
             nr_teams=self.nr_teams,
             active_players=self.active_players,
             courts=self.courts,
