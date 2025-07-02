@@ -11,8 +11,7 @@ def generate_players(count: int, level: Level, start_index: int = 1) -> list[Pla
     return [
         Player(
             name=f"Player {i + 1}",
-            level=level,
-            id=str(i + 1),
+            level=level
         )
         for i in range(start_index - 1, start_index - 1 + count)
     ]
@@ -38,7 +37,7 @@ def round_as_tuple_set(round: Round) -> frozenset[frozenset[frozenset[str]]]:
     )
 
 
-@pytest.mark.parametrize("num_matches", [1, 2])
+@pytest.mark.parametrize("num_matches", [1, 2, 10])
 @pytest.mark.timeout(60)
 def test_n_rounds_no_history(num_matches: int, caplog):
     """
@@ -90,15 +89,13 @@ def test_1_match_5_rounds_with_history(caplog):
     a limited number of unique match configurations.
     """
     caplog.set_level(logging.DEBUG)
-    history = HistoryManager()
     unique_rounds = []
+    solver = create_solver(num_players=4, num_courts=1)
 
     for _ in range(4):
-        solver = create_solver(num_players=4, num_courts=1)
-        solver.history = history
         round = solver.solve()
         unique_rounds.append(round_as_tuple_set(round))
-        history.update_from_round(round)
+        solver.history.update_from_round(round)
 
         assert len(round.matches) == 1
         assert len(round.matches[0].teams) == 2
@@ -115,15 +112,13 @@ def test_1_qkotc_6_rounds_with_history(caplog):
     Validate that a reasonable number of unique configurations are produced.
     """
     caplog.set_level(logging.DEBUG)
-    history = HistoryManager()
     unique_rounds = []
+    solver = create_solver(num_players=6, num_courts=1)
 
     for _ in range(6):
-        solver = create_solver(num_players=6, num_courts=1)
-        solver.history = history
         round = solver.solve()
         unique_rounds.append(round_as_tuple_set(round))
-        history.update_from_round(round)
+        solver.history.update_from_round(round)
 
         assert len(round.matches) == 1
         assert len(round.matches[0].teams) == 3
@@ -187,6 +182,7 @@ def test_15_matches_with_history(caplog):
     solver = ScrambleSolver(players, history, courts, Settings())
     round = solver.solve()
 
+    print("len matches:", len(round.matches))
     assert len(round.matches) == 15
 
 @pytest.mark.timeout(60)

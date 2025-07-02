@@ -144,8 +144,8 @@ def symmetry_court_groups(mdl: CpModel, mv: ModelVariables):
 SYMMETRY_FUNCTIONS: list[ConstraintFunction] = [
     symmetry_teams,
     symmetry_courts,
-    # symmetry_anchor_first_player,
-    # symmetry_anchor_first_team,
+    symmetry_anchor_first_player,
+    symmetry_anchor_first_team,
     symmetry_team_groups,
     symmetry_court_groups
 ]

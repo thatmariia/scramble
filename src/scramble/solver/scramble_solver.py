@@ -67,10 +67,13 @@ class ScrambleSolver:
         self.courts = courts
         self.settings = settings
 
+        assert len({player.id for player in active_players}) == len(active_players), "Player IDs must be unique"
+        assert len({court.id for court in courts}) == len(courts), "Court IDs must be unique"
+
         self.model = cp.CpModel()
         self.solver = cp.CpSolver()
         self.solver.parameters.log_search_progress = self.settings.log_verbose
-        # self.solver.parameters.num_search_workers = min(4, multiprocessing.cpu_count())
+        self.solver.parameters.num_search_workers = min(4, multiprocessing.cpu_count())
         # self.solver.parameters.linearization_level = 1
         # self.solver.parameters.max_presolve_iterations = 2
         # self.solver.parameters.max_time_in_seconds = 60.0
@@ -139,7 +142,7 @@ class ScrambleSolver:
         Adds constraints to ensure valid match structure.
         """
         add_constraints(self.model, self._mv)
-        # add_symmetry_breaking(self.model, mv)
+        add_symmetry_breaking(self.model, self._mv)
 
     def set_objective(self):
         """
@@ -197,7 +200,9 @@ class ScrambleSolver:
         """
         self.build_model()
         self.build_mv()
-        # self.add_hints()
+        print("started adding hints")
+        self.add_hints()
+        print("finished adding hints")
         self.add_constraints()
         self.set_objective()
 

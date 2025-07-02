@@ -27,13 +27,11 @@ class Settings(Serializable):
     max_team_size: int = 5
     min_nr_teams_in_match: int = 2
     goal_configs: dict[Goal, GoalConfig] | None = None
-    team_lvl_scores: dict | None = None
     log_enabled: bool = True
     log_verbose: bool = True
 
     def __post_init__(self):
         self.max_team_size = max(self.min_team_size, self.max_team_size)
-        self._create_team_lvl_scores()
         if self.goal_configs is None:
             self.goal_configs = DEFAULT_GOAL_CONFIGS.copy()
         else:
@@ -47,15 +45,12 @@ class Settings(Serializable):
         lvl_scores_str = "None"
         if self.goal_configs is not None:
             goal_configs_str = "\n - ".join(f"{goal.value}: {config}" for goal, config in self.goal_configs.items())
-        if self.team_lvl_scores is not None:
-            lvl_scores_str = "\n - ".join(f"{key}: {value}" for key, value in self.team_lvl_scores.items())
         return "Settings:\n" + "\n" + \
                 f"Team size: {self.min_team_size}-{self.max_team_size}\n" + \
                 f"Min teams in match: {self.min_nr_teams_in_match}\n" + \
                 f"Goal configs: {goal_configs_str}\n" + \
                 f"Log enabled: {self.log_enabled}\n" + \
-                f"Log verbose: {self.log_verbose}\n" + \
-                f"Team level scores: {lvl_scores_str}\n"
+                f"Log verbose: {self.log_verbose}\n"
 
     @classmethod
     def from_dict(cls, data: dict) -> "Settings":
@@ -78,17 +73,3 @@ class Settings(Serializable):
             "log_enabled": self.log_enabled,
             "log_verbose": self.log_verbose
         }
-
-    def _create_team_lvl_scores(self):
-        """
-        Creates a dictionary to hold team level scores based on the goal configurations.
-        This method is called to initialize the team_lvl_scores attribute.
-        """
-        self.team_lvl_scores = {(0, 0): 0}
-        scale = self.min_team_size * self.max_team_size
-        all_levels = Level.all_values()
-        for team_size in range(0, self.max_team_size + 1):
-            for lvl_combo in combinations_with_replacement(all_levels + [0], team_size):
-                key = (sum(lvl_combo), team_size)
-                value = sum(lvl_combo) * scale // team_size if team_size > 0 else 0
-                self.team_lvl_scores[key] = value
