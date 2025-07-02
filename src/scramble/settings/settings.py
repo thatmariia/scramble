@@ -41,7 +41,6 @@ class Settings(Serializable):
             for goal in DEFAULT_GOAL_CONFIGS:
                 if goal not in self.goal_configs:
                     self.goal_configs[goal] = DEFAULT_GOAL_CONFIGS[goal]
-        # print(self)
 
     def __str__(self):
         goal_configs_str = "None"
