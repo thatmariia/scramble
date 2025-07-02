@@ -8,7 +8,7 @@ import multiprocessing
 from scramble.core import Player, Team, HistoryManager, Match, Court, Round
 from scramble.settings import Settings, Goal
 from scramble.solver.model_variables import ModelVariables
-from scramble.solver.hints import add_hints
+from scramble.solver.hints import add_startup_hints, add_hints_from_round
 from scramble.solver.constraints import add_constraints, add_symmetry_breaking
 from scramble.solver.objective import score_round
 from scramble.solver.utils import define_and_var
@@ -47,6 +47,7 @@ class ScrambleSolver:
             history: HistoryManager,
             courts: list[Court],
             settings: Settings,
+            prev_round: Round | None = None
     ):
         """
         Initializes the ScrambleSolver with players, their history, and settings.
@@ -83,6 +84,7 @@ class ScrambleSolver:
             math.ceil(len(self.active_players) / self.settings.min_team_size)
         )
         self._mv = None
+        self._prev_round = prev_round
         LOGGER.debug(f"number of teams: {self.nr_teams}")
 
     def build_model(self):
@@ -116,7 +118,8 @@ class ScrambleSolver:
                 f"court_{court.id}_active"
             )
 
-        LOGGER.debug(f"number of vars: {self.nr_teams * (len(self.active_players) + len(self.courts) + 1) + len(self.courts)}")
+        LOGGER.debug(
+            f"number of vars: {self.nr_teams * (len(self.active_players) + len(self.courts) + 1) + len(self.courts)}")
 
     def build_mv(self):
         self._mv = ModelVariables(
@@ -135,7 +138,10 @@ class ScrambleSolver:
         )
 
     def add_hints(self):
-        add_hints(self.model, self._mv)
+        if self._prev_round:
+            add_hints_from_round(self.model, self._mv, self._prev_round)
+        else:
+            add_startup_hints(self.model, self._mv)
 
     def add_constraints(self):
         """
