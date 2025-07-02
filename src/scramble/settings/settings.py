@@ -77,5 +77,4 @@ class Settings(Serializable):
                 key = sum(lvl_combo)
                 value = sum(lvl_combo) * scale // team_size if team_size > 0 else 0
                 self.team_lvl_scores[key] = value
-
-
+        self.team_lvl_scores[0] = 0
