@@ -23,15 +23,15 @@ def score_keep_ideal_team_size(mdl: CpModel, mv: ModelVariables) -> LinearExpr |
     terms: list[IntVar] = []
     for team_id in range(mv.nr_teams):
         # calculate the deviation from the ideal team size
-        dev = mdl.new_int_var(0, len(mv.active_players), f"dev_t{team_id}")
+        diff = mdl.new_int_var(-len(mv.active_players), len(mv.active_players), f"diff_t{team_id}")
+        abs_diff = mdl.new_int_var(0, len(mv.active_players), f"abs_diff_t{team_id}")
+
         team_size = sum(mv.player_in_team[player.id, team_id] for player in mv.active_players)
-        mdl.add_abs_equality(dev, team_size - ideal_team_size)
+        mdl.add(diff == team_size - ideal_team_size).only_enforce_if(mv.team_active[team_id])
+        mdl.add(diff == 0).only_enforce_if(mv.team_active[team_id].Not())
+        mdl.add_abs_equality(abs_diff, diff)
 
-        # only count if the team is active
-        mdl.add(dev == dev).only_enforce_if(mv.team_active[team_id])
-        mdl.add(dev == 0).only_enforce_if(mv.team_active[team_id].Not())
-
-        terms.append(dev)
+        terms.append(abs_diff)
     return sum(terms)
 
 
@@ -73,12 +73,16 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
         mdl.add(score_var == 0).only_enforce_if(mv.team_active[team_id].Not())
         team_lvl[team_id] = score_var
 
+        # FIXME: this is reverted cod
         # allowed mapping: sum, size -> score
-        allowed = [
-            [lvl_sum_val, team_size_val, score]
-            for (lvl_sum_val, team_size_val), score in mv.settings.team_lvl_scores.items()
-        ]
-        mdl.add_allowed_assignments([lvl_sum, team_size, score_var], allowed).only_enforce_if(mv.team_active[team_id])
+        # allowed = [
+        #     [lvl_sum_val, team_size_val, score]
+        #     for (lvl_sum_val, team_size_val), score in mv.settings.team_lvl_scores.items()
+        # ]
+        # mdl.add_allowed_assignments([lvl_sum, team_size, score_var], allowed).only_enforce_if(mv.team_active[team_id])
+        tuples = [[s, v] for s, v in mv.settings.team_lvl_scores.items()]
+        print(tuples)
+        mdl.add_allowed_assignments([lvl_sum, score_var], tuples)
 
     # build pairwise imbalance only when teams share a court
     for court in mv.courts:
@@ -94,13 +98,15 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
                         mv.team_active[team2_id],
                     ],
                 )
-                diff = mdl.new_int_var(0, max_total, f"avg_diff_t{team1_id}_t{team2_id}_c{court.id}")
-                mdl.add_abs_equality(diff, team_lvl[team1_id] - team_lvl[team2_id])
+                diff = mdl.new_int_var(-max_total, max_total, f"avg_diff_t{team1_id}_t{team2_id}_c{court.id}")
+                abs_diff = mdl.new_int_var(0, max_total, f"abs_avg_diff_t{team1_id}_t{team2_id}_c{court.id}")
 
-                mdl.add(diff == diff).only_enforce_if(both_on_court_and_active)
+                mdl.add(diff == team_lvl[team1_id] - team_lvl[team2_id]).only_enforce_if(both_on_court_and_active)
                 mdl.add(diff == 0).only_enforce_if(both_on_court_and_active.Not())
+                mdl.add_abs_equality(abs_diff, diff)
 
-                terms.append(diff)
+                terms.append(abs_diff)
+
     return sum(terms)
 
 
