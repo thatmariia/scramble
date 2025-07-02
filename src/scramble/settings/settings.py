@@ -73,8 +73,9 @@ class Settings(Serializable):
         scale = self.min_team_size * self.max_team_size
         all_levels = Level.all_values()
         for team_size in range(self.min_team_size, self.max_team_size + 1):
+            self.team_lvl_scores[(0, team_size)] = 0
             for lvl_combo in combinations_with_replacement(all_levels, team_size):
-                key = sum(lvl_combo)
+                key = (sum(lvl_combo), team_size)
                 value = sum(lvl_combo) * scale // team_size if team_size > 0 else 0
                 self.team_lvl_scores[key] = value
 

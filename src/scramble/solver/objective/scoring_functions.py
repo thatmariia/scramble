@@ -51,6 +51,12 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
     team_lvl: dict[int, IntVar] = {}
 
     for team_id in range(mv.nr_teams):
+        # compute team size
+        team_size = mdl.new_int_var(mv.settings.min_team_size, mv.settings.max_team_size, f"team_size_t{team_id}")
+        mdl.add(
+            team_size == sum(mv.player_in_team[(player.id, team_id)] for player in mv.active_players)
+        )
+
         # compute sum of levels in team
         lvl_sum = mdl.new_int_var(0, max_score, f"lvl_sum_t{team_id}")
         mdl.add(
@@ -64,9 +70,12 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
         score_var = mdl.new_int_var(0, max_score, f"team_lvl_score_t{team_id}")
         team_lvl[team_id] = score_var
 
-        # allowed mapping: sum -> score
-        tuples = [[s, v] for s, v in mv.settings.team_lvl_scores.items()]
-        mdl.add_allowed_assignments([lvl_sum, score_var], tuples)
+        # allowed mapping: sum, size -> score
+        allowed = [
+            [lvl_sum_val, team_size_val, score]
+            for (lvl_sum_val, team_size_val), score in mv.settings.team_lvl_scores.items()
+        ]
+        mdl.add_allowed_assignments([lvl_sum, team_size, score_var], allowed)
 
     # build pairwise imbalance only when teams share a court
     for court in mv.courts:
