@@ -11,3 +11,29 @@ class Level(int, Enum):
 
     def __str__(self):
         return self.name.capitalize()
+
+    @classmethod
+    def all_values(cls) -> list[int]:
+        """
+        Returns a list of all level values.
+
+        Returns
+        -------
+        list[int]
+            List of all level values defined in the Level enum.
+        """
+        return [level.value for level in cls]
+
+    @classmethod
+    def max_value(cls) -> int:
+        """
+        Returns the maximum level value.
+
+        Returns
+        -------
+        int
+            The maximum value of the Level enum.
+        """
+        return max(cls.all_values())
+
+

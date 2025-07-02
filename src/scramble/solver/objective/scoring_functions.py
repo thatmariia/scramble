@@ -1,7 +1,8 @@
 from ortools.sat.python.cp_model import CpModel, IntVar, LinearExpr
+from scramble.core import Level
+from scramble.settings import Goal
 from scramble.solver.model_variables import ModelVariables
 from scramble.solver.objective.function_protocol import ScoringFunction
-from scramble.settings import Goal
 from scramble.solver.utils import define_and_var, define_or_var
 from scramble.solver.objective.utils import map_players_to_teams, map_players_to_courts
 
@@ -38,32 +39,33 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
 
     Conforms to the ScoreFunction protocol.
     """
+    terms: list[IntVar] = []
+
     max_lvl = max(p.level.value for p in mv.active_players)
     max_total = max_lvl * len(mv.active_players)
-    max_players = len(mv.active_players)
 
-    # pre-compute each team's total level
-    total_lvl: dict[int, IntVar] = {}
-    team_size: dict[int, IntVar] = {}
+    max_score = Level.max_value() * mv.settings.max_team_size
+    team_lvl: dict[int, IntVar] = {}
+
     for team_id in range(mv.nr_teams):
-        team_size[team_id] = mdl.new_int_var(0, max_players, f"team_size_t{team_id}")
+        # compute sum of levels in team
+        lvl_sum = mdl.new_int_var(0, max_score, f"lvl_sum_t{team_id}")
         mdl.add(
-            team_size[team_id] == sum(
-                mv.player_in_team[(player.id, team_id)]
+            lvl_sum == sum(
+                player.level.value * mv.player_in_team[(player.id, team_id)]
                 for player in mv.active_players
             )
         )
 
-        total_lvl[team_id] = mdl.new_int_var(0, max_total, f"total_lvl_t{team_id}")
-        mdl.add(
-            total_lvl[team_id] == sum(
-                player.level * mv.player_in_team[(player.id, team_id)]
-                for player in mv.active_players
-            )
-        )
+        # create score var and link via allowed assignments
+        score_var = mdl.new_int_var(0, max_score, f"team_lvl_score_t{team_id}")
+        team_lvl[team_id] = score_var
+
+        # allowed mapping: sum -> score
+        tuples = [[s, v] for s, v in mv.settings.team_lvl_scores.items()]
+        mdl.add_allowed_assignments([lvl_sum, score_var], tuples)
 
     # build pairwise imbalance only when teams share a court
-    terms: list[IntVar] = []
     for court in mv.courts:
         for team1_id in range(mv.nr_teams):
             for team2_id in range(team1_id + 1, mv.nr_teams):
@@ -76,15 +78,8 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
                         mv.team_on_court[(team2_id, court.id)]
                     ]
                 )
-
-                left = mdl.new_int_var(0, max_total * max_players, f"left_t{team1_id}_t{team2_id}_c{court.id}")
-                right = mdl.new_int_var(0, max_total * max_players, f"right_t{team1_id}_t{team2_id}_c{court.id}")
-
-                mdl.add_multiplication_equality(left, [total_lvl[team1_id], team_size[team2_id]])
-                mdl.add_multiplication_equality(right, [total_lvl[team2_id], team_size[team1_id]])
-
-                diff = mdl.new_int_var(0, max_total * max_players, f"avg_diff_t{team1_id}_t{team2_id}_c{court.id}")
-                mdl.add_abs_equality(diff, left - right)
+                diff = mdl.new_int_var(0, max_total, f"avg_diff_t{team1_id}_t{team2_id}_c{court.id}")
+                mdl.add_abs_equality(diff, team_lvl[team1_id] - team_lvl[team2_id])
 
                 mdl.add(diff == diff).only_enforce_if(both_on_court)
                 mdl.add(diff == 0).only_enforce_if(both_on_court.Not())
