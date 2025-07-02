@@ -48,7 +48,7 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
     max_total = max_lvl * len(mv.active_players)
 
     allowed_scores = sorted(set(score for (_, _), score in mv.settings.team_lvl_scores.items()))
-    max_score = Level.max_value() * mv.settings.max_team_size
+    allowed_lvl_sums = sorted(set(lvl_sum for (lvl_sum, _), _ in mv.settings.team_lvl_scores.items()))
     team_lvl: dict[int, IntVar] = {}
 
     for team_id in range(mv.nr_teams):
@@ -60,7 +60,10 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
         mdl.add(team_size == 0).only_enforce_if(mv.team_active[team_id].Not())
 
         # compute sum of levels in team
-        lvl_sum = mdl.new_int_var(0, max_score, f"lvl_sum_t{team_id}")
+        lvl_sum = mdl.new_int_var_from_domain(
+            Domain.FromValues(allowed_lvl_sums),
+            f"team_lvl_sum_t{team_id}"
+        )
         mdl.add(
             lvl_sum == sum(
                 player.level.value * mv.player_in_team[(player.id, team_id)]
