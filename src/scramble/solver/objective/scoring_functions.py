@@ -16,6 +16,9 @@ def score_keep_ideal_team_size(mdl: CpModel, mv: ModelVariables) -> LinearExpr |
 
     Conforms to the ScoreFunction protocol.
     """
+    if mv.settings.min_team_size == mv.settings.max_team_size:
+        return mdl.new_int_var(0, 0, "ideal_team_size_score")
+
     ideal_team_size = mv.settings.min_team_size
     terms: list[IntVar] = []
     for team_id in range(mv.nr_teams):

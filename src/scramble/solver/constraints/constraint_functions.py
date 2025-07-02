@@ -43,9 +43,9 @@ def constraint_nr_active_courts(mdl: CpModel, mv: ModelVariables):
         mdl.add(sum(mv.court_active.values()) <= max_nr_active_courts)
 
 
-def constraint_min_team_size(mdl: CpModel, mv: ModelVariables):
+def constraint_team_size(mdl: CpModel, mv: ModelVariables):
     """
-    Ensures that each active team has at least the minimum number of players.
+    Ensures that each active team has a size within the defined limits.
 
     Conforms to the ConstraintFunction protocol.
     """
@@ -55,6 +55,7 @@ def constraint_min_team_size(mdl: CpModel, mv: ModelVariables):
             for player in mv.active_players
         ]
         mdl.add(sum(team_players) >= mv.settings.min_team_size).only_enforce_if(mv.team_active[team_id])
+        mdl.add(sum(team_players) <= mv.settings.max_team_size).only_enforce_if(mv.team_active[team_id])
         mdl.add(sum(team_players) == 0).only_enforce_if(mv.team_active[team_id].Not())
 
 
@@ -146,7 +147,7 @@ def constraint_court_active(mdl: CpModel, mv: ModelVariables):
 CONSTRAINT_FUNCTIONS: list[ConstraintFunction] = [
     constraint_nr_active_teams,
     constraint_nr_active_courts,
-    constraint_min_team_size,
+    constraint_team_size,
     constraint_min_nr_teams_on_court,
     constraint_player_mapping,
     constraint_team_active,
