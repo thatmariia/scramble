@@ -4,7 +4,6 @@ from scramble.settings import Goal
 from scramble.solver.model_variables import ModelVariables
 from scramble.solver.objective.function_protocol import ScoringFunction
 from scramble.solver.utils import define_and_var, define_or_var
-from scramble.solver.objective.utils import map_players_to_teams, map_players_to_courts, map_teams_to_courts
 
 
 # --- Individual goal scoring functions ---
@@ -68,7 +67,7 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
         )
 
     if not mv.court_of_team:
-        mv.court_of_team = map_teams_to_courts(mdl, mv)
+        mv.map_teams_to_courts(mdl)
 
     # build penalty terms for each pair of teams
     # abs_diffs: dict[tuple[int, int], IntVar] = {}
@@ -146,13 +145,16 @@ def score_diversify_partners(mdl: CpModel, mv: ModelVariables) -> LinearExpr | I
     """
     terms: list[IntVar] = []
 
+    if not mv.players_same_team:
+        mv.players_in_same_team(mdl)
+
     if not mv.team_of_player:
-        mv.team_of_player = map_players_to_teams(mdl, mv)
+        mv.map_players_to_teams(mdl)
 
     for player_i_id, player_j_id in mv.history.partner_tuples:
         freq = mv.history.get_partner_frequency(player_i_id, player_j_id)
 
-        same_team = mdl.new_bool_var(f"same_team_{player_i_id}_{player_j_id}")
+        same_team = mv.players_same_team[(player_i_id, player_j_id)]
 
         # same_team is true iff both players are on same team
         mdl.add(mv.team_of_player[player_i_id] == mv.team_of_player[player_j_id]).only_enforce_if(same_team)
@@ -171,30 +173,22 @@ def score_diversify_opponents(mdl: CpModel, mv: ModelVariables) -> LinearExpr | 
     """
     terms: list[IntVar] = []
 
-    if not mv.team_of_player:
-        mv.team_of_player = map_players_to_teams(mdl, mv)
-    if not mv.court_of_player:
-        mv.court_of_player = map_players_to_courts(mdl, mv)
+    if not mv.players_same_team:
+        mv.players_in_same_team(mdl)
+
+    if not mv.players_same_court:
+        mv.players_on_same_court(mdl)
 
     for player_i_id, player_j_id in mv.history.opponent_tuples:
         freq = mv.history.get_opponent_frequency(player_i_id, player_j_id)
 
-        same_court = mdl.new_bool_var(f"same_court_{player_i_id}_{player_j_id}")
-
-        # same_court is true iff both players are on the same court
-        mdl.add(mv.court_of_player[player_i_id] == mv.court_of_player[player_j_id]).only_enforce_if(same_court)
-        mdl.add(mv.court_of_player[player_i_id] != mv.court_of_player[player_j_id]).only_enforce_if(same_court.Not())
-
-        different_team = mdl.new_bool_var(f"different_team_{player_i_id}_{player_j_id}")
-
-        # different_team is true iff both players are on different teams
-        mdl.add(mv.team_of_player[player_i_id] != mv.team_of_player[player_j_id]).only_enforce_if(different_team)
-        mdl.add(mv.team_of_player[player_i_id] == mv.team_of_player[player_j_id]).only_enforce_if(different_team.Not())
+        same_court = mv.players_same_court[(player_i_id, player_j_id)]
+        same_team = mv.players_same_team[(player_i_id, player_j_id)]
 
         valid_pair = define_and_var(
             mdl,
             f"valid_pair_{player_i_id}_{player_j_id}",
-            [same_court, different_team]
+            [same_court, same_team.Not()]
         )
 
         terms.append(valid_pair * freq)
