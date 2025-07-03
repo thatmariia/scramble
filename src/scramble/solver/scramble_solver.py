@@ -132,6 +132,7 @@ class ScrambleSolver:
             court_of_team=[],  # filled in later on as needed
             players_same_team={},  # filled in later on as needed
             players_same_court={},  # filled in later on as needed
+            players_same_court_diff_teams={},  # filled in later on as needed
             nr_teams=self.nr_teams,
             active_players=self.active_players,
             courts=self.courts,

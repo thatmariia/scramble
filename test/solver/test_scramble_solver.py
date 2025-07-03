@@ -162,15 +162,20 @@ def test_8_matches_with_history(caplog):
     courts = generate_courts(8)
 
     history = HistoryManager()
-    solver = ScrambleSolver(players, history, courts, Settings())
 
     rounds = []
-    num_rounds = 2
+    last_round = None
+    num_rounds = 10
+    print("8 matches rounds \n")
     for i in range(num_rounds):
+        solver = ScrambleSolver(players, history, courts, Settings(), prev_round=last_round)
         start = time.time()
         round = solver.solve()
+        last_round = round
         rounds.append(round_as_tuple_set(round))
-        solver.history.update_from_round(round)
+
+        history = solver.history
+        history.update_from_round(round)
         end = time.time()
         print(f"[{test_8_matches_with_history.__name__}] num_histories: {i} time: {end - start}")
 
@@ -192,15 +197,20 @@ def test_15_matches_with_history(caplog):
     courts = generate_courts(16)
 
     history = HistoryManager()
-    solver = ScrambleSolver(players, history, courts, Settings())
 
     rounds = []
-    num_rounds = 2
+    last_round = None
+    num_rounds = 5
+    print("15 matches rounds \n")
     for i in range(num_rounds):
+        solver = ScrambleSolver(players, history, courts, Settings(), prev_round=last_round)
         start = time.time()
         round = solver.solve()
+        last_round = round
         rounds.append(round_as_tuple_set(round))
-        solver.history.update_from_round(round)
+
+        history = solver.history
+        history.update_from_round(round)
         end = time.time()
         print(f"[{test_15_matches_with_history.__name__}] num_histories: {i} time: {end - start}")
 

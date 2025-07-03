@@ -153,13 +153,7 @@ def score_diversify_partners(mdl: CpModel, mv: ModelVariables) -> LinearExpr | I
 
     for player_i_id, player_j_id in mv.history.partner_tuples:
         freq = mv.history.get_partner_frequency(player_i_id, player_j_id)
-
         same_team = mv.players_same_team[(player_i_id, player_j_id)]
-
-        # same_team is true iff both players are on same team
-        mdl.add(mv.team_of_player[player_i_id] == mv.team_of_player[player_j_id]).only_enforce_if(same_team)
-        mdl.add(mv.team_of_player[player_i_id] != mv.team_of_player[player_j_id]).only_enforce_if(same_team.Not())
-
         terms.append(same_team * freq)
     return sum(terms)
 
@@ -173,25 +167,14 @@ def score_diversify_opponents(mdl: CpModel, mv: ModelVariables) -> LinearExpr | 
     """
     terms: list[IntVar] = []
 
-    if not mv.players_same_team:
-        mv.players_in_same_team(mdl)
-
-    if not mv.players_same_court:
-        mv.players_on_same_court(mdl)
+    if not mv.players_same_court_diff_teams:
+        mv.players_in_same_court_diff_teams(mdl)
 
     for player_i_id, player_j_id in mv.history.opponent_tuples:
         freq = mv.history.get_opponent_frequency(player_i_id, player_j_id)
-
-        same_court = mv.players_same_court[(player_i_id, player_j_id)]
-        same_team = mv.players_same_team[(player_i_id, player_j_id)]
-
-        valid_pair = define_and_var(
-            mdl,
-            f"valid_pair_{player_i_id}_{player_j_id}",
-            [same_court, same_team.Not()]
-        )
-
+        valid_pair = mv.players_same_court_diff_teams[(player_i_id, player_j_id)]
         terms.append(valid_pair * freq)
+
     return sum(terms)
 
 

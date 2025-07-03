@@ -3,7 +3,7 @@ from ortools.sat.python.cp_model import CpModel, IntVar
 from itertools import combinations
 from scramble.settings import Settings
 from scramble.core import Player, HistoryManager, Court
-from scramble.solver.utils import define_and_var
+from scramble.solver.utils import define_and_var, define_and_var_imp
 
 
 @dataclass
@@ -21,6 +21,7 @@ class ModelVariables:
     court_of_team: list
     players_same_team: dict
     players_same_court: dict
+    players_same_court_diff_teams: dict
     nr_teams: int
     active_players: list[Player]
     courts: list[Court]
@@ -30,6 +31,38 @@ class ModelVariables:
 
     def __post_init__(self):
         self._player_combos = list(combinations(self.active_players, 2))
+
+    def players_in_same_court_diff_teams(self, mdl: CpModel):
+        """
+        Create a constraint that ensures players are on the same court if they are paired together
+        but belong to different teams.
+        This is done by creating a binary variable for each player pair and enforcing that they
+        are on the same court if the variable is set.
+        """
+        if not self.players_same_court:
+            self.players_on_same_court(mdl)
+
+        if not self.players_same_team:
+            self.players_in_same_team(mdl)
+
+        players_same_court_diff_teams = {}
+        for player1, player2 in self._player_combos:
+            if player1.id == player2.id:
+                continue
+            same_court = self.players_same_court[(player1.id, player2.id)]
+            same_team = self.players_same_team[(player1.id, player2.id)]
+
+            valid_pair = define_and_var_imp(
+                mdl,
+                same_court,
+                same_team.Not(),
+                f"players_same_court_diff_teams_{player1.id}_{player2.id}"
+            )
+
+            players_same_court_diff_teams[(player1.id, player2.id)] = valid_pair
+            players_same_court_diff_teams[(player2.id, player1.id)] = valid_pair
+
+        self.players_same_court_diff_teams = players_same_court_diff_teams
 
     def players_on_same_court(self, mdl: CpModel):
         if not self.court_of_player:
