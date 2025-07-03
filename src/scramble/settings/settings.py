@@ -28,7 +28,7 @@ class Settings(Serializable):
     min_nr_teams_in_match: int = 2
     goal_configs: dict[Goal, GoalConfig] | None = None
     log_enabled: bool = True
-    log_verbose: bool = True
+    log_verbose: bool = False
 
     def __post_init__(self):
         self.max_team_size = max(self.min_team_size, self.max_team_size)

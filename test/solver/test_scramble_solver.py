@@ -10,10 +10,7 @@ from scramble.settings import Settings
 def generate_players(count: int, level: Level, start_index: int = 1) -> list[Player]:
     """Generate a list of players with the given skill level and sequential IDs."""
     return [
-        Player(
-            name=f"Player {i + 1}",
-            level=level
-        )
+        Player(name=f"Player {i + 1}", level=level)
         for i in range(start_index - 1, start_index - 1 + count)
     ]
 
@@ -54,6 +51,7 @@ def test_n_rounds_no_history(num_matches: int, caplog):
         assert len(match.teams) == 2
         assert len(match.all_player_ids()) == 4
 
+
 # @pytest.mark.repeat(1)
 def test_1_rounds_mixed_levels_no_history(caplog):
     caplog.set_level(logging.INFO)
@@ -70,16 +68,24 @@ def test_1_rounds_mixed_levels_no_history(caplog):
 
     match_levels = []
     for match in round.matches:
-        teams_levels = [sorted([player.level for player in team.players]) for team in match.teams]
+        teams_levels = [
+            sorted([player.level for player in team.players]) for team in match.teams
+        ]
         match_levels.append(sorted(teams_levels))
 
     # Sort match_levels so we can reliably compare, regardless of match order
     match_levels = sorted(match_levels)
 
-    expected = sorted([
-        sorted([ [Level.BEGINNER, Level.BEGINNER], [Level.BEGINNER, Level.BEGINNER] ]),
-        sorted([ [Level.BEGINNER, Level.INTERMEDIATE], [Level.BEGINNER, Level.EXPERT]]),
-    ])
+    expected = sorted(
+        [
+            sorted(
+                [[Level.BEGINNER, Level.BEGINNER], [Level.BEGINNER, Level.BEGINNER]]
+            ),
+            sorted(
+                [[Level.BEGINNER, Level.INTERMEDIATE], [Level.BEGINNER, Level.EXPERT]]
+            ),
+        ]
+    )
 
     assert match_levels == expected
 
@@ -149,6 +155,31 @@ def test_2_matches_2_levels_no_history(caplog):
         }
         assert len(avg_team_levels) == 1
 
+
+def test_1_qkotc_match_3_levels_no_history(caplog):
+    """
+    Ensure players of different levels are split into separate matches.
+    """
+    caplog.set_level(logging.DEBUG)
+    players = (
+        generate_players(2, Level.BEGINNER, start_index=1)
+        + generate_players(3, Level.INTERMEDIATE, start_index=5)
+        + generate_players(1, Level.EXPERT, start_index=6)
+    )
+    courts = generate_courts(1)
+
+    solver = ScrambleSolver(players, HistoryManager(), courts, Settings())
+    round = solver.solve()
+
+    assert len(round.matches) == 1
+    for match in round.matches:
+        avg_team_levels = {
+            sum(player.level for player in team.players) / len(team.players)
+            for team in match.teams
+        }
+        assert len(avg_team_levels) == 1
+
+
 def test_8_matches_with_history(caplog):
     caplog.set_level(logging.DEBUG)
 
@@ -168,7 +199,9 @@ def test_8_matches_with_history(caplog):
     num_rounds = 10
     print("8 matches rounds \n")
     for i in range(num_rounds):
-        solver = ScrambleSolver(players, history, courts, Settings(), prev_round=last_round)
+        solver = ScrambleSolver(
+            players, history, courts, Settings(), prev_round=last_round
+        )
         start = time.time()
         round = solver.solve()
         last_round = round
@@ -177,12 +210,15 @@ def test_8_matches_with_history(caplog):
         history = solver.history
         history.update_from_round(round)
         end = time.time()
-        print(f"[{test_8_matches_with_history.__name__}] num_histories: {i} time: {end - start}")
+        print(
+            f"[{test_8_matches_with_history.__name__}] num_histories: {i} time: {end - start}"
+        )
 
         assert len(round.matches) == 6
 
     expected_variants = num_rounds
     assert len(set(rounds)) == expected_variants
+
 
 def test_15_matches_with_history(caplog):
     caplog.set_level(logging.DEBUG)
@@ -203,7 +239,9 @@ def test_15_matches_with_history(caplog):
     num_rounds = 5
     print("15 matches rounds \n")
     for i in range(num_rounds):
-        solver = ScrambleSolver(players, history, courts, Settings(), prev_round=last_round)
+        solver = ScrambleSolver(
+            players, history, courts, Settings(), prev_round=last_round
+        )
         start = time.time()
         round = solver.solve()
         last_round = round
@@ -212,12 +250,50 @@ def test_15_matches_with_history(caplog):
         history = solver.history
         history.update_from_round(round)
         end = time.time()
-        print(f"[{test_15_matches_with_history.__name__}] num_histories: {i} time: {end - start}")
+        print(
+            f"[{test_15_matches_with_history.__name__}] num_histories: {i} time: {end - start}"
+        )
 
         assert len(round.matches) == 15
 
     expected_variants = num_rounds
     assert len(set(rounds)) == expected_variants
+
+
+def test_1_match_with_history_and_pause(caplog):
+    caplog.set_level(logging.DEBUG)
+    players = generate_players(5, Level.BEGINNER, start_index=1)
+
+    courts = generate_courts(1)
+    history = HistoryManager()
+
+    # make a match with 5 players
+    solver = ScrambleSolver(players, history, courts, Settings())
+    round_1 = solver.solve()
+    history.update_from_round(round_1)
+
+    assert len(round_1.matches) == 1
+    assert len(round_1.matches[0].all_player_ids()) == 5
+
+    # one player will take a break
+    solver = ScrambleSolver(
+        players[:4], history, courts, Settings(), prev_round=round_1
+    )
+    round_2 = solver.solve()
+    history.update_from_round(round_1)
+
+    assert len(round_2.matches) == 1
+    assert len(round_2.matches[0].all_player_ids()) == 4
+
+    # player joined again
+    solver = ScrambleSolver(players, history, courts, Settings(), prev_round=round_2)
+    round_3 = solver.solve()
+    history.update_from_round(round_3)
+
+    assert len(round_3.matches) == 1
+    assert len(round_3.matches[0].all_player_ids()) == 5
+    assert round_as_tuple_set(round_1) != round_as_tuple_set(round_3)
+
 
 @pytest.mark.timeout(60)
 def test_1_qkotc_and_1_normal_match():
