@@ -37,3 +37,4 @@ uvicorn = {extras = ["standard"], version = "^0.35.0"}
 
 [tool.poetry.scripts]
 scramble = "scramble:cliapp"
+scramble-api = "scramble:apiapp"

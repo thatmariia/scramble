@@ -39,14 +39,3 @@ def undo_and_start_new_round():
     typer.secho(separator, fg=typer.colors.BLUE)
     typer.secho(game_round, fg=typer.colors.BLUE)
     typer.secho(separator, fg=typer.colors.BLUE)
-
-
-@round_app.command("history")
-def show_round_history():
-    """
-    Show the history of all rounds.
-    """
-    session = require_session()
-    typer.secho("Players history:", fg=typer.colors.GREEN, bold=True)
-    typer.secho(session.round_tracker.history_manager, fg=typer.colors.BLUE)
-    set_current_session(session)

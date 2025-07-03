@@ -1,5 +1,6 @@
-from .adapters import cliapp
+from .adapters import cliapp, apiapp
 
 __all__ = [
     "cliapp",
+    "apiapp"
 ]

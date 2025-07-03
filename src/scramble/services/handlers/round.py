@@ -1,5 +1,6 @@
 from scramble.services import require_session, set_current_session
 from scramble.core import Round
+from scramble.app import AppSession
 
 
 def start_round() -> Round:
@@ -42,3 +43,4 @@ def undo_and_start_new_round() -> Round:
     session.start_round(game_round)
     set_current_session(session)
     return game_round
+

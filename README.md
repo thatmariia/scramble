@@ -50,6 +50,17 @@ For example, to see the parameters for `add` in the `player`, run:
 poetry run scramble player add --help
 ```
 
+--- 
+
+## Using with API
+
+Use Poetry to run the API server with the reload:
+```sh
+poetry run scramble-api
+```
+
+You can access the Swagger UI at [localhost:8000/docs](http://localhost:8000/docs).
+
 ---
 
 ## License
