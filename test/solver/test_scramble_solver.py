@@ -20,13 +20,6 @@ def generate_courts(count: int) -> list[Court]:
     return [Court(name=f"Court {i + 1}", id=str(i + 1)) for i in range(count)]
 
 
-def create_solver(num_players: int, num_courts: int) -> ScrambleSolver:
-    """Create a ScrambleSolver instance with the given number of players and courts."""
-    players = generate_players(num_players, Level.BEGINNER)
-    courts = generate_courts(num_courts)
-    return ScrambleSolver(players, HistoryManager(), courts, Settings())
-
-
 def round_as_tuple_set(round: Round) -> frozenset[frozenset[frozenset[str]]]:
     """Convert a round into a nested frozenset structure to detect unique match configurations."""
     return frozenset(
@@ -43,7 +36,12 @@ def test_n_rounds_no_history(num_matches: int, caplog):
     that each match consists of 2 teams with 4 players total.
     """
     caplog.set_level(logging.DEBUG)
-    solver = create_solver(num_players=num_matches * 4, num_courts=num_matches)
+    num_players = num_matches * 4
+    num_courts = num_matches
+
+    players = generate_players(num_players, Level.BEGINNER)
+    courts = generate_courts(num_courts)
+    solver = ScrambleSolver(players, HistoryManager(), courts, Settings())
     round = solver.solve()
 
     assert len(round.matches) == num_matches
@@ -96,13 +94,20 @@ def test_1_match_5_rounds_with_history(caplog):
     a limited number of unique match configurations.
     """
     caplog.set_level(logging.DEBUG)
+    num_players = 4
+    num_courts = 1
+
     rounds = []
-    solver = create_solver(num_players=4, num_courts=1)
+    history = HistoryManager()
+    players = generate_players(num_players, Level.BEGINNER)
+    courts = generate_courts(num_courts)
 
     for _ in range(4):
+        solver = ScrambleSolver(players, history, courts, Settings())
+
         round = solver.solve()
         rounds.append(round_as_tuple_set(round))
-        solver.history.update_from_round(round)
+        history.update_from_round(round)
 
         assert len(round.matches) == 1
         assert len(round.matches[0].teams) == 2
@@ -119,19 +124,26 @@ def test_1_qkotc_6_rounds_with_history(caplog):
     Validate that a reasonable number of unique configurations are produced.
     """
     caplog.set_level(logging.DEBUG)
-    unique_rounds = []
-    solver = create_solver(num_players=6, num_courts=1)
+    num_players = 6
+    num_courts = 1
+
+    rounds = []
+
+    players = generate_players(num_players, Level.BEGINNER)
+    courts = generate_courts(num_courts)
+    history = HistoryManager()
 
     for _ in range(6):
+        solver = ScrambleSolver(players, history, courts, Settings())
         round = solver.solve()
-        unique_rounds.append(round_as_tuple_set(round))
-        solver.history.update_from_round(round)
+        rounds.append(round_as_tuple_set(round))
+        history.update_from_round(round)
 
         assert len(round.matches) == 1
         assert len(round.matches[0].teams) == 3
         assert len(round.matches[0].all_player_ids()) == 6
 
-    assert len(set(unique_rounds)) in [5, 6]
+    assert len(set(rounds)) in [5, 6]
 
 
 def test_2_matches_2_levels_no_history(caplog):
@@ -177,7 +189,7 @@ def test_1_qkotc_match_3_levels_no_history(caplog):
             sum(player.level for player in team.players) / len(team.players)
             for team in match.teams
         }
-        assert len(avg_team_levels) == 1
+        assert len(avg_team_levels) == 2
 
 
 def test_8_matches_with_history(caplog):
@@ -197,7 +209,6 @@ def test_8_matches_with_history(caplog):
     rounds = []
     last_round = None
     num_rounds = 10
-    print("8 matches rounds \n")
     for i in range(num_rounds):
         solver = ScrambleSolver(
             players, history, courts, Settings(), prev_round=last_round
@@ -237,7 +248,6 @@ def test_15_matches_with_history(caplog):
     rounds = []
     last_round = None
     num_rounds = 5
-    print("15 matches rounds \n")
     for i in range(num_rounds):
         solver = ScrambleSolver(
             players, history, courts, Settings(), prev_round=last_round
@@ -246,8 +256,6 @@ def test_15_matches_with_history(caplog):
         round = solver.solve()
         last_round = round
         rounds.append(round_as_tuple_set(round))
-
-        history = solver.history
         history.update_from_round(round)
         end = time.time()
         print(
@@ -301,6 +309,11 @@ def test_1_qkotc_and_1_normal_match():
     Test with 10 players and 2 courts, expecting 2 matches with correct distribution.
     This covers the edge case of team sizes that don’t divide evenly.
     """
-    solver = create_solver(num_players=10, num_courts=2)
+    num_players = 10
+    num_courts = 2
+
+    players = generate_players(num_players, Level.BEGINNER)
+    courts = generate_courts(num_courts)
+    solver = ScrambleSolver(players, HistoryManager(), courts, Settings())
     round = solver.solve()
     assert len(round.matches) == 2

@@ -152,7 +152,7 @@ def score_diversify_partners(mdl: CpModel, mv: ModelVariables) -> LinearExpr | I
         mv.map_players_to_teams(mdl)
 
     for player_i_id, player_j_id in mv.history.partner_tuples:
-        if player_i_id not in mv.active_players or player_j_id not in mv.active_players:
+        if (player_i_id, player_j_id) not in mv.players_same_team:
             continue
 
         freq = mv.history.get_partner_frequency(player_i_id, player_j_id)
@@ -174,7 +174,7 @@ def score_diversify_opponents(mdl: CpModel, mv: ModelVariables) -> LinearExpr | 
         mv.players_in_same_court_diff_teams(mdl)
 
     for player_i_id, player_j_id in mv.history.opponent_tuples:
-        if player_i_id not in mv.active_players or player_j_id not in mv.active_players:
+        if (player_i_id, player_j_id) not in mv.players_same_court_diff_teams:
             continue
 
         freq = mv.history.get_opponent_frequency(player_i_id, player_j_id)
