@@ -1,11 +1,8 @@
 import typer
 import json
 from pathlib import Path
-from scramble.app.app_session import AppSession
-from scramble.app.session_persistence import SessionPersistence, SessionNameManager
 from scramble.settings import Settings
-from scramble.cli.state import set_current_session
-from scramble.cli.utils import require_session
+from scramble.services import handlers
 
 session_app = typer.Typer(help="Manage application sessions")
 
@@ -25,18 +22,7 @@ def new_session(
     settings_path : Path, optional
         Path to a JSON file containing settings. If not provided, default settings will be used.
     """
-    if settings_path and settings_path.is_file():
-        with open(settings_path, "r") as f:
-            settings = Settings.from_dict(json.load(f))
-    else:
-        typer.secho("Using default settings as no valid settings file was provided.", fg=typer.colors.YELLOW)
-        settings = Settings()
-
-    session_name = name or SessionNameManager.generate_name()
-    session = AppSession(settings=settings, session_name=session_name)
-    set_current_session(session)
-
-    SessionPersistence.save(session)
+    session = handlers.new_session(name, settings_path)
     typer.secho(f"Started new session: {session.session_name}", fg=typer.colors.GREEN)
 
 
@@ -52,11 +38,10 @@ def load_session(
     name : str, optional
         The name of the session to load. If not provided, the latest session will be loaded.
     """
-    session = SessionPersistence.load(name)
+    session = handlers.load_session(name)
     if session is None:
         typer.secho("No session found.", fg=typer.colors.RED)
         raise typer.Exit(code=1)
-    set_current_session(session)
     typer.secho(f"Loaded session: {session.session_name}", fg=typer.colors.GREEN)
 
 
@@ -65,8 +50,7 @@ def save_session():
     """
     Save the current session to disk.
     """
-    session = require_session()
-    SessionPersistence.save(session)
+    session = handlers.save_session()
     typer.secho(f"Session '{session.session_name}' saved successfully.", fg=typer.colors.GREEN)
 
 

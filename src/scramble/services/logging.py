@@ -4,6 +4,7 @@ import logging
 
 LOG_FORMAT = '[%(asctime)s][%(filename)s][%(lineno)d] %(levelname)s: %(message)s'
 
+
 def configure_logging(log_file: str, verbose: bool, silent: bool):
     # clear last log file
     if os.path.isfile(log_file):

@@ -1,7 +1,5 @@
 import typer
-from scramble.core import Court
-from scramble.cli.utils import require_session
-from scramble.cli.state import set_current_session
+from scramble.services import handlers
 
 court_app = typer.Typer(help="Manage courts")
 
@@ -16,13 +14,8 @@ def add_court(name: str):
     name : str
         Name of the court.
     """
-    session = require_session()
-
-    court = Court(name=name)
-    session.court_state.add(court)
+    court = handlers.add_court(name)
     typer.secho(f"Added court #{court.id}: {court.name}", fg=typer.colors.GREEN)
-
-    set_current_session(session)
 
 
 @court_app.command("remove")
@@ -35,11 +28,8 @@ def remove_court(court_id: str):
     court_id : str
         ID of the court to remove.
     """
-    session = require_session()
-    session.court_state.remove(court_id)
+    handlers.remove_court(court_id)
     typer.secho(f"Removed court with ID {court_id}", fg=typer.colors.YELLOW)
-
-    set_current_session(session)
 
 
 @court_app.command("list")
@@ -47,8 +37,7 @@ def list_courts():
     """
     List all courts in the current session.
     """
-    session = require_session()
-    courts = session.court_state.courts_list()
+    courts = handlers.list_courts()
 
     if not courts:
         typer.secho("No courts have been added yet.", fg=typer.colors.RED)
@@ -64,8 +53,5 @@ def clear_courts():
     """
     Clear all courts from the current session.
     """
-    session = require_session()
-    session.court_state.clear()
+    handlers.clear_courts()
     typer.secho("All courts have been cleared.", fg=typer.colors.YELLOW)
-
-    set_current_session(session)

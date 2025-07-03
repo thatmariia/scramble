@@ -36,4 +36,4 @@ fastapi = "^0.115.14"
 uvicorn = {extras = ["standard"], version = "^0.35.0"}
 
 [tool.poetry.scripts]
-scramble = "scramble.cli.main:app"
+scramble = "scramble:cliapp"

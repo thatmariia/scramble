@@ -1,5 +1,5 @@
 import typer
-from scramble.cli.commands import (
+from scramble.adapters.cli.commands import (
     player_app,
     court_app,
     round_app,
