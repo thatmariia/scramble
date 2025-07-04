@@ -1,3 +1,6 @@
+# auto-generated api
+src/api/
+
 # Logs
 logs
 *.log

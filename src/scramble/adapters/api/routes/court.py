@@ -4,7 +4,7 @@ from typing import List
 from scramble.services import handlers
 from scramble.adapters.api.schemas import CourtDTO
 
-router = APIRouter(tags=["Manage courts"])
+router = APIRouter(tags=["court"])
 
 
 class CourtCreate(BaseModel):
@@ -13,7 +13,8 @@ class CourtCreate(BaseModel):
 
 @router.post(
     "",
-    summary="Add a new court to the current session.",
+    operation_id="add_court",
+    summary="Add court.",
     response_model=CourtDTO,
     status_code=status.HTTP_201_CREATED,
 )
@@ -32,7 +33,8 @@ def add_court(payload: CourtCreate):
 
 @router.get(
     "",
-    summary="List all courts in the current session.",
+    operation_id="list_courts",
+    summary="List courts.",
     response_model=List[CourtDTO],
     status_code=status.HTTP_200_OK
 )
@@ -46,7 +48,8 @@ def list_courts():
 
 @router.delete(
     "/{court_id}",
-    summary="Remove a court by ID.",
+    operation_id="delete_court_by_id",
+    summary="Delete court by ID.",
     status_code=status.HTTP_204_NO_CONTENT
 )
 def remove_court(court_id: str):
@@ -66,7 +69,8 @@ def remove_court(court_id: str):
 
 @router.delete(
     "",
-    summary="Clear all courts from the current session.",
+    operation_id="delete_all_courts",
+    summary="Delete all courts.",
     status_code=status.HTTP_204_NO_CONTENT
 )
 def clear_courts():

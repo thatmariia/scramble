@@ -5,7 +5,7 @@ from pydantic import Field
 from scramble.services import handlers
 from scramble.adapters.api.schemas import AppSessionDTO
 
-router = APIRouter(tags=["Manage application sessions"])
+router = APIRouter(tags=["session"])
 
 
 class SessionCreate(BaseModel):
@@ -15,7 +15,8 @@ class SessionCreate(BaseModel):
 
 @router.post(
     "",
-    summary="Start a new session with the given name and settings.",
+    operation_id="new_session",
+    summary="Start new session.",
     response_model=AppSessionDTO,
     status_code=status.HTTP_201_CREATED
 )
@@ -39,7 +40,8 @@ def new_session(payload: SessionCreate):
 
 @router.get(
     "/",
-    summary="Load an existing session by name (?name=…) or the latest session if no name is provided.",
+    operation_id="load_session",
+    summary="Load session (by name ?name=… or latest).",
     response_model=AppSessionDTO,
     status_code=status.HTTP_200_OK
 )
