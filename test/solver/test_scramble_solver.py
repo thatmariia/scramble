@@ -10,7 +10,7 @@ from scramble.settings import Settings
 def generate_players(count: int, level: Level, start_index: int = 1) -> list[Player]:
     """Generate a list of players with the given skill level and sequential IDs."""
     return [
-        Player(name=f"Player {i + 1}", level=level)
+        Player(name=f"Player {i + 1}", level=level, id=f"{i}")
         for i in range(start_index - 1, start_index - 1 + count)
     ]
 
@@ -26,6 +26,21 @@ def round_as_tuple_set(round: Round) -> frozenset[frozenset[frozenset[str]]]:
         frozenset(frozenset(team.player_ids()) for team in match.teams)
         for match in round.matches
     )
+
+def test_duplicate_ids():
+    p1 = Player('', Level.BEGINNER, id='1')
+    p2 = Player('', Level.BEGINNER, id='1')
+    courts = generate_courts(1)
+
+    with pytest.raises(ValueError, match=r".*Player IDs must be unique*"):
+        ScrambleSolver([p1, p2], HistoryManager(), courts, Settings())
+
+def test_no_courts():
+    players = generate_players(10, Level.BEGINNER)
+    courts = generate_courts(0)
+
+    with pytest.raises(ValueError, match=r".*Courts may not be empty*"):
+        ScrambleSolver(players, HistoryManager(), courts, Settings())
 
 
 @pytest.mark.parametrize("num_matches", [1, 2, 10])
@@ -176,7 +191,7 @@ def test_1_qkotc_match_3_levels_no_history(caplog):
     players = (
         generate_players(2, Level.BEGINNER, start_index=1)
         + generate_players(3, Level.INTERMEDIATE, start_index=5)
-        + generate_players(1, Level.EXPERT, start_index=6)
+        + generate_players(1, Level.EXPERT, start_index=10)
     )
     courts = generate_courts(1)
 
@@ -217,8 +232,6 @@ def test_8_matches_with_history(caplog):
         round = solver.solve()
         last_round = round
         rounds.append(round_as_tuple_set(round))
-
-        history = solver.history
         history.update_from_round(round)
         end = time.time()
         print(
@@ -239,7 +252,7 @@ def test_15_matches_with_history(caplog):
         + generate_players(10, Level.IMPROVER, start_index=11)
         + generate_players(20, Level.INTERMEDIATE, start_index=21)
         + generate_players(15, Level.ADVANCED, start_index=41)
-        + generate_players(7, Level.EXPERT, start_index=51)
+        + generate_players(7, Level.EXPERT, start_index=61)
     )
     courts = generate_courts(16)
 

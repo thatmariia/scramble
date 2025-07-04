@@ -68,13 +68,20 @@ class ScrambleSolver:
         self.courts = courts
         self.settings = settings
 
-        assert len({player.id for player in active_players}) == len(active_players), "Player IDs must be unique"
-        assert len({court.id for court in courts}) == len(courts), "Court IDs must be unique"
+        if len(courts) == 0:
+            raise ValueError("Courts may not be empty")
+
+        if  len({player.id for player in active_players}) != len(active_players):
+            raise ValueError("Player IDs must be unique")
+
+        if len({court.id for court in courts}) != len(courts):
+            raise ValueError("Court IDs must be unique")
 
         self.model = cp.CpModel()
         self.solver = cp.CpSolver()
-        # self.solver.parameters.log_search_progress = self.settings.log_verbose
+        self.solver.parameters.log_search_progress = self.settings.log_verbose
         self.solver.parameters.num_search_workers = min(4, multiprocessing.cpu_count())
+        self.solver.parameters.random_seed = 1
         # self.solver.parameters.linearization_level = 1
         # self.solver.parameters.max_presolve_iterations = 2
         # self.solver.parameters.max_time_in_seconds = 60.0
