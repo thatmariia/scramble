@@ -39,19 +39,7 @@ def load_session(
         The name of the session to load. If not provided, the latest session will be loaded.
     """
     session = handlers.load_session(name)
-    if session is None:
-        typer.secho("No session found.", fg=typer.colors.RED)
-        raise typer.Exit(code=1)
     typer.secho(f"Loaded session: {session.session_name}", fg=typer.colors.GREEN)
-
-
-@session_app.command("save")
-def save_session():
-    """
-    Save the current session to disk.
-    """
-    session = handlers.save_session()
-    typer.secho(f"Session '{session.session_name}' saved successfully.", fg=typer.colors.GREEN)
 
 
 @session_app.command("default-settings")

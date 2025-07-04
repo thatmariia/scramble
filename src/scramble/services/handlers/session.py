@@ -52,21 +52,5 @@ def load_session(name: str | None = None) -> AppSession | None:
         The loaded session object, or None if no session is found.
     """
     session = SessionPersistence.load(name)
-    if session is None:
-        return None
     set_current_session(session)
-    return session
-
-
-def save_session() -> AppSession:
-    """
-    Save the current session to disk.
-
-    Returns
-    -------
-    AppSession
-        The current session object after saving.
-    """
-    session = require_session()
-    SessionPersistence.save(session)
     return session

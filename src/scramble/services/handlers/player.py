@@ -49,7 +49,7 @@ def list_players() -> tuple[list[Player], list[Player]]:
     return active_list, resting_list
 
 
-def toggle_rest(player_id: str):
+def toggle_rest(player_id: str) -> Player:
     """
     Toggle resting state of a player.
 
@@ -59,8 +59,9 @@ def toggle_rest(player_id: str):
         The ID of the player whose resting state to toggle.
     """
     session = require_session()
-    session.player_state.toggle_rest(player_id)
+    player = session.player_state.toggle_rest(player_id)
     set_current_session(session)
+    return player
 
 
 def clear_players():

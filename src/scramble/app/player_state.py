@@ -99,8 +99,10 @@ class PlayerState(Serializable):
             del self.active_players[player_id]
         elif player_id in self.resting_players:
             del self.resting_players[player_id]
+        else:
+            raise ValueError(f"Player with ID {player_id} not found in active or resting players.")
 
-    def toggle_rest(self, player_id: str):
+    def toggle_rest(self, player_id: str) -> Player:
         """
         Toggles the resting state of a player.
 
@@ -114,5 +116,9 @@ class PlayerState(Serializable):
         """
         if player_id in self.active_players:
             self.resting_players[player_id] = self.active_players.pop(player_id)
+            return self.resting_players[player_id]
         elif player_id in self.resting_players:
             self.active_players[player_id] = self.resting_players.pop(player_id)
+            return self.active_players[player_id]
+        else:
+            raise ValueError(f"Player with ID {player_id} not found in active or resting players.")

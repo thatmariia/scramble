@@ -25,12 +25,7 @@ class SessionPersistence:
         session : AppSession
             The session to save.
         """
-        session_data = {
-            "settings": session.settings,
-            "player_state": session.player_state,
-            "court_state": session.court_state,
-            "round_tracker": session.round_tracker,
-        }
+        session_data = session.to_dict()
 
         path = SESSIONS_DIR / session.session_name
         path.mkdir(parents=True, exist_ok=True)
@@ -62,7 +57,7 @@ class SessionPersistence:
         session_name = session_name or SessionNameManager.get_latest()
         path = SESSIONS_DIR / session_name
         if not path.exists():
-            return None
+            raise FileNotFoundError(f"Session {session_name} not found")
 
         with open(path / "settings.json", "r") as f:
             settings = Settings.from_dict(json.load(f))

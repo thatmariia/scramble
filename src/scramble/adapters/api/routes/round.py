@@ -1,37 +1,53 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, status, HTTPException
 from scramble.services import handlers
+from scramble.adapters.api.schemas import RoundDTO
 
 router = APIRouter(tags=["Manage rounds"])
 
 
-@router.post("/start", summary="Start a new round and add it to the round history.")
+@router.post(
+    "",
+    summary="Start a new round and add it to the round history.",
+    response_model=RoundDTO,
+    status_code=status.HTTP_201_CREATED,
+)
 def start_round():
     """
     Start a new round and add it to the round history.
     """
     game_round = handlers.start_round()
-    return {
-        "message": "Started round",
-        "round": str(game_round)
-    }
+    return RoundDTO.from_domain(game_round)
 
 
-@router.post("/undo", summary="Undo the last round.")
-def undo_round():
-    """
-    Undo the last round.
-    """
-    handlers.undo_round()
-    return {"message": "Last round undone (if existed)."}
-
-
-@router.post("/undo-and-start", summary="Undo the last round and start a new one.")
+@router.post(
+    "/restart",
+    summary="Undo the last round and start a new one.",
+    response_model=RoundDTO,
+    status_code=status.HTTP_201_CREATED,
+)
 def undo_and_start_new_round():
     """
     Undo the last round and start a new one.
     """
-    game_round = handlers.undo_and_start_new_round()
-    return {
-        "message": "Last round undone and new round started",
-        "round": str(game_round)
-    }
+    try:
+        game_round = handlers.undo_and_start_new_round()
+        return RoundDTO.from_domain(game_round)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="No rounds to undo")
+
+
+@router.delete(
+    "",
+    summary="Undo the last round.",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def undo_round():
+    """
+    Undo the last round.
+    """
+    try:
+        handlers.undo_round()
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="No rounds to undo")
+
+

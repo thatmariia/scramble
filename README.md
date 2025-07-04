@@ -67,9 +67,23 @@ You can access the Swagger UI at [localhost:8000/docs](http://localhost:8000/doc
 
 To run the frontend, you need to have Node.js and npm installed. 
 
-Run the dev server with the following command:
+The frontend is located in the `frontend` directory:
 ```sh
 cd frontend
+```
+
+Before running the frontend, install the dependencies:
+```sh
+npm install
+```
+
+To build the frontend, run:
+```sh
+npm run build
+```
+
+Run the dev server with the following command:
+```sh
 npm run dev
 ```
 

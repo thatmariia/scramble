@@ -80,7 +80,7 @@ class RoundTracker(Serializable):
         Removes the last round from the tracker and updates player histories accordingly.
         """
         if not self.rounds:
-            return
+            raise ValueError("No rounds to undo.")
         last_round = self.rounds.pop()
         self.history_manager.remove_round(last_round)
 

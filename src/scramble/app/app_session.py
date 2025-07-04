@@ -4,9 +4,10 @@ from scramble.app.player_state import PlayerState
 from scramble.app.round_tracker import RoundTracker
 from scramble.solver import ScrambleSolver
 from scramble.core import Round
+from scramble.utils import Serializable
 
 
-class AppSession:
+class AppSession(Serializable):
     """
     Represents a session for the Scramble app.
     This class is used to manage the state of the application during a session.
@@ -42,6 +43,26 @@ class AppSession:
         self.round_tracker = RoundTracker()
 
         self.session_name = session_name
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "AppSession":
+        settings = Settings.from_dict(data["settings"])
+        session_name = data.get("session_name", "default_session")
+
+        app_session = cls(settings, session_name)
+        app_session.player_state = PlayerState.from_dict(data["player_state"])
+        app_session.court_state = CourtState.from_dict(data["court_state"])
+        app_session.round_tracker = RoundTracker.from_dict(data["round_tracker"])
+
+        return app_session
+
+    def to_dict(self) -> dict:
+        return {
+            "settings": self.settings,
+            "player_state": self.player_state,
+            "court_state": self.court_state,
+            "round_tracker": self.round_tracker,
+        }
 
     def clear(self):
         """

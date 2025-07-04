@@ -64,4 +64,6 @@ class CourtState(Serializable):
         """
         if court_id in self.courts:
             del self.courts[court_id]
+        else:
+            raise ValueError(f"Court with ID {court_id} does not exist in the court state.")
 

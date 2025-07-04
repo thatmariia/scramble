@@ -1,24 +1,54 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, status, HTTPException
+from pydantic import BaseModel
+from typing import List
 from scramble.services import handlers
+from scramble.adapters.api.schemas import CourtDTO
 
 router = APIRouter(tags=["Manage courts"])
 
 
-@router.post("/add", summary="Add a new court to the current session.")
-def add_court(name: str):
+class CourtCreate(BaseModel):
+    name: str
+
+
+@router.post(
+    "",
+    summary="Add a new court to the current session.",
+    response_model=CourtDTO,
+    status_code=status.HTTP_201_CREATED,
+)
+def add_court(payload: CourtCreate):
     """
     Add a new court to the current session.
 
     Parameters
     ----------
-    name : str
-        Name of the court.
+    payload : CourtCreate
+        The court to add, containing the name of the court.
     """
-    court = handlers.add_court(name)
-    return {"message": f"Added court #{court.id}: {court.name}"}
+    court = handlers.add_court(payload.name)
+    return CourtDTO.from_domain(court)
 
 
-@router.post("/remove", summary="Remove a court by ID.")
+@router.get(
+    "",
+    summary="List all courts in the current session.",
+    response_model=List[CourtDTO],
+    status_code=status.HTTP_200_OK
+)
+def list_courts():
+    """
+    List all courts in the current session.
+    """
+    courts = handlers.list_courts()
+    return [CourtDTO.from_domain(court) for court in courts]
+
+
+@router.delete(
+    "/{court_id}",
+    summary="Remove a court by ID.",
+    status_code=status.HTTP_204_NO_CONTENT
+)
 def remove_court(court_id: str):
     """
     Remove a court by ID.
@@ -28,29 +58,19 @@ def remove_court(court_id: str):
     court_id : str
         ID of the court to remove.
     """
-    handlers.remove_court(court_id)
-    return {"message": f"Removed court with ID {court_id}"}
+    try:
+        handlers.remove_court(court_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Court not found")
 
 
-@router.get("/list", summary="List all courts in the current session.")
-def list_courts():
-    """
-    List all courts in the current session.
-    """
-    courts = handlers.list_courts()
-
-    if not courts:
-        return {"message": "No courts have been added yet."}
-
-    courts_list = "\n".join(f" - {court}" for court in courts)
-
-    return {"courts": courts_list}
-
-
-@router.post("/clear", summary="Clear all courts from the current session.")
+@router.delete(
+    "",
+    summary="Clear all courts from the current session.",
+    status_code=status.HTTP_204_NO_CONTENT
+)
 def clear_courts():
     """
     Clear all courts from the current session.
     """
     handlers.clear_courts()
-    return {"message": "All courts have been cleared."}
