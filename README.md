@@ -63,6 +63,20 @@ You can access the Swagger UI at [localhost:8000/docs](http://localhost:8000/doc
 
 ---
 
+## Using frontend
+
+To run the frontend, you need to have Node.js and npm installed. 
+
+Run the dev server with the following command:
+```sh
+cd frontend
+npm run dev
+```
+
+You can access development server at [localhost:5173](http://localhost:5173).
+
+---
+
 ## License
 
 This project is licensed under the Apache-2.0 License. See the [LICENSE](LICENSE) file for details.
