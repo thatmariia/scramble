@@ -1,25 +1,23 @@
-import { useEffect, useState } from "react";
+// import { useEffect, useState } from "react";
+import { usePlayers } from '../hooks/player';
+import { ApiError } from '../api';
+
 
 const Players = () => {
-    const [players, setPlayers] = useState<string[]>([]);
+    const { data, isLoading, error } = usePlayers();
 
-    useEffect(() => {
-        // fetch("/api/player/list")
-        // .then(res => res.json())
-        // .then(data => {
-        //     const allPlayers = [
-        //     ...(data.active_players?.split("\n") || []),
-        //     ...(data.resting_players?.split("\n") || []),
-        //     ];
-        //     setPlayers(allPlayers);
-        // });
-    }, []);
+    const everyone = [
+        ...(data?.active  ?? []),
+        ...(data?.resting ?? []),
+    ];
 
     return (
         <div className="p-4">
-        <h2 className="text-2xl font-bold mb-4">Players</h2>
+        <h1 className="text-3xl font-bold mb-4">Players</h1>
         <ul className="list-disc pl-5">
-            {players.map((p, i) => <li key={i}>{p}</li>)}
+            {everyone.map((p) => (
+            <li key={p.id}>{p.name} (lvl {p.level})</li>
+            ))}
         </ul>
         </div>
     );

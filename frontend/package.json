@@ -8,10 +8,12 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "generate:api": "openapi --input http://localhost:8000/openapi.json --output src/api --client fetch --useOptions --useUnionTypes"
+    "generate:api": "openapi --input http://localhost:8000/openapi.json --output src/api --client fetch --useOptions --useUnionTypes",
+    "prebuild": "npm run generate:api"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.11",
+    "@tanstack/react-query": "^5.81.5",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.3"
