@@ -1,0 +1,41 @@
+[project]
+name = "scramble"
+version = "0.1.0"
+description = "todo description"
+authors = [
+    {name = "Mariia Steeghs-Turchina"},
+    {name = "Sander Steeghs-Turchina"}
+]
+license = {text = "Apache-2.0"}
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "ortools (>=9.14.6206,<10.0.0)",
+    "pandas (>=2.3.0,<3.0.0)",
+    "pydantic (>=2.11.7,<3.0.0)",
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+packages = [{ include = "scramble", from = "src" }]
+
+[tool.poetry.group.dev.dependencies]
+typer = {extras = ["all"], version = "^0.16.0"}
+pyyaml = "^6.0.2"
+pytest = "^8.4.1"
+pytest-benchmark = "^5.1.0"
+pytest-timeout = "^2.4.0"
+pytest-repeat = "^0.9.4"
+
+
+[tool.poetry.group.web.dependencies]
+fastapi = "^0.115.14"
+uvicorn = {extras = ["standard"], version = "^0.35.0"}
+
+[tool.poetry.scripts]
+scramble = "scramble:cliapp"
+scramble-api = "scramble:apiapp"
