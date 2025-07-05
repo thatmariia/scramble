@@ -1,6 +1,7 @@
 import Session from "../components/Session";
 import Players from "../components/Players";
 import Courts from "../components/Courts";
+import RoundList from "../components/RoundList";
 
 
 export default function Scramble() {
@@ -10,6 +11,7 @@ export default function Scramble() {
         <Session />
         <Players />
         <Courts />
+        <RoundList />
         </div>
     );
 }
