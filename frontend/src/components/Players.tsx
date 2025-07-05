@@ -7,7 +7,7 @@ import {
 import { EntityListSection } from './shared/EntityListSection';
 import { EntityListItem } from './shared/EntityListItem';
 import { AddEntityButton } from './shared/AddEntityButton';
-import { PlayerForm } from './players/PlayerForm';
+import { PlayerForm } from './forms/PlayerForm';
 import type { PlayerDTO } from '../api';
 
 export default function Players() {
@@ -62,7 +62,7 @@ export default function Players() {
 
             <AddEntityButton
                 buttonLabel="+ Add player"
-                form={<PlayerForm onDone={() => {/* handled inside */ }} />}
+                renderForm={(close) => <PlayerForm onDone={close} />}
             />
         </div>
     );

@@ -4,7 +4,7 @@ import { EntityListItem } from './shared/EntityListItem';
 import { AddEntityButton } from './shared/AddEntityButton';
 
 import { useCourts, useDeleteCourt } from '../hooks/court';
-import { CourtForm } from './courts/CourtForm';
+import { CourtForm } from './forms/CourtForm';
 import type { CourtDTO } from '../api';
 
 export default function Courts() {
@@ -46,7 +46,7 @@ export default function Courts() {
 
             <AddEntityButton
                 buttonLabel="+ Add court"
-                form={<CourtForm onDone={() => {/* handled inside */ }} />}
+                renderForm={(close) => <CourtForm onDone={close} />}
             />
         </div>
     );
