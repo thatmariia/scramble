@@ -12,7 +12,8 @@ import { PlayerStamp } from '../elements/PlayerStamp';
 import type { PlayerDTO } from '../api';
 import styles from './Card.module.css';
 import { Trash, Pause, Play } from 'lucide-react';
-import { LEVELS, LEVEL_VALUES, LEVEL_COLORS } from '../constants/levels';
+import { LEVEL_COLORS } from '../constants/levels';
+import { Card } from './Card';
 
 export default function Players() {
     const { data, isLoading } = usePlayers();
@@ -53,8 +54,7 @@ export default function Players() {
     );
 
     return (
-        <div className={styles.card}>
-            <span className={styles.title}>Players</span>
+        <Card title="Players">
 
             <EntityListSection
                 title="Active"
@@ -72,6 +72,6 @@ export default function Players() {
                 entity="player"
                 renderForm={(close) => <PlayerForm onDone={close} />}
             />
-        </div>
+        </Card>
     );
   }

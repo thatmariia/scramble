@@ -5,6 +5,7 @@ import { useSession } from '../hooks/session';
 import NewSessionForm from './forms/NewSessionForm';
 import LoadSessionForm from './forms/LoadSessionForm';
 import styles from './Session.module.css';
+import { Volleyball } from 'lucide-react';
 
 export default function Session() {
     const { name: active, setName } = useSessionName();
@@ -16,7 +17,10 @@ export default function Session() {
     return (
         <header className={styles.sessionHeader}>
             <div className={styles.sessionInfo}>
-                <span className={styles.name}>{active ?? 'No active session'}</span>
+                <span className={styles.name}>
+                    {/* <Volleyball className="icon" /> */}
+                    {active ?? 'No active session'}
+                </span>
             </div>
 
             <div className={styles.menuWrapper}>

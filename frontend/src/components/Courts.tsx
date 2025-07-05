@@ -6,8 +6,8 @@ import { AddEntityButton } from './shared/AddEntityButton';
 import { useCourts, useDeleteCourt } from '../hooks/court';
 import { CourtForm } from './forms/CourtForm';
 import type { CourtDTO } from '../api';
-import styles from './Card.module.css';
 import { Trash } from 'lucide-react';
+import { Card } from './Card';
 
 export default function Courts() {
     /* Data + mutations */
@@ -37,9 +37,7 @@ export default function Courts() {
     );
 
     return (
-        <div className={styles.card}>
-            <span className={styles.title}>Courts</span>
-
+        <Card title="Courts">
             <EntityListSection
                 items={courts}
                 render={renderRow}
@@ -49,6 +47,6 @@ export default function Courts() {
                 entity="court"
                 renderForm={(close) => <CourtForm onDone={close} />}
             />
-        </div>
+        </Card>
     );
 }
