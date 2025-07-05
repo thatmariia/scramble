@@ -1,5 +1,7 @@
 # auto-generated api
-src/api/
+src/api/core
+src/api/models
+src/api/services
 
 # Logs
 logs
