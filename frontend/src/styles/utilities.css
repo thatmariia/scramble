@@ -1,0 +1,46 @@
+/* General button base */
+.button {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+/* Variants */
+.button.primary {
+    background: var(--color-accent);
+    color: white;
+}
+
+.button.primary:hover {
+    background: var(--color-accent-hover);
+}
+
+.button.danger {
+    background: var(--color-danger);
+    color: white;
+}
+
+.button.danger:hover {
+    background: var(--color-danger-hover);
+}
+
+.button.ghost {
+    background: transparent;
+    color: var(--color-accent);
+    border: 1px solid var(--color-accent);
+}
+
+.button.ghost:hover {
+    background: var(--color-accent-hover);
+    color: white;
+}
+
+/* Disabled state */
+.button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}

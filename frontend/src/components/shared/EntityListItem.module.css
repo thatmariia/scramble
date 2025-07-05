@@ -1,0 +1,20 @@
+.item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: var(--radius-md);
+}
+
+.defaultBg {
+    background: #f0f0f0;
+}
+
+.label {
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.actions {
+    display: flex;
+    gap: 0.5rem;
+}

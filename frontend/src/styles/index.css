@@ -1,3 +1,5 @@
+@import './utilities.css';
+
 :root {
   /* COLORS */
   --color-bg: #f7f8f9;

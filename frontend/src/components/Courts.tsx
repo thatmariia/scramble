@@ -22,7 +22,7 @@ export default function Courts() {
             primaryAction={null /* no toggle for courts */}
             dangerAction={
                 <button
-                    className="px-2 py-0.5 text-sm bg-red-400 text-white rounded"
+                    className="button danger"
                     onClick={() => deleteCourt.mutate({ courtId: c.id! })}
                     disabled={deleteCourt.isPending}
                 >
@@ -39,7 +39,6 @@ export default function Courts() {
             <h3 className="text-3xl font-bold">Courts</h3>
 
             <EntityListSection
-                title="All courts"
                 items={courts}
                 render={renderRow}
             />

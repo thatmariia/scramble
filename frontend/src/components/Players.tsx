@@ -19,11 +19,10 @@ export default function Players() {
 
     const renderRow = (bg: string) => (p: PlayerDTO) => (
         <EntityListItem
-            key={p.id}
-            bg={bg}
+            key={p.id} 
             primaryAction={
                 <button
-                    className="px-2 py-0.5 text-sm bg-amber-300 rounded"
+                    className="button ghost"
                     onClick={() => toggleRest.mutate({ playerId: p.id! })}
                     disabled={toggleRest.isPending}
                 >
@@ -32,7 +31,7 @@ export default function Players() {
             }
             dangerAction={
                 <button
-                    className="px-2 py-0.5 text-sm bg-red-400 text-white rounded"
+                    className="button danger"
                     onClick={() => deletePlayer.mutate({ playerId: p.id! })}
                     disabled={deletePlayer.isPending}
                 >
