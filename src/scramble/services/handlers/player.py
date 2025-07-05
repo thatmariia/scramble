@@ -61,7 +61,7 @@ def toggle_rest(player_id: str) -> tuple[list[Player], list[Player]]:
     session = require_session()
     player = session.player_state.toggle_rest(player_id)
     set_current_session(session)
-    return session.player_state.active_players, session.player_state.resting_players
+    return session.player_state.active_list(), session.player_state.resting_list()
 
 
 def clear_players():
