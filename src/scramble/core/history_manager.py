@@ -1,9 +1,11 @@
+from dataclasses import dataclass, field
 import pandas as pd
 from scramble.utils import Serializable
 from scramble.core.player_history import PlayerHistory
 from scramble.core.round import Round
 
 
+@dataclass
 class HistoryManager(Serializable):
     """
     Manages the history of all players, including their partners and opponents.
@@ -13,6 +15,9 @@ class HistoryManager(Serializable):
     player_histories : dict[str, PlayerHistory]
         Dictionary mapping player IDs to their PlayerHistory.
     """
+    player_histories: dict[str, PlayerHistory] = field(default_factory=dict)
+    partner_tuples: list[tuple[str, str]] = field(default_factory=list)
+    opponent_tuples: list[tuple[str, str]] = field(default_factory=list)
 
     def __init__(self):
         """

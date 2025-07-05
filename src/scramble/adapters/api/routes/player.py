@@ -4,7 +4,7 @@ from scramble.core import Level
 from scramble.services import handlers
 from scramble.adapters.api.schemas import PlayerDTO, PlayerListDTO
 
-router = APIRouter(tags=["Manage players"])
+router = APIRouter(tags=["player"])
 
 
 class PlayerCreate(BaseModel):
@@ -14,7 +14,8 @@ class PlayerCreate(BaseModel):
 
 @router.post(
     "",
-    summary="Add a new player to the current session.",
+    operation_id="add_player",
+    summary="Add player.",
     response_model=PlayerDTO,
     status_code=status.HTTP_201_CREATED,
 )
@@ -33,7 +34,8 @@ def add_player(payload: PlayerCreate):
 
 @router.get(
     "",
-    summary="List all players in the current session.",
+    operation_id="list_players",
+    summary="List players.",
     response_model=PlayerListDTO,
     status_code=status.HTTP_200_OK
 )
@@ -50,7 +52,8 @@ def list_players():
 
 @router.delete(
     "/{player_id}",
-    summary="Remove a player by ID from the current session.",
+    operation_id="delete_player_by_id",
+    summary="Delete player by ID.",
     status_code=status.HTTP_204_NO_CONTENT
 )
 def remove_player(player_id: str):
@@ -70,7 +73,8 @@ def remove_player(player_id: str):
 
 @router.delete(
     "",
-    summary="Clear all players from the session.",
+    operation_id="delete_all_players",
+    summary="Delete all players.",
     status_code=status.HTTP_204_NO_CONTENT
 )
 def clear_players():
@@ -82,8 +86,9 @@ def clear_players():
 
 @router.patch(
     "/{player-id}/toggle-rest",
-    summary="Toggle resting state of a player.",
-    response_model=PlayerDTO,
+    operation_id="toggle_rest_player",
+    summary="Toggle player resting state.",
+    response_model=PlayerListDTO,
     status_code=status.HTTP_200_OK
 )
 def toggle_rest(player_id: str):
@@ -96,8 +101,11 @@ def toggle_rest(player_id: str):
         The ID of the player whose resting state to toggle.
     """
     try:
-        player = handlers.toggle_rest(player_id)
-        return PlayerDTO.from_domain(player)
+        active_list, resting_list = handlers.toggle_rest(player_id)
+        return PlayerListDTO(
+            active=[PlayerDTO.from_domain(player) for player in active_list],
+            resting=[PlayerDTO.from_domain(player) for player in resting_list]
+        )
     except ValueError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Player not found")
 
