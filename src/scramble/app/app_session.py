@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from scramble.settings import Settings
 from scramble.app.court_state import CourtState
 from scramble.app.player_state import PlayerState
@@ -28,10 +28,10 @@ class AppSession(Serializable):
         The name of the session.
     """
     settings: Settings
-    player_state: PlayerState
-    court_state: CourtState
-    round_tracker: RoundTracker
     session_name: str
+    player_state: PlayerState = field(default_factory=PlayerState)
+    court_state: CourtState = field(default_factory=CourtState)
+    round_tracker: RoundTracker = field(default_factory=RoundTracker)
 
     def __init__(self, settings: Settings, session_name: str):
         """
@@ -66,6 +66,7 @@ class AppSession(Serializable):
     def to_dict(self) -> dict:
         return {
             "settings": self.settings,
+            "session_name": self.session_name,
             "player_state": self.player_state,
             "court_state": self.court_state,
             "round_tracker": self.round_tracker,

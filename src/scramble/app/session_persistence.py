@@ -31,6 +31,8 @@ class SessionPersistence:
         path.mkdir(parents=True, exist_ok=True)
 
         for filename, data in session_data.items():
+            if not hasattr(data, "to_dict"):
+                continue
             file_path = path / f"{filename}.json"
             with open(file_path, "w") as f:
                 json.dump(data.to_dict(), f, indent=4)
