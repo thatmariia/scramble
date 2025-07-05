@@ -60,7 +60,7 @@ export default function Players() {
             />
 
             <AddEntityButton
-                buttonLabel="+ Add player"
+                entity="player"
                 renderForm={(close) => <PlayerForm onDone={close} />}
             />
         </div>

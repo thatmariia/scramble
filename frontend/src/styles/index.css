@@ -1,17 +1,19 @@
-@import './utilities.css';
+@import './buttons.css';
+@import './fieldBase.css';
 
 :root {
   /* COLORS */
   --color-bg: #f7f8f9;
   --color-surface: #ffffff;
-  --color-shadow: rgba(0, 0, 0, 0.04);
+  --color-shadow: rgba(0, 0, 0, 0.08);
   --color-accent: #0070f3;
   /* Use for primary buttons/links */
   --color-accent-hover: #005dc1;
   --color-danger: #e63946;
   /* For delete buttons etc */
   --color-danger-hover: #c62828;
-  --color-muted: #ccc;
+  --color-muted: #EDEDED;
+  --color-muted-hover: #E4E4E4;
   --color-text: #000;
   --color-subtle-text: #666;
 
@@ -19,11 +21,13 @@
   --radius-lg: 30px;
   --radius-md: 16px;
   --shadow-sm: 0 4px 10px var(--color-shadow);
+  --reverse-shadow-sm: inset 0 4px 10px var(--color-shadow);
 
   /* FONT */
   --font-sans: "SF Pro", -apple-system, BlinkMacSystemFont, sans-serif;
 
   /* SPACING */
+  --small-padding: 6px 12px;
   --padding: 16px;
 
   /* TRANSITIONS */

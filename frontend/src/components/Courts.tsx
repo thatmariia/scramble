@@ -44,7 +44,7 @@ export default function Courts() {
             />
 
             <AddEntityButton
-                buttonLabel="+ Add court"
+                entity="court"
                 renderForm={(close) => <CourtForm onDone={close} />}
             />
         </div>

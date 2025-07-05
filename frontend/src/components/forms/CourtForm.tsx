@@ -1,36 +1,32 @@
 // src/components/courts/CourtForm.tsx
 import { useState } from 'react';
 import { useAddCourt } from '../../hooks/court';
+import { EntityFormWrapper } from './shared/FormWrapper';
 
 export function CourtForm({ onDone }: { onDone(): void }) {
     const addCourt = useAddCourt();
     const [name, setName] = useState('');
 
     return (
-        <form
-            className="space-x-2"
-            onSubmit={(e) => {
-                e.preventDefault();
-                addCourt.mutate(
-                    { name },
-                    { onSuccess: () => { setName(''); onDone(); } },
-                );
+        <EntityFormWrapper
+            onSubmit={() => {
+                addCourt.mutate({ name }, {
+                    onSuccess: () => {
+                        setName('');
+                        onDone();
+                    },
+                });
             }}
+            onCancel={onDone}
+            isSubmitting={addCourt.isPending}
         >
             <input
-                className="border rounded px-2 py-1 w-48"
+                className="input"
                 placeholder="Court name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
             />
-            <button
-                type="submit"
-                className="px-3 py-1 bg-blue-500 text-white rounded"
-                disabled={addCourt.isPending}
-            >
-                Add
-            </button>
-        </form>
+        </EntityFormWrapper>
     );
 }

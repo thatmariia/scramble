@@ -1,0 +1,4 @@
+.wrapper {
+    padding-top: var(--spacing);
+    max-width: 100%;
+}

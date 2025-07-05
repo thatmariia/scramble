@@ -1,10 +1,10 @@
 /* General button base */
 .button {
-    padding: 6px 12px;
+    padding: var(--small-padding);
     font-size: 0.9rem;
     font-weight: 500;
     border: none;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-lg);
     cursor: pointer;
     transition: background var(--transition-fast), color var(--transition-fast);
 }
@@ -26,6 +26,15 @@
 
 .button.danger:hover {
     background: var(--color-danger-hover);
+}
+
+.button.cancel {
+    background: var(--color-muted);
+    color: var(--color-text);
+}
+
+.button.cancel:hover {
+    background: var(--color-muted-hover);
 }
 
 .button.ghost {

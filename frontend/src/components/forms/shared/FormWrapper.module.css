@@ -1,0 +1,19 @@
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+    max-width: 100%;
+}
+
+.formInline {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
