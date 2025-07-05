@@ -1,0 +1,84 @@
+/* overall grid: header row + content row */
+.page {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    height: 100vh;  /* full-height canvas */
+    width: 100vw;   /* full-width canvas */
+    background: #f7f8f9;
+    font-family: "SF Pro", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* top bar */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    background: #ffffff;
+    border-bottom: 1px solid #e7e7e7;
+}
+
+/* chevron button */
+.collapseBtn {
+    border: none;
+    background: #fff;
+    color: #641010;
+    font-size: 30px;
+    line-height: 1;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: transform 0.25s ease;
+}
+
+.collapseBtn:hover {
+    transform: scale(1.5);
+}
+
+/* 2-column content area */
+.main,
+.sidebar {
+    padding: 24px;
+    overflow-y: auto;
+}
+
+.page {
+    /* after the header row, define two columns: 1fr + 320px sidebar */
+    grid-template-columns: 1fr 320px;
+    grid-template-areas:
+        "header   header"
+        "main     sidebar";
+}
+
+.header {
+    grid-area: header;
+}
+
+.main {
+    grid-area: main;
+}
+
+.sidebar {
+    grid-area: sidebar;
+}
+
+/* collapsed sidebar */
+.sidebar.collapsed {
+    width: 0;
+    padding: 0;
+    overflow: hidden;
+    border-left: none;
+}
+
+/* animate the width change */
+.sidebar,
+.page {
+    transition: all 0.25s ease;
+}
+
+/* minimal card look for inner components (optional) */
+.sidebar :global(.p-4) {
+    padding: 16px;
+    background: #fff;
+    border-radius: 30px;
+    box-shadow: 0 4px 10px rgb(0 0 0 / 4%);
+    margin-bottom: 24px; }
