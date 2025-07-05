@@ -1,6 +1,7 @@
 import typer
 from scramble.core import Level
 from scramble.services import handlers
+from scramble.adapters.cli.state import get_session
 
 player_app = typer.Typer(help="Manage players")
 
@@ -20,7 +21,7 @@ def add_player(
     level : Level
         The skill level of the player. Must be one of the predefined levels.
     """
-    player = handlers.add_player(name, level)
+    player = handlers.add_player(get_session(), name, level)
     typer.secho(f"Added player #{player.id}: {player.name} ({player.level})", fg=typer.colors.GREEN)
 
 
@@ -34,7 +35,7 @@ def remove_player(player_id: str):
     player_id : str
         The ID of the player to remove.
     """
-    handlers.remove_player(player_id)
+    handlers.remove_player(get_session(), player_id)
     typer.secho(f"Removed player with ID {player_id}", fg=typer.colors.YELLOW)
 
 
@@ -43,7 +44,7 @@ def list_players():
     """
     List all players in the current session.
     """
-    active_list, resting_list = handlers.list_players()
+    active_list, resting_list = handlers.list_players(get_session())
 
     typer.secho("Active Players:", fg=typer.colors.BLUE)
     if not active_list:
@@ -70,7 +71,7 @@ def toggle_rest(player_id: str):
     player_id : str
         The ID of the player whose resting state to toggle.
     """
-    handlers.toggle_rest(player_id)
+    handlers.toggle_rest(get_session(), player_id)
     typer.secho(f"Toggled rest state of player #{player_id}", fg=typer.colors.MAGENTA)
 
 
@@ -79,5 +80,5 @@ def clear_players():
     """
     Clear all players from the session.
     """
-    handlers.clear_players()
+    handlers.clear_players(get_session())
     typer.secho("All players have been cleared", fg=typer.colors.YELLOW)

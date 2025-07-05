@@ -9,7 +9,7 @@ router = APIRouter(tags=["session"])
 
 
 class SessionCreate(BaseModel):
-    name: str | None = Field(None)
+    name: str = Field()
     settings_path: str | None = Field(None)
 
 
@@ -45,7 +45,7 @@ def new_session(payload: SessionCreate):
     response_model=AppSessionDTO,
     status_code=status.HTTP_200_OK
 )
-def load_session(name: str | None = Query(None, description="Session name")):
+def load_session(name: str = Query(description="Session name")):
     """
     Load an existing session by name or the latest session if no name is provided.
 

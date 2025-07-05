@@ -1,12 +1,11 @@
 import json
 from pathlib import Path
 from scramble.app.app_session import AppSession
-from scramble.app.session_persistence import SessionPersistence, SessionNameManager
+from scramble.app.session_persistence import SessionPersistence
 from scramble.settings import Settings
-from scramble.services import require_session, set_current_session
 
 
-def new_session(name: str | None, settings_path: Path | None) -> AppSession:
+def new_session(name: str, settings_path: Path | None) -> AppSession:
     """
     Start a new session with the given name and settings.
 
@@ -28,16 +27,13 @@ def new_session(name: str | None, settings_path: Path | None) -> AppSession:
     else:
         settings = Settings()
 
-    session_name = name or SessionNameManager.generate_name()
-    session = AppSession(settings=settings, session_name=session_name)
-    set_current_session(session)
-
+    session = AppSession(settings=settings, session_name=name)
     SessionPersistence.save(session)
 
     return session
 
 
-def load_session(name: str | None = None) -> AppSession | None:
+def load_session(name: str) -> AppSession:
     """
     Load an existing session by name or the latest session if no name is provided.
 
@@ -52,5 +48,4 @@ def load_session(name: str | None = None) -> AppSession | None:
         The loaded session object, or None if no session is found.
     """
     session = SessionPersistence.load(name)
-    set_current_session(session)
     return session

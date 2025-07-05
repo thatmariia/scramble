@@ -3,13 +3,15 @@ import json
 from pathlib import Path
 from scramble.settings import Settings
 from scramble.services import handlers
+from scramble.app.session_name_manager import SessionNameManager
+from scramble.adapters.cli.state import set_session
 
 session_app = typer.Typer(help="Manage application sessions")
 
 
 @session_app.command("new")
 def new_session(
-    name: str = typer.Option(None, help="Optional name for the new session."),
+    name: str = typer.Argument(help="Optional name for the new session."),
     settings_path: Path = typer.Option(None, help="Path to a JSON settings file.")
 ):
     """
@@ -22,13 +24,15 @@ def new_session(
     settings_path : Path, optional
         Path to a JSON file containing settings. If not provided, default settings will be used.
     """
+    if name is None:
+        name = SessionNameManager.generate_name()
     session = handlers.new_session(name, settings_path)
     typer.secho(f"Started new session: {session.session_name}", fg=typer.colors.GREEN)
-
+    set_session(session)
 
 @session_app.command("load")
 def load_session(
-    name: str = typer.Option(None, help="Name of the session to load. If omitted, loads the latest.")
+    name: str = typer.Argument(help="Name of the session to load. If omitted, loads the latest.")
 ):
     """
     Load an existing session by name or the latest session if no name is provided.
@@ -40,6 +44,7 @@ def load_session(
     """
     session = handlers.load_session(name)
     typer.secho(f"Loaded session: {session.session_name}", fg=typer.colors.GREEN)
+    set_session(session)
 
 
 @session_app.command("default-settings")
