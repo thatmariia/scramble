@@ -1,4 +1,32 @@
 :root {
+  /* COLORS */
+  --color-bg: #f7f8f9;
+  --color-surface: #ffffff;
+  --color-shadow: rgba(0, 0, 0, 0.04);
+  --color-accent: #0070f3;
+  /* Use for primary buttons/links */
+  --color-accent-hover: #005dc1;
+  --color-danger: #e63946;
+  /* For delete buttons etc */
+  --color-danger-hover: #c62828;
+  --color-muted: #ccc;
+  --color-text: #000;
+  --color-subtle-text: #666;
+
+  /* RADIUS + SHADOWS */
+  --radius-lg: 30px;
+  --radius-md: 16px;
+  --shadow-sm: 0 4px 10px var(--color-shadow);
+
+  /* FONT */
+  --font-sans: "SF Pro", -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* SPACING */
+  --padding: 16px;
+
+  /* TRANSITIONS */
+  --transition-fast: 0.25s ease-in-out;
+
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;

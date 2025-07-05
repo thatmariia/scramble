@@ -1,39 +1,39 @@
-import { AddEntityButton } from './shared/AddEntityButton';
+// src/components/Session.tsx
+import { useState } from 'react';
 import { useSessionName } from '../context/SessionContext';
 import { useSession } from '../hooks/session';
 import NewSessionForm from './forms/NewSessionForm';
 import LoadSessionForm from './forms/LoadSessionForm';
+import styles from './Session.module.css';
 
 export default function Session() {
     const { name: active, setName } = useSessionName();
     const { isLoading } = useSession(active);
+    const [showMenu, setShowMenu] = useState(false);
 
-
-    if (isLoading) return <p className="p-4">Loading session…</p>;
+    if (isLoading) return <div className={styles.loading}>Loading session…</div>;
 
     return (
-        <div className="p-4 space-y-4">
-            <h3 className="text-3xl font-bold">Session</h3>
+        <header className={styles.sessionHeader}>
+            <div className={styles.sessionInfo}>
+                <span className={styles.name}>{active ?? 'No active session'}</span>
+            </div>
 
-            <p className="text-lg">
-                <strong>Current:</strong> {active ?? 'No active session'}
-            </p>
+            <div className={styles.menuWrapper}>
+                <button
+                    className={styles.menuToggle}
+                    onClick={() => setShowMenu((v) => !v)}
+                >
+                    Session ▾
+                </button>
 
-            <AddEntityButton
-                buttonLabel="+ Start new session"
-                color="blue"
-                renderForm={(close) => (
-                    <NewSessionForm close={close} setActive={setName} />
+                {showMenu && (
+                    <div className={styles.dropdown}>
+                        <NewSessionForm close={() => setShowMenu(false)} setActive={setName} />
+                        <LoadSessionForm close={() => setShowMenu(false)} setActive={setName} />
+                    </div>
                 )}
-            />
-
-            <AddEntityButton
-                buttonLabel="Load session"
-                color="emerald"
-                renderForm={(close) => (
-                    <LoadSessionForm close={close} setActive={setName} />
-                )}
-            />
-        </div>
+            </div>
+        </header>
     );
 }

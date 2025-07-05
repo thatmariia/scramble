@@ -4,8 +4,8 @@
     grid-template-rows: auto 1fr;
     height: 100vh;  /* full-height canvas */
     width: 100vw;   /* full-width canvas */
-    background: #f7f8f9;
-    font-family: "SF Pro", -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--color-bg);
+    font-family: var(--font-sans);
 }
 
 /* top bar */
@@ -13,21 +13,26 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 24px;
-    background: #ffffff;
-    border-bottom: 1px solid #e7e7e7;
-}
+
+    margin: var(--padding);
+    padding: var(--padding);
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    z-index: 10;
+
+    position: relative; }
 
 /* chevron button */
 .collapseBtn {
     border: none;
-    background: #fff;
-    color: #641010;
+    background: var(--color-surface);
+    color: var(--color-danger);
     font-size: 30px;
     line-height: 1;
-    padding: 4px 8px;
+    padding: var(--padding);
     cursor: pointer;
-    transition: transform 0.25s ease;
+    transition: transform var(--transition-fast);
 }
 
 .collapseBtn:hover {
@@ -37,7 +42,7 @@
 /* 2-column content area */
 .main,
 .sidebar {
-    padding: 24px;
+    padding: var(--padding);
     overflow-y: auto;
 }
 
@@ -72,13 +77,14 @@
 /* animate the width change */
 .sidebar,
 .page {
-    transition: all 0.25s ease;
+    transition: all var(--transition-fast);
 }
 
 /* minimal card look for inner components (optional) */
 .sidebar :global(.p-4) {
-    padding: 16px;
-    background: #fff;
-    border-radius: 30px;
-    box-shadow: 0 4px 10px rgb(0 0 0 / 4%);
-    margin-bottom: 24px; }
+    padding: var(--padding);
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--padding); 
+}
