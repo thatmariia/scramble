@@ -88,7 +88,7 @@ def clear_players():
     "/{player-id}/toggle-rest",
     operation_id="toggle_rest_player",
     summary="Toggle player resting state.",
-    response_model=PlayerDTO,
+    response_model=PlayerListDTO,
     status_code=status.HTTP_200_OK
 )
 def toggle_rest(player_id: str):
@@ -101,8 +101,11 @@ def toggle_rest(player_id: str):
         The ID of the player whose resting state to toggle.
     """
     try:
-        player = handlers.toggle_rest(player_id)
-        return PlayerDTO.from_domain(player)
+        active_list, resting_list = handlers.toggle_rest(player_id)
+        return PlayerListDTO(
+            active=[PlayerDTO.from_domain(player) for player in active_list],
+            resting=[PlayerDTO.from_domain(player) for player in resting_list]
+        )
     except ValueError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Player not found")
 
