@@ -9,7 +9,7 @@ interface Props<T> {
 export function EntityListSection<T>({ title, items, render }: Props<T>) {
     return (
         <section>
-            <h2 className="text-xl font-semibold mb-2">{title}</h2>
+            <h4 className="text-xl font-semibold mb-2">{title}</h4>
             <ul className="space-y-1">{items.map(render)}</ul>
         </section>
     );
