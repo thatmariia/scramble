@@ -25,18 +25,22 @@ export default function Scramble() {
                 </button>
             </header>
 
-            {/* ─── main left column: current round ─── */}
-            <main className={styles.main}>
-                <RoundList />
-            </main>
+            <div className={styles.contentRow}>  
 
-            {/* ─── right sidebar: players & courts ─── */}
-            <aside
-                className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''}`}
-            >
-                <Players />
-                <Courts />
-            </aside>
+                {/* ─── main left column: current round ─── */}
+                <main className={styles.main}>
+                    <RoundList />
+                </main>
+
+                {/* ─── right sidebar: players & courts ─── */}
+                <aside
+                    className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''}`}
+                >
+                    <Players />
+                    <Courts />
+                </aside>
+
+            </div>
         </div>
     );
 }
