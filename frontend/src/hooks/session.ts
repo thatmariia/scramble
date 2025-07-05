@@ -30,7 +30,7 @@ export function useNewSession() {
         onSuccess: (newSession) => {
             // Put the freshly-created session into cache
             queryClient.setQueryData<AppSessionDTO>(
-                [...SESSION_QUERY_KEY, newSession?.name ?? 'latest'],
+                [...SESSION_QUERY_KEY, newSession?.session_name ?? 'latest'],
                 newSession,
             );
             // Optional: invalidate players / courts so they refetch for the new session

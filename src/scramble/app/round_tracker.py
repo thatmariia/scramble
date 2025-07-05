@@ -1,9 +1,11 @@
+from dataclasses import dataclass
 from collections import deque
 from scramble.utils import Serializable
 from scramble.core.round import Round
 from scramble.core.history_manager import HistoryManager
 
 
+@dataclass
 class RoundTracker(Serializable):
     """
     Tracks the sequence of rounds played and manages player histories.
@@ -15,6 +17,8 @@ class RoundTracker(Serializable):
     rounds : deque[Round]
         A deque of rounds, where each round contains matches and resting players.
     """
+    history_manager: HistoryManager
+    rounds: deque[Round]
 
     def __init__(self, history_manager: HistoryManager | None = None):
         """
