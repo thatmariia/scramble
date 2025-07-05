@@ -1,11 +1,12 @@
 .section {
     margin-bottom: var(--padding);
+    /* margin: 0; */
 }
 
 .title {
     font-weight: 600;
-    margin-bottom: 0.5rem;
     color: var(--color-text);
+    margin-top: 0;
 }
 
 .list {

@@ -1,5 +1,8 @@
+// src/components/forms/LoadSessionForm.tsx
 import { useState } from 'react';
 import { useLoadSession } from '../../hooks/session';
+import { EntityFormWrapper } from './shared/FormWrapper';
+import styles from './Form.module.css'; 
 
 interface Props {
     close(): void;
@@ -7,38 +10,39 @@ interface Props {
 }
 
 export default function LoadSessionForm({ close, setActive }: Props) {
-    const newSession = useLoadSession();
+    const loadSession = useLoadSession();
     const [name, setName] = useState('');
 
+    const handleSubmit = () => {
+        loadSession.mutate(
+            { name: name || null },
+            {
+                onSuccess: () => {
+                    setActive(name || null);
+                    close();
+                },
+            }
+        );
+    };
+
     return (
-        <form
-            className="space-y-2"
-            onSubmit={(e) => {
-                e.preventDefault();
-                newSession.mutate(
-                    { name: name || null},
-                    {
-                        onSuccess: () => {
-                            setActive(name || null);
-                            close();
-                        },
-                    },
-                );
-            }}
-        >
-            <input
-                className="border rounded px-2 py-1 w-48"
-                placeholder="Session name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-            />
-            <button
-                type="submit"
-                className="px-3 py-1 bg-emerald-500 text-white rounded"
+        <div>
+            <p className={styles.title}>
+                Load a session
+            </p>
+            <EntityFormWrapper
+                onSubmit={handleSubmit}
+                onCancel={close}
+                isSubmitting={loadSession.isPending}
+                submitLabel="Load"
             >
-                Load
-            </button>
-        </form>
+                <input
+                    className="input"
+                    placeholder="Name (optional)"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                />
+            </EntityFormWrapper>
+        </div>
     );
 }

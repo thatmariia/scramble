@@ -14,7 +14,7 @@ export function AddEntityButton({
     const [open, setOpen] = useState(false);
     const close = () => setOpen(false);
 
-    const label = `+ Add ${entity}`;
+    const label = `+ add ${entity}`;
 
     return (
         <div className={styles.wrapper}>

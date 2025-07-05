@@ -1,3 +1,9 @@
+.icon {
+    width: 1em;
+    height: 1em;
+    stroke-width: 3; 
+}
+
 /* General button base */
 .button {
     padding: var(--small-padding);
@@ -20,12 +26,15 @@
 }
 
 .button.danger {
-    background: var(--color-danger);
-    color: white;
+    /* background: var(--color-danger);
+    color: white; */
+    color: var(--color-danger);
+    background: transparent;
 }
 
 .button.danger:hover {
-    background: var(--color-danger-hover);
+    background: var(--color-danger);
+    color: white;
 }
 
 .button.cancel {
@@ -40,7 +49,7 @@
 .button.ghost {
     background: transparent;
     color: var(--color-accent);
-    border: 1px solid var(--color-accent);
+    /* border: 1px solid var(--color-accent); */
 }
 
 .button.ghost:hover {

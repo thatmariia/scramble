@@ -5,7 +5,6 @@ import { useAddPlayer } from '../../hooks/player';
 import { EntityFormWrapper } from './shared/FormWrapper';
 import { CustomSelect } from '../../elements/CustomSelect';
 import { LEVELS, LEVEL_VALUES, LEVEL_COLORS } from '../../constants/levels';
-import style from './PlayerForm.module.css';
 
 export function PlayerForm({ onDone }: { onDone(): void }) {
     const addPlayer = useAddPlayer();

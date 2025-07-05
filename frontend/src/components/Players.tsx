@@ -9,6 +9,8 @@ import { EntityListItem } from './shared/EntityListItem';
 import { AddEntityButton } from './shared/AddEntityButton';
 import { PlayerForm } from './forms/PlayerForm';
 import type { PlayerDTO } from '../api';
+import styles from './Card.module.css';
+import { Trash, Pause, Play } from 'lucide-react';
 
 export default function Players() {
     const { data, isLoading } = usePlayers();
@@ -17,7 +19,7 @@ export default function Players() {
 
     if (isLoading) return <p className="p-4">Loading…</p>;
 
-    const renderRow = (bg: string) => (p: PlayerDTO) => (
+    const renderRow = (active: boolean) => (p: PlayerDTO) => (
         <EntityListItem
             key={p.id} 
             primaryAction={
@@ -26,7 +28,11 @@ export default function Players() {
                     onClick={() => toggleRest.mutate({ playerId: p.id! })}
                     disabled={toggleRest.isPending}
                 >
-                    Toggle
+                    {active ? (
+                        <Pause className="icon" />
+                    ) : (
+                        <Play className="icon" />
+                    )}
                 </button>
             }
             dangerAction={
@@ -35,28 +41,28 @@ export default function Players() {
                     onClick={() => deletePlayer.mutate({ playerId: p.id! })}
                     disabled={deletePlayer.isPending}
                 >
-                    Delete
+                    <Trash className="icon" />
                 </button>
             }
         >
-            {p.name} (lvl&nbsp;{p.level}) — #{p.assignment ?? '–'}
+            {p.name} (lvl&nbsp;{p.level}) — #{p.assignment ?? 'no ass'}
         </EntityListItem>
     );
 
     return (
-        <div className="p-4 space-y-6">
-            <h3 className="text-3xl font-bold">Players</h3>
+        <div className={styles.card}>
+            <span className={styles.title}>Players</span>
 
             <EntityListSection
                 title="Active"
                 items={data?.active ?? []}
-                render={renderRow('bg-gray-100')}
+                render={renderRow(true)}
             />
 
             <EntityListSection
                 title="Resting"
                 items={data?.resting ?? []}
-                render={renderRow('bg-gray-50')}
+                render={renderRow(false)}
             />
 
             <AddEntityButton

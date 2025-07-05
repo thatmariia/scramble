@@ -21,22 +21,30 @@
     box-shadow: var(--shadow-sm);
     z-index: 10;
 
-    position: relative; }
+    position: relative; 
+}
 
 /* chevron button */
 .collapseBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform-origin: center;
+
     border: none;
     background: var(--color-surface);
-    color: var(--color-danger);
+    color: var(--color-accent);
     font-size: 30px;
     line-height: 1;
-    padding: var(--padding);
+    padding: var(--small-padding);
     cursor: pointer;
     transition: transform var(--transition-fast);
+    margin: 0;
 }
 
 .collapseBtn:hover {
-    transform: scale(1.5);
+    transform: scale(1.2);
+    color: var(--color-accent-hover);
 }
 
 /* 2-column content area */
@@ -80,11 +88,11 @@
     transition: all var(--transition-fast);
 }
 
-/* minimal card look for inner components (optional) */
+/* minimal card look for inner components (optional)
 .sidebar :global(.p-4) {
     padding: var(--padding);
     background: var(--color-surface);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
     margin-bottom: var(--padding); 
-}
+} */

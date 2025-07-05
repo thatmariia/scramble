@@ -21,4 +21,4 @@ export function EntityListItem({
             </div>
         </li>
     );
-}
+} 

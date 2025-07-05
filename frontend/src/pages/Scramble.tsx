@@ -3,6 +3,7 @@ import Session from '../components/Session';
 import Players from '../components/Players';
 import Courts from '../components/Courts';
 import RoundList from '../components/RoundList';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 import styles from './Scramble.module.css';
 
@@ -20,7 +21,7 @@ export default function Scramble() {
                     onClick={() => setCollapsed(!collapsed)}
                     aria-label={collapsed ? 'Open sidebar' : 'Close sidebar'}
                 >
-                    {collapsed ? '›' : '‹'}
+                    {collapsed ? <ChevronLeft className='icon' /> : <ChevronRight className='icon' />}
                 </button>
             </header>
 

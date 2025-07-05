@@ -6,6 +6,8 @@ import { AddEntityButton } from './shared/AddEntityButton';
 import { useCourts, useDeleteCourt } from '../hooks/court';
 import { CourtForm } from './forms/CourtForm';
 import type { CourtDTO } from '../api';
+import styles from './Card.module.css';
+import { Trash } from 'lucide-react';
 
 export default function Courts() {
     /* Data + mutations */
@@ -26,7 +28,7 @@ export default function Courts() {
                     onClick={() => deleteCourt.mutate({ courtId: c.id! })}
                     disabled={deleteCourt.isPending}
                 >
-                    Delete
+                    <Trash className="icon" />
                 </button>
             }
         >
@@ -35,8 +37,8 @@ export default function Courts() {
     );
 
     return (
-        <div className="p-4 space-y-6">
-            <h3 className="text-3xl font-bold">Courts</h3>
+        <div className={styles.card}>
+            <span className={styles.title}>Courts</span>
 
             <EntityListSection
                 items={courts}

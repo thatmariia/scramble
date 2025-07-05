@@ -10,7 +10,7 @@ interface Props<T> {
 export function EntityListSection<T>({ title, items, render }: Props<T>) {
     return (
         <section className={styles.section}>
-            {title && <h4 className={styles.title}>{title}</h4>}
+            {title && <span className={styles.title}>{title}</span>}
             <ul className={styles.list}>{items.map(render)}</ul>
         </section>
     );

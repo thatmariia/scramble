@@ -1,5 +1,6 @@
 import type { ReactNode, FormEvent, KeyboardEvent } from 'react';
 import styles from './FormWrapper.module.css'; 
+import { X } from 'lucide-react';
 
 interface Props {
     onSubmit: () => void;
@@ -48,7 +49,7 @@ export function EntityFormWrapper({
                     className="button cancel"
                     onClick={onCancel}
                 >
-                    x
+                    <X className="icon" />
                 </button>
             </form>
         </div>

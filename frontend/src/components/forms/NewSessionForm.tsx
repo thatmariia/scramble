@@ -1,5 +1,8 @@
+// src/components/forms/NewSessionForm.tsx
 import { useState } from 'react';
 import { useNewSession } from '../../hooks/session';
+import { EntityFormWrapper } from './shared/FormWrapper';
+import styles from './Form.module.css'; 
 
 interface Props {
     close(): void;
@@ -11,41 +14,41 @@ export default function NewSessionForm({ close, setActive }: Props) {
     const [name, setName] = useState('');
     const [settings, setSettings] = useState('');
 
+    const handleSubmit = () => {
+        newSession.mutate(
+            { name: name || null, settings_path: settings || null },
+            {
+                onSuccess: () => {
+                    setActive(name || null);
+                    close();
+                },
+            }
+        );
+    };
+
     return (
-        <form
-            className="space-y-2"
-            onSubmit={(e) => {
-                e.preventDefault();
-                newSession.mutate(
-                    { name: name || null, settings_path: settings || null },
-                    {
-                        onSuccess: () => {
-                            setActive(name || null);
-                            close();
-                        },
-                    },
-                );
-            }}
-        >
-            <input
-                className="border rounded px-2 py-1 w-48"
-                placeholder="Session name (optional)"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-            />
-            <input
-                className="border rounded px-2 py-1 w-60"
-                placeholder="Settings path (optional)"
-                value={settings}
-                onChange={(e) => setSettings(e.target.value)}
-            />
-            <button
-                type="submit"
-                className="px-3 py-1 bg-blue-500 text-white rounded"
-                disabled={newSession.isPending}
+        <div>
+            <p className={styles.title}>
+                Create a new session
+            </p>
+            <EntityFormWrapper
+                onSubmit={handleSubmit}
+                onCancel={close}
+                isSubmitting={newSession.isPending}
             >
-                Create
-            </button>
-        </form>
+                <input
+                    className="input"
+                    placeholder="Name (optional)"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                />
+                {/* <input
+                    className="input"
+                    placeholder="Settings path (optional)"
+                    value={settings}
+                    onChange={(e) => setSettings(e.target.value)}
+                /> */}
+            </EntityFormWrapper>
+        </div>
     );
 }
