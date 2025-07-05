@@ -39,6 +39,12 @@
     background: var(--color-accent-hover);
 }
 
+.menuTitle {
+    font-weight: 600;
+    color: var(--color-surface);
+    font-size: 0.9rem;
+}
+
 .dropdown {
     position: absolute;
     top: 110%;

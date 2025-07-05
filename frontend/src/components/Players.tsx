@@ -8,9 +8,11 @@ import { EntityListSection } from './shared/EntityListSection';
 import { EntityListItem } from './shared/EntityListItem';
 import { AddEntityButton } from './shared/AddEntityButton';
 import { PlayerForm } from './forms/PlayerForm';
+import { PlayerStamp } from '../elements/PlayerStamp';
 import type { PlayerDTO } from '../api';
 import styles from './Card.module.css';
 import { Trash, Pause, Play } from 'lucide-react';
+import { LEVELS, LEVEL_VALUES, LEVEL_COLORS } from '../constants/levels';
 
 export default function Players() {
     const { data, isLoading } = usePlayers();
@@ -44,8 +46,9 @@ export default function Players() {
                     <Trash className="icon" />
                 </button>
             }
-        >
-            {p.name} (lvl&nbsp;{p.level}) — #{p.assignment ?? 'no ass'}
+        >   
+            <PlayerStamp tag={p.assignment == "" ? "n/a" : p.assignment ?? "n/a"} color={LEVEL_COLORS[p.level]} />
+            {p.name}
         </EntityListItem>
     );
 

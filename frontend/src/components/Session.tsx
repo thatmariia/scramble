@@ -24,7 +24,7 @@ export default function Session() {
                     className={styles.menuToggle}
                     onClick={() => setShowMenu((v) => !v)}
                 >
-                    session
+                    <span className={styles.menuTitle}>session</span>
                 </button>
 
                 {showMenu && (
