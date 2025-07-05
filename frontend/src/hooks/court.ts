@@ -1,4 +1,4 @@
-// src/hooks/courts.ts
+import { useSessionName } from '../context/SessionContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { useApiQuery } from './useApiQuery';
 import { useApiMutation } from './useApiMutation';
@@ -12,10 +12,12 @@ export const COURTS_QUERY_KEY = ['courts'] as const;
 
 // GET court (list all courts)
 export function useCourts() {
+    const { name: active } = useSessionName();
     return useApiQuery<CourtDTO[]>({
         queryKey: COURTS_QUERY_KEY,
         queryFn: () => CourtService.listCourts(),
-        staleTime: 60_000,
+        enabled: !!active,
+        staleTime: 0,
     });
 }
 

@@ -18,10 +18,11 @@ export function useSession(name?: string | null) {
     return useApiQuery<AppSessionDTO>({
         queryKey: [...SESSION_QUERY_KEY, name ?? 'no session name'],
         queryFn: () => SessionService.loadSession({ name }),
-        staleTime: 60_000
+        staleTime: Infinity
     });
 }
 
+// GET session (load by name or latest), but with a mutation for refreshing
 export function useLoadSession() {
     const qc = useQueryClient();
 
