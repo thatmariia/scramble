@@ -30,6 +30,7 @@ export default function Scramble() {
                 {/* ─── main left column: current round ─── */}
                 <main className={styles.main}>
                     <RoundList />
+                    <div className="spacer" />
                 </main>
 
                 {/* ─── right sidebar: players & courts ─── */}
@@ -38,6 +39,7 @@ export default function Scramble() {
                 >
                     <Players />
                     <Courts />
+                    <div className="spacer" />
                 </aside>
 
             </div>

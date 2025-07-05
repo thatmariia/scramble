@@ -13,6 +13,11 @@
     flex: 1;
     display: flex;
     overflow: hidden;
+    height: 100%;
+}
+
+.spacer {
+    flex-grow: 1;
 }
 
 /* top bar */
