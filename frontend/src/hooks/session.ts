@@ -11,7 +11,7 @@ import { COURTS_QUERY_KEY } from './court';
 import { PLAYERS_QUERY_KEY } from './player';
 import { CURRENT_ROUND_KEY } from './round';
 
-const SESSION_QUERY_KEY = ['session'] as const;
+export const SESSION_QUERY_KEY = ['session'] as const;
 
 // GET session (load by name or latest)
 export function useSession(name?: string | null) {
