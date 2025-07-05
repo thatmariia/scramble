@@ -9,7 +9,7 @@ import {
   type PlayerDTO,
 } from '../api';
 
-const PLAYERS_QUERY_KEY = ['players'] as const;
+export const PLAYERS_QUERY_KEY = ['players'] as const;
 
 // GET player (list all players)
 export function usePlayers() {

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLoadSession } from '../../hooks/session';
 
 interface Props {
     close(): void;
@@ -6,6 +7,7 @@ interface Props {
 }
 
 export default function LoadSessionForm({ close, setActive }: Props) {
+    const newSession = useLoadSession();
     const [name, setName] = useState('');
 
     return (
@@ -13,8 +15,15 @@ export default function LoadSessionForm({ close, setActive }: Props) {
             className="space-y-2"
             onSubmit={(e) => {
                 e.preventDefault();
-                setActive(name || null);
-                close();
+                newSession.mutate(
+                    { name: name || null},
+                    {
+                        onSuccess: () => {
+                            setActive(name || null);
+                            close();
+                        },
+                    },
+                );
             }}
         >
             <input

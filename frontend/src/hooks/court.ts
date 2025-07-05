@@ -8,7 +8,7 @@ import {
     type CourtCreate,
 } from '../api';
 
-const COURTS_QUERY_KEY = ['courts'] as const;
+export const COURTS_QUERY_KEY = ['courts'] as const;
 
 // GET court (list all courts)
 export function useCourts() {

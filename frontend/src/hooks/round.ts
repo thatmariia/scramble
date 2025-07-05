@@ -7,7 +7,7 @@ import {
 } from '../api';
 
 
-const CURRENT_ROUND_KEY = ['round', 'current'] as const;
+export const CURRENT_ROUND_KEY = ['round', 'current'] as const;
 
 // POST round (start a new round)
 export function useStartRound() {
