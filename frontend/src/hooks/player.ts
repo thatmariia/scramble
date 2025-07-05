@@ -88,7 +88,6 @@ export function useToggleRestPlayer() {
         PLAYERS_QUERY_KEY,
         updatedLists,
       );
-      // maybe: queryClient.invalidateQueries({ queryKey: PLAYERS_QUERY_KEY });
     },
   });
 }
