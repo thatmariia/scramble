@@ -12,7 +12,7 @@ export function Card({ title, children, defaultOpen = true }: Props) {
     const [open, setOpen] = useState(defaultOpen);
 
     return (
-        <div className={styles.card}>
+        <div className="card">
             <button className={styles.header} onClick={() => setOpen(!open)}>
                 <span className={styles.title}>{title}</span>
                 {open ? <ChevronUp className='icon' /> : <ChevronDown className='icon' />}

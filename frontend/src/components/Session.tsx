@@ -32,7 +32,7 @@ export default function Session() {
                 </button>
 
                 {showMenu && (
-                    <div className={styles.dropdown}>
+                    <div className={`card ${styles.dropdown}`}> 
                         <NewSessionForm close={() => setShowMenu(false)} setActive={setName} />
                         <LoadSessionForm close={() => setShowMenu(false)} setActive={setName} />
                     </div>

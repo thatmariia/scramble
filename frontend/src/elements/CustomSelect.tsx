@@ -43,7 +43,7 @@ export function CustomSelect<T>({ value, options, onChange }: Props<T>) {
                 {/* <span className={styles.chevron}>▾</span> */}
             </button>
             {open && (
-                <ul className={styles.dropdown}>
+                <ul className={`card ${styles.dropdown}`}>
                     {options.map((opt) => (
                         <li
                             key={String(opt.value)}
