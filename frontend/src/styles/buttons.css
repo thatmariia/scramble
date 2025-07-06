@@ -6,6 +6,10 @@
 
 /* General button base */
 .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
     padding: var(--small-padding);
     font-size: 0.9rem;
     font-weight: 500;
@@ -13,6 +17,7 @@
     border-radius: var(--radius-lg);
     cursor: pointer;
     transition: background var(--transition-fast), color var(--transition-fast);
+    width: fit-content;
 }
 
 /* Variants */

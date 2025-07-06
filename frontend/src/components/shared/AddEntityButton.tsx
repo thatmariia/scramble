@@ -17,7 +17,7 @@ export function AddEntityButton({
     const label = `+ add ${entity}`;
 
     return (
-        <div className={styles.wrapper}>
+        <div className={styles.wrapper}> 
             {open ? (
                 <>
                     {renderForm(close)}

@@ -40,9 +40,6 @@
 
 .trigger {
     flex: 1 1 0;
-    /* min-width: 0;
-    max-width: 100%;
-    width: 100%; */
     width: 50px;
     box-sizing: border-box;
     font-size: 0.9rem;
@@ -57,7 +54,7 @@
     line-height: 1.2;
 
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     text-align: center;
     cursor: pointer;
