@@ -18,6 +18,7 @@ export function useStartRound() {
 
     onSuccess: (newRound) => {
       queryClient.setQueryData<RoundDTO>(CURRENT_ROUND_KEY, newRound);
+      queryClient.invalidateQueries({ queryKey: CURRENT_ROUND_KEY });
     },
   });
 }
@@ -31,6 +32,7 @@ export function useRestartRound() {
 
     onSuccess: (newRound) => {
       queryClient.setQueryData<RoundDTO>(CURRENT_ROUND_KEY, newRound);
+      queryClient.invalidateQueries({ queryKey: CURRENT_ROUND_KEY });
     },
   });
 }
@@ -44,6 +46,7 @@ export function useUndoRound() {
 
     onSuccess: () => {
       queryClient.removeQueries({ queryKey: CURRENT_ROUND_KEY });
+      queryClient.invalidateQueries({ queryKey: CURRENT_ROUND_KEY });
     },
   });
 }

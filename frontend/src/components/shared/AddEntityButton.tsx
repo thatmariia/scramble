@@ -12,7 +12,7 @@ export function AddEntityButton({
     renderForm
 }: Props) {
     const [open, setOpen] = useState(false);
-    const close = () => setOpen(false);
+    const close = () => setOpen(false); 
 
     const label = `+ add ${entity}`;
 
