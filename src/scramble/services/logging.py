@@ -1,8 +1,12 @@
 import os
 import sys
 import logging
+import datetime
 
 LOG_FORMAT = '[%(asctime)s][%(filename)s][%(lineno)d] %(levelname)s: %(message)s'
+
+def get_log_file() -> str:
+    return f"logs/{datetime.datetime.now().strftime("logfile_%H_%M_%d_%m_%Y.log")}"
 
 
 def configure_logging(log_file: str, verbose: bool, silent: bool):

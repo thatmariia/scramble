@@ -58,5 +58,5 @@ def load_session(name: str = Query(description="Session name")):
         session = handlers.load_session(name)
         return AppSessionDTO.from_domain(session)
     except FileNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
-
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")

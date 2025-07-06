@@ -1,6 +1,4 @@
-import click
 import typer
-import datetime
 from click_shell import make_click_shell
 
 from scramble.adapters.cli.commands import (
@@ -9,7 +7,7 @@ from scramble.adapters.cli.commands import (
     round_app,
     session_app
 )
-from scramble.services.logging import configure_logging
+from scramble.services.logging import configure_logging, get_log_file
 
 app = typer.Typer(help="Scramble CLI")
 
@@ -55,8 +53,7 @@ def base(ctx: typer.Context):
         shell.emptyline = emptyline_handler
         shell.cmdloop()
 
-log_file = f"logs/{datetime.datetime.now().strftime("logfile_%H_%M_%d_%m_%Y.log")}"
-configure_logging(log_file, True, True)
+configure_logging(get_log_file(), True, True)
 
 if __name__ == "__main__":
     app()
