@@ -1,13 +1,16 @@
 from scramble.core import Player, Level
-from scramble.services import require_session, set_current_session
+from scramble.app import AppSession
+from scramble.app.session_persistence import SessionPersistence
 
 
-def add_player(name: str, level: Level) -> Player:
+def add_player(session: AppSession, name: str, level: Level) -> Player:
     """
     Add a new player to the current session.
 
     Parameters
     ----------
+    session : AppSession
+        The current application session.
     name : str
         The name of the player to add.
     level : Level
@@ -18,56 +21,60 @@ def add_player(name: str, level: Level) -> Player:
     Player
         The newly created player object.
     """
-    session = require_session()
     player = Player(name=name, level=level)
     session.player_state.add(player)
-    set_current_session(session)
+    SessionPersistence.save(session)
     return player
 
 
-def remove_player(player_id: str):
+def remove_player(session: AppSession, player_id: str):
     """
     Remove a player by ID from the current session.
 
     Parameters
     ----------
+    session : AppSession
+        The current application session.
     player_id : str
         The ID of the player to remove.
     """
-    session = require_session()
     session.player_state.remove(player_id)
-    set_current_session(session)
+    SessionPersistence.save(session)
 
 
-def list_players() -> tuple[list[Player], list[Player]]:
+def list_players(session: AppSession) -> tuple[list[Player], list[Player]]:
     """
     List all players in the current session.
     """
-    session = require_session()
     active_list = session.player_state.active_list()
     resting_list = session.player_state.resting_list()
     return active_list, resting_list
 
 
-def toggle_rest(player_id: str) -> tuple[list[Player], list[Player]]:
+def toggle_rest(session: AppSession, player_id: str) -> tuple[list[Player], list[Player]]:
     """
     Toggle resting state of a player.
 
     Parameters
     ----------
+    session : AppSession
+        The current application session.
     player_id : str
         The ID of the player whose resting state to toggle.
     """
-    session = require_session()
     player = session.player_state.toggle_rest(player_id)
-    set_current_session(session)
+    SessionPersistence.save(session)
     return session.player_state.active_list(), session.player_state.resting_list()
 
 
-def clear_players():
+def clear_players(session: AppSession):
     """
     Clear all players from the session.
+
+    Parameters
+    ----------
+    session : AppSession
+        The current application session from which to clear all players.
     """
-    session = require_session()
     session.player_state.clear()
-    set_current_session(session)
+    SessionPersistence.save(session)
