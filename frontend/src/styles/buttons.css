@@ -54,12 +54,13 @@
 .button.ghost {
     background: transparent;
     color: var(--color-accent);
-    /* border: 1px solid var(--color-accent); */
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
 }
 
 .button.ghost:hover {
-    background: var(--color-accent-hover);
-    color: white;
+    background: transparent;
+    color: var(--color-accent-hover);
 }
 
 /* Disabled state */

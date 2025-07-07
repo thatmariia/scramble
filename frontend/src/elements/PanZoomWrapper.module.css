@@ -24,8 +24,8 @@
 
 .content {
     position: absolute;
-        top: 0;
-        left: 0;
+    top: 0;
+    left: 0;
     transform-origin: 0 0;
     transform: translate(0px, 0px) scale(1);
 
@@ -36,4 +36,13 @@
 
     min-width: 100%;
     min-height: 100%;
+}
+
+.resetButton {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    margin: var(--padding);
+    /* box-shadow: var(--shadow-sm); */
+    z-index: 10;
 }

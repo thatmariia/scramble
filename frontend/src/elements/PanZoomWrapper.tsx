@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import styles from './PanZoomWrapper.module.css';
+import { Crosshair } from 'lucide-react';
 
 interface Props {
     children: React.ReactNode;
@@ -19,6 +20,11 @@ export function PanZoomWrapper({
     const [offset, setOffset] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const lastPos = useRef({ x: 0, y: 0 });
+
+    const resetView = () => {
+        setScale(initialScale);
+        setOffset({ x: 0, y: 0 });
+    };
 
     const handleMouseDown = (e: React.MouseEvent) => {
         setIsDragging(true);
@@ -61,6 +67,12 @@ export function PanZoomWrapper({
             onMouseDown={handleMouseDown}
             onWheel={handleWheel}
         >
+            <button
+                onClick={resetView}
+                className={`${styles.resetButton} button ghost `}
+            >
+                <Crosshair className='icon' />
+            </button>
             <div className={styles.roundContentWrapper}>  
                 <div
                     className={styles.content}
