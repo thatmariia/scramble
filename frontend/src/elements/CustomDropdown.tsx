@@ -30,7 +30,8 @@ export default function Dropdown({
     children,
     placement = 'bottom-end',
 }: DropdownProps) {
-    const [dropdownRef, setDropdownRef] = useState<HTMLDivElement | null>(null);
+    // const [dropdownRef, setDropdownRef] = useState<HTMLDivElement | null>(null);
+    const dropdownRef = useRef<HTMLDivElement | null>(null);
 
     const { refs, floatingStyles, update } = useFloating({
         open,
@@ -41,9 +42,10 @@ export default function Dropdown({
 
     // Link trigger and floating elements
     useEffect(() => {
-        refs.setReference(triggerRef.current);
-        refs.setFloating(dropdownRef);
-    }, [triggerRef, dropdownRef, refs]);
+        if (triggerRef.current) {
+            refs.setReference(triggerRef.current);
+        }
+    }, [triggerRef, refs]);
 
     // Close on outside click
     useEffect(() => {
@@ -51,7 +53,7 @@ export default function Dropdown({
         const handleClick = (e: MouseEvent) => {
             if (
                 !triggerRef.current?.contains(e.target as Node) &&
-                !dropdownRef?.contains(e.target as Node)
+                !refs.floating.current?.contains(e.target as Node)
             ) {
                 onClose();
             }
@@ -65,7 +67,7 @@ export default function Dropdown({
     return (
         <Portal>
             <div
-                ref={setDropdownRef}
+                ref={refs.setFloating}
                 className="card dropdown"
                 style={{
                     ...floatingStyles,

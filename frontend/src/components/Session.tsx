@@ -37,7 +37,6 @@ export default function Session() {
                     open={showMenu}
                     onClose={() => setShowMenu(false)}
                     triggerRef={menuButtonRef}
-                    placement="bottom-end"
                 >
                     <div className={styles.dropdown}>
                         <NewSessionForm close={() => setShowMenu(false)} setActive={setName} />
