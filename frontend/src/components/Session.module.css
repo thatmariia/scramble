@@ -3,22 +3,28 @@
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    /* background: var(--color-surface); */
     position: sticky;
     z-index: 50;
+    flex: 1;
+    min-width: 0;
 }
 
 .sessionInfo {
     display: flex;
     gap: 0.5rem;
     font-size: 1rem;
+    overflow: hidden;
 }
 
 .name {
-    /* color: var(--color-text); */
     font-weight: 800;
     font-size: 2rem;
     margin-left: 0.5em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
 }
 
 .menuWrapper {
