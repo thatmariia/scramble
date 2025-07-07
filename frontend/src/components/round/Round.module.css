@@ -1,11 +1,18 @@
 .roundContentWrapper {
-    margin-top: var(--padding);
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    z-index: 0;
+    pointer-events: auto;
+
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
 }
 
-.actionButtons {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    align-items: center;
+.roundContent {
+    padding: var(--padding);
+    padding-top: calc(var(--header-height) + 3 * var(--padding) + var(--action-button-height));
 }

@@ -35,6 +35,8 @@
   /* SPACING */
   --small-padding: 6px 12px;
   --padding: 16px;
+  --header-height: 85px;
+  --action-button-height: 25px;
 
   /* TRANSITIONS */
   --transition-fast: 0.25s ease-in-out;
@@ -46,10 +48,6 @@
   color-scheme: light dark;
   color: var(--color-text);
   background-color: var(--color-bg);
-  /* background-image: url('../assets/sand.jpg');
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-position: center;   */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;

@@ -4,10 +4,14 @@
     flex-direction: column;
     height: 100vh;
     width: 100vw;
-    /* background: var(--color-bg); */
     font-family: var(--font-sans);
     isolation: isolate;
     z-index: 0;
+    margin: 0;
+    padding: 0;
+
+    overflow: hidden;
+    position: relative;
 }
 
 .contentRow {
@@ -16,10 +20,16 @@
     display: flex;
     overflow: hidden;
     height: 100%;
-}
 
-.spacer {
-    flex-grow: 1;
+    /* position: fixed;
+    top: 0;
+    left: 0;
+    right: 0; */
+
+    padding-top: calc(var(--header-height) + 2 * var(--padding));
+    padding-bottom: var(--padding);
+    padding-left: var(--padding);
+    padding-right: var(--padding);
 }
 
 /* top bar */
@@ -32,6 +42,21 @@
     margin-left: var(--padding);
     margin-top: var(--padding);
     margin-bottom: var(--small-padding);
+    z-index: 30;
+
+    pointer-events: auto;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+}
+
+.actionButtons {
+    /* margin-right: var(--padding);
+    margin-left: var(--padding);
+    margin-top: var(--padding);
+    margin-bottom: var(--small-padding); */
+    margin-top: 0;
     z-index: 30;
 }
 
@@ -66,18 +91,23 @@
 }
 
 .main {
-    padding: var(--padding);
+    /* padding: var(--padding); */
     flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    z-index: 10;
 }
 
 .sidebar {
     grid-area: sidebar;
     height: 100%;
-    position: absolute;
+    /* position: absolute;
     top: 0;
-    right: 0;
+    right: 0; */
     width: 320px;
-    padding: var(--padding);
+    /* padding: var(--padding); */
     overflow-y: auto;
     /* background: var(--color-surface); */
     background: transparent;

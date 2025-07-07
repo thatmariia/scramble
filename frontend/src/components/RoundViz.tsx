@@ -44,22 +44,20 @@ function MatchItem({
                 {match.court ? `court ${match.court.name}` : `unknown court`}
             </div>
 
-            {/* <div className="card sand"> */}
-                <div
-                    className={styles.grid}
-                    style={{
-                        gridTemplateColumns: `repeat(${maxPlayers}, 3em)`,
-                        gridTemplateRows: `repeat(${maxTeams}, 2em)`
-                    }}
-                >
-                    {gridItems}
-                </div>
-            {/* </div> */}
+            <div
+                className={styles.grid}
+                style={{
+                    gridTemplateColumns: `repeat(${maxPlayers}, 3em)`,
+                    gridTemplateRows: `repeat(${maxTeams}, 2em)`
+                }}
+            >
+                {gridItems}
+            </div>
         </div>
     );
 }
 
-export default function RoundList() {
+export default function RoundViz() {
     const { data: currentRound } = useQuery<RoundDTO>({ queryKey: CURRENT_ROUND_KEY });
 
     const matches = currentRound?.matches ?? [];

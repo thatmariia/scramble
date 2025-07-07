@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { useStartRound, useRestartRound, CURRENT_ROUND_KEY } from '../../hooks/round';
+import { CURRENT_ROUND_KEY } from '../../hooks/round';
 import type { RoundDTO, Match } from '../../api';
+import { PanZoomWrapper } from '../../elements/PanZoomWrapper';
 import styles from './Round.module.css';
 
 interface Props {
@@ -10,34 +11,19 @@ interface Props {
 export function Round({ renderMatch }: Props) {
     const { data: round } = useQuery<RoundDTO>({ queryKey: CURRENT_ROUND_KEY });
 
-    const startRound = useStartRound();
-    const restartRound = useRestartRound();
-
     return (
-        <div>
-            <div className={styles.actionButtons}>
-                <button
-                    className="button primary"
-                    onClick={() => startRound.mutate()}
-                    disabled={startRound.isPending}
-                >
-                    start round
-                </button>
-                <button
-                    className="button primary"
-                    onClick={() => restartRound.mutate()}
-                    disabled={restartRound.isPending}
-                >
-                    restart round
-                </button>
-            </div>
-            <div className={styles.roundContentWrapper}>
+        <div className={styles.roundContentWrapper}>
+            <PanZoomWrapper>
+                <div className={styles.roundContent}>
                 {round?.matches?.length ? (
-                    round.matches.map((match, idx) => renderMatch(match, idx))
+                    round.matches.map(
+                        (match, idx) => renderMatch(match, idx)
+                    )
                 ) : (
                         <span>No round in progress.</span>
                 )}
-            </div>
+                </div>
+            </PanZoomWrapper>
         </div>
     );
 }
