@@ -4,8 +4,10 @@
 
 :root {
   /* COLORS */
-  --color-bg: #f7f8f9;
+  /* --color-bg: #f7f8f9; */
+  --color-bg: #F3F5F6;
   --color-surface: #ffffff;
+  --color-surface-rgb: 255, 255, 255;
   --color-shadow: rgba(0, 0, 0, 0.08);
   --color-accent: #0070f3;
   /* Use for primary buttons/links */
@@ -44,6 +46,10 @@
   color-scheme: light dark;
   color: var(--color-text);
   background-color: var(--color-bg);
+  /* background-image: url('../assets/sand.jpg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;   */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;

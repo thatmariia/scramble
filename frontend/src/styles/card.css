@@ -1,6 +1,6 @@
 .card {
     padding: var(--padding);
-    background: rgba(var(--color-surface), 0.3);
+    background: rgba(var(--color-surface-rgb), 0.3);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
     margin-bottom: var(--padding);
@@ -19,10 +19,10 @@
 
 .sand {
     /* padding: var(--padding); */
-    box-shadow: var(--reverse-shadow-sm);
-    /* background: var(--color-bg);
+    /* box-shadow: var(--reverse-shadow-sm); */
+
     background-image: url('../assets/sand.jpg');
     background-size: cover;
     background-repeat: no-repeat;
-    background-position: center;   */
+    background-position: center;  
 }
