@@ -1,5 +1,3 @@
-// src/components/players/PlayerStamp.tsx
-import React from 'react';
 import styles from './PlayerStamp.module.css';
 
 interface Props {

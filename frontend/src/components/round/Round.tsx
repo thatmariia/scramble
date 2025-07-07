@@ -31,12 +31,13 @@ export function Round({ renderMatch }: Props) {
                     restart round
                 </button>
             </div>
-
-            {round?.matches?.length ? (
-                round.matches.map((match, idx) => renderMatch(match, idx))
-            ) : (
-                    <span>No round in progress.</span>
-            )}
+            <div className={styles.roundContentWrapper}>
+                {round?.matches?.length ? (
+                    round.matches.map((match, idx) => renderMatch(match, idx))
+                ) : (
+                        <span>No round in progress.</span>
+                )}
+            </div>
         </div>
     );
 }

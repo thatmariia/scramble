@@ -6,6 +6,8 @@
     width: 100vw;
     background: var(--color-bg);
     font-family: var(--font-sans);
+    isolation: isolate;
+    z-index: 0;
 }
 
 .contentRow {
@@ -30,10 +32,6 @@
     margin-left: var(--padding);
     margin-top: var(--padding);
     margin-bottom: var(--small-padding);
-    padding: var(--padding);
-    background: var(--color-surface);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
     z-index: 30;
 }
 
@@ -45,7 +43,7 @@
     transform-origin: center;
 
     border: none;
-    background: var(--color-surface);
+    background: none;
     color: var(--color-accent);
     font-size: 30px;
     line-height: 1;

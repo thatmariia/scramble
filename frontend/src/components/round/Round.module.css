@@ -1,3 +1,7 @@
+.roundContentWrapper {
+    margin-top: var(--padding);
+}
+
 .actionButtons {
     display: flex;
     flex-direction: row;

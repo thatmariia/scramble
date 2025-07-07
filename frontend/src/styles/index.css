@@ -17,6 +17,9 @@
   --color-muted-hover: #E4E4E4;
   --color-text: #333333;
   --color-subtle-text: #666;
+  --color-sand: #f4f2e7;
+
+  --blur: blur(10px);
 
   /* RADIUS + SHADOWS */
   --radius-lg: 30px;

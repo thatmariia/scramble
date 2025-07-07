@@ -10,10 +10,10 @@ import { AddEntityButton } from './shared/AddEntityButton';
 import { PlayerForm } from './forms/PlayerForm';
 import { PlayerStamp } from '../elements/PlayerStamp';
 import type { PlayerDTO } from '../api';
-import styles from './Card.module.css';
 import { Trash, Pause, Play } from 'lucide-react';
 import { LEVEL_COLORS } from '../constants/levels';
-import { Card } from './Card';
+import { Card } from './shared/Card';
+import styles from './Players.module.css';
 
 export default function Players() {
     const { data, isLoading } = usePlayers();
@@ -24,7 +24,7 @@ export default function Players() {
 
     const renderRow = (active: boolean) => (p: PlayerDTO) => (
         <EntityListItem
-            key={p.id} 
+            key={p.id}
             primaryAction={
                 <button
                     className="button ghost"
@@ -47,9 +47,11 @@ export default function Players() {
                     <Trash className="icon" />
                 </button>
             }
-        >   
-            <PlayerStamp tag={p.assignment == "" ? "n/a" : p.assignment ?? "n/a"} color={LEVEL_COLORS[p.level]} />
-            {p.name}
+        > 
+            <div className={styles.infoWrapper}>
+                <PlayerStamp tag={p.assignment?.trim() || "n/a"} color={LEVEL_COLORS[p.level]} />
+                {p.name}
+            </div>
         </EntityListItem>
     );
 
@@ -74,4 +76,4 @@ export default function Players() {
             />
         </Card>
     );
-  }
+}

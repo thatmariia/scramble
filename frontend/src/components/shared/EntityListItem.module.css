@@ -18,7 +18,7 @@
 .actions {
     display: flex;
     gap: 0rem;
-    background-color: var(--color-surface);
+    background-color: none;
 
     /* hide actions by default */
     position: absolute;

@@ -1,7 +1,7 @@
 .stamp {
     display: inline-block;
     padding: var(--small-padding);
-    margin-right: 10px;
+    /* margin-right: 10px; */
     color: var(--color-text);
     border-radius: var(--radius-lg);
     font-size: 0.85rem;

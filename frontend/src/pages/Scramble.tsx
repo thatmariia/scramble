@@ -3,6 +3,7 @@ import Session from '../components/Session';
 import Players from '../components/Players';
 import Courts from '../components/Courts';
 import RoundList from '../components/RoundList';
+import RoundVis from '../components/RoundViz';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 import styles from './Scramble.module.css';
@@ -14,7 +15,7 @@ export default function Scramble() {
     return (
         <div className={styles.page}>
             {/* ─── top bar: session management spans full width ─── */}
-            <header className={styles.header}>
+            <header className={`card ${styles.header}`}>
                 <Session />
                 <button
                     className={styles.collapseBtn}
@@ -29,7 +30,7 @@ export default function Scramble() {
 
                 {/* ─── main left column: current round ─── */}
                 <main className={styles.main}>
-                    <RoundList />
+                    <RoundVis />
                     {/* <div className="spacer" /> */}
                 </main>
 

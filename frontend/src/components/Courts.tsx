@@ -7,7 +7,7 @@ import { useCourts, useDeleteCourt } from '../hooks/court';
 import { CourtForm } from './forms/CourtForm';
 import type { CourtDTO } from '../api';
 import { Trash } from 'lucide-react';
-import { Card } from './Card';
+import { Card } from './shared/Card';
 
 export default function Courts() {
     /* Data + mutations */

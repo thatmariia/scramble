@@ -1,7 +1,8 @@
 // src/components/Session.tsx
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useSessionName } from '../context/SessionContext';
 import { useSession } from '../hooks/session';
+import CustomDropdown from '../elements/CustomDropdown'; 
 import NewSessionForm from './forms/NewSessionForm';
 import LoadSessionForm from './forms/LoadSessionForm';
 import styles from './Session.module.css';
@@ -11,6 +12,7 @@ export default function Session() {
     const { name: active, setName } = useSessionName();
     const { isLoading } = useSession(active);
     const [showMenu, setShowMenu] = useState(false);
+    const menuButtonRef = useRef<HTMLButtonElement>(null);
 
     if (isLoading) return <div className={styles.loading}>Loading session…</div>;
 
@@ -25,18 +27,23 @@ export default function Session() {
 
             <div className={styles.menuWrapper}>
                 <button
+                    ref={menuButtonRef}
                     className={styles.menuToggle}
                     onClick={() => setShowMenu((v) => !v)}
                 >
                     <span className={styles.menuTitle}>session</span>
                 </button>
-
-                {showMenu && (
-                    <div className={`card ${styles.dropdown}`}> 
+                <CustomDropdown
+                    open={showMenu}
+                    onClose={() => setShowMenu(false)}
+                    triggerRef={menuButtonRef}
+                    placement="bottom-end"
+                >
+                    <div className={styles.dropdown}>
                         <NewSessionForm close={() => setShowMenu(false)} setActive={setName} />
                         <LoadSessionForm close={() => setShowMenu(false)} setActive={setName} />
                     </div>
-                )}
+                </CustomDropdown>
             </div>
         </header>
     );

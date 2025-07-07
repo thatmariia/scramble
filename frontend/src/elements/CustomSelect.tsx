@@ -1,10 +1,12 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
+import { useFloating, autoUpdate, offset, flip, shift } from '@floating-ui/react';
 import styles from './CustomSelect.module.css';
+import Portal from './Portal';
 
 interface Option<T> {
     label: string;
     value: T;
-    color?: string; // optional color for the option
+    color?: string;
 }
 
 interface Props<T> {
@@ -15,51 +17,64 @@ interface Props<T> {
 
 export function CustomSelect<T>({ value, options, onChange }: Props<T>) {
     const [open, setOpen] = useState(false);
-    const ref = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        const close = (e: MouseEvent) => {
-            if (ref.current && !ref.current.contains(e.target as Node)) {
-                setOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', close);
-        return () => document.removeEventListener('mousedown', close);
-    }, []);
 
     const selected = options.find((opt) => opt.value === value);
 
+    // Floating UI setup
+    const {
+        refs,
+        floatingStyles,
+        update,
+        placement,
+    } = useFloating({
+        open,
+        onOpenChange: setOpen,
+        middleware: [offset(8), flip(), shift()],
+        whileElementsMounted: autoUpdate,
+        placement: 'bottom-end', // align right edges
+    });
+
     return (
-        <div className={styles.wrapper} ref={ref}>
+        <div className={styles.wrapper} ref={refs.setReference}>
             <button
+                ref={refs.setReference}
                 type="button"
                 className="trigger"
                 style={{
                     backgroundColor: selected?.color || 'transparent',
                 }}
-                onClick={() => setOpen(!open)}
+                onClick={() => setOpen((v) => !v)}
             >
                 {selected?.label.slice(0, 3) || 'n/a'}
-                {/* <span className={styles.chevron}>▾</span> */}
             </button>
+
             {open && (
-                <ul className={`card ${styles.dropdown}`}>
-                    {options.map((opt) => (
-                        <li
-                            key={String(opt.value)}
-                            className={styles.option}
-                            style={{
-                                backgroundColor: opt.color || 'transparent',
-                            }}
-                            onClick={() => {
-                                onChange(opt.value);
-                                setOpen(false);
-                            }}
-                        >
-                            {opt.label}
-                        </li>
-                    ))}
-                </ul>
+                <Portal>
+                    <ul
+                        ref={refs.setFloating}
+                        className={`card dropdown ${styles.dropdown}`}
+                        style={{
+                            ...floatingStyles,
+                            zIndex: 999,
+                        }}
+                    >
+                        {options.map((opt) => (
+                            <li
+                                key={String(opt.value)}
+                                className={styles.option}
+                                style={{
+                                    backgroundColor: opt.color || 'transparent',
+                                }}
+                                onClick={() => {
+                                    onChange(opt.value);
+                                    setOpen(false);
+                                }}
+                            >
+                                {opt.label}
+                            </li>
+                        ))}
+                    </ul>
+                </Portal>
             )}
         </div>
     );
