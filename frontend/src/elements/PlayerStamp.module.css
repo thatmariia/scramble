@@ -1,7 +1,6 @@
 .stamp {
     display: inline-block;
     padding: var(--small-padding);
-    /* margin-right: 10px; */
     color: var(--color-text);
     border-radius: var(--radius-lg);
     font-size: 0.85rem;
@@ -9,3 +8,30 @@
     line-height: 1;
     white-space: nowrap; 
 }
+
+.wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip {
+    position: absolute;
+    bottom: 125%;
+    /* appear above */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    padding: 0.5em;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    box-shadow: var(--shadow-md);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 100;
+}
+
+.wrapper:hover .tooltip {
+    opacity: 1; }

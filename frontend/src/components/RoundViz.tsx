@@ -29,6 +29,7 @@ function MatchItem({
                         <PlayerStamp
                             tag={player.assignment?.trim() || 'n/a'}
                             color={LEVEL_COLORS[player.level]}
+                            player={player}
                         />
                     ) : (
                         <div className={styles.emptyCell}></div>

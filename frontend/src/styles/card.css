@@ -26,3 +26,11 @@
     background-repeat: no-repeat;
     background-position: center;  
 }
+
+.tooltip {
+    padding: var(--small-padding);
+    pointer-events: none;
+    font-size: 0.9em;
+    /* max-width: 300px; */
+    z-index: 1000;
+}
