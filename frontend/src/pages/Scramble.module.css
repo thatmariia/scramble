@@ -26,10 +26,10 @@
     left: 0;
     right: 0; */
 
-    padding-top: calc(var(--header-height) + 2 * var(--padding));
-    padding-bottom: var(--padding);
+    padding-top: calc(var(--header-height) + var(--padding));
+    /* padding-bottom: var(--padding);
     padding-left: var(--padding);
-    padding-right: var(--padding);
+    padding-right: var(--padding); */
 }
 
 /* top bar */
@@ -58,6 +58,7 @@
     margin-bottom: var(--small-padding); */
     margin-top: 0;
     z-index: 30;
+    padding: var(--padding);
 }
 
 /* chevron button */
@@ -107,7 +108,7 @@
     top: 0;
     right: 0; */
     width: 320px;
-    /* padding: var(--padding); */
+    padding: var(--padding);
     overflow-y: auto;
     /* background: var(--color-surface); */
     background: transparent;
