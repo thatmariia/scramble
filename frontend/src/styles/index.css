@@ -63,6 +63,22 @@ body {
   min-height: 100px;
 }
 
+::selection {
+  background: var(--color-accent);
+  color: var(--color-surface);
+}
+
+::-moz-selection {
+  background: var(--color-accent);
+  color: var(--color-surface);
+}
+
+.no-select {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -ms-user-select: none !important;
+}
+
 /* 
 a {
   font-weight: 500;

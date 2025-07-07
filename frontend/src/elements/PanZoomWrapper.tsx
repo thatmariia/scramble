@@ -28,6 +28,7 @@ export function PanZoomWrapper({
 
     const handleMouseDown = (e: React.MouseEvent) => {
         setIsDragging(true);
+        document.documentElement.classList.add('no-select');
         lastPos.current = { x: e.clientX, y: e.clientY };
     };
 
@@ -39,7 +40,10 @@ export function PanZoomWrapper({
         lastPos.current = { x: e.clientX, y: e.clientY };
     };
 
-    const handleMouseUp = () => setIsDragging(false);
+    const handleMouseUp = () => {
+        setIsDragging(false);
+        document.documentElement.classList.remove('no-select');
+    }
 
     const handleWheel = (e: React.WheelEvent) => {
         e.preventDefault();
@@ -57,6 +61,7 @@ export function PanZoomWrapper({
         return () => {
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
+            document.documentElement.classList.remove('no-select');
         };
     }, [isDragging]);
 
