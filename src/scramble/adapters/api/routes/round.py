@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status, HTTPException
+from fastapi import APIRouter, status, HTTPException, Query
 from scramble.services import handlers
 from scramble.adapters.api.schemas import RoundDTO
 from scramble.adapters.api.cache import get_session
@@ -13,7 +13,7 @@ router = APIRouter(tags=["round"])
     response_model=RoundDTO,
     status_code=status.HTTP_201_CREATED,
 )
-def start_round(session_name: str):
+def start_round(session_name: str = Query(..., description="Name of the session to start the round in")):
     """
     Start a new round and add it to the round history.
 
@@ -34,7 +34,7 @@ def start_round(session_name: str):
     response_model=RoundDTO,
     status_code=status.HTTP_201_CREATED,
 )
-def undo_and_start_new_round(session_name: str):
+def undo_and_start_new_round(session_name: str = Query(..., description="Name of the session to restart the round in")):
     """
     Undo the last round and start a new one.
 
@@ -57,7 +57,7 @@ def undo_and_start_new_round(session_name: str):
     summary="Undo round.",
     status_code=status.HTTP_204_NO_CONTENT,
 )
-def undo_round(session_name: str):
+def undo_round(session_name: str = Query(..., description="Name of the session to undo the last round in")):
     """
     Undo the last round.
 

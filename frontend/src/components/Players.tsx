@@ -8,7 +8,12 @@ import { EntityListSection } from './shared/EntityListSection';
 import { EntityListItem } from './shared/EntityListItem';
 import { AddEntityButton } from './shared/AddEntityButton';
 import { PlayerForm } from './forms/PlayerForm';
+import { PlayerStamp } from '../elements/PlayerStamp';
 import type { PlayerDTO } from '../api';
+import { Trash, Pause, Play } from 'lucide-react';
+import { LEVEL_COLORS } from '../constants/levels';
+import { Card } from './shared/Card';
+import styles from './Players.module.css';
 
 export default function Players() {
     const { data, isLoading } = usePlayers();
@@ -17,53 +22,58 @@ export default function Players() {
 
     if (isLoading) return <p className="p-4">Loading…</p>;
 
-    const renderRow = (bg: string) => (p: PlayerDTO) => (
+    const renderRow = (active: boolean) => (p: PlayerDTO) => (
         <EntityListItem
             key={p.id}
-            bg={bg}
             primaryAction={
                 <button
-                    className="px-2 py-0.5 text-sm bg-amber-300 rounded"
+                    className="button ghost"
                     onClick={() => toggleRest.mutate({ playerId: p.id! })}
                     disabled={toggleRest.isPending}
                 >
-                    Toggle
+                    {active ? (
+                        <Pause className="icon" />
+                    ) : (
+                        <Play className="icon" />
+                    )}
                 </button>
             }
             dangerAction={
                 <button
-                    className="px-2 py-0.5 text-sm bg-red-400 text-white rounded"
+                    className="button danger"
                     onClick={() => deletePlayer.mutate({ playerId: p.id! })}
                     disabled={deletePlayer.isPending}
                 >
-                    Delete
+                    <Trash className="icon" />
                 </button>
             }
-        >
-            {p.name} (lvl&nbsp;{p.level}) — #{p.assignment ?? '–'}
+        > 
+            <div className={styles.infoWrapper}>
+                <PlayerStamp tag={p.assignment?.trim() || "n/a"} color={LEVEL_COLORS[p.level]} />
+                {p.name}
+            </div>
         </EntityListItem>
     );
 
     return (
-        <div className="p-4 space-y-6">
-            <h3 className="text-3xl font-bold">Players</h3>
+        <Card title="Players">
 
             <EntityListSection
                 title="Active"
                 items={data?.active ?? []}
-                render={renderRow('bg-gray-100')}
+                render={renderRow(true)}
             />
 
             <EntityListSection
                 title="Resting"
                 items={data?.resting ?? []}
-                render={renderRow('bg-gray-50')}
+                render={renderRow(false)}
             />
 
             <AddEntityButton
-                buttonLabel="+ Add player"
+                entity="player"
                 renderForm={(close) => <PlayerForm onDone={close} />}
             />
-        </div>
+        </Card>
     );
-  }
+}

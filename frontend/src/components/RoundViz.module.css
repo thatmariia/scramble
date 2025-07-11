@@ -1,0 +1,43 @@
+.court {
+    /* background: var(--color-sand); */
+    padding-top: calc(1em + 2 * var(--padding));
+    margin-bottom: var(--padding);
+    margin-right: var(--padding);
+    /* box-shadow: var(--shadow-toy); */
+
+    display: inline-block;
+    position: relative;
+}
+
+.header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    box-sizing: border-box;
+    padding: var(--padding);
+
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.grid {
+    position: relative;
+
+    display: grid;
+    gap: 0.5rem;
+    width: max-content;
+    grid-auto-flow: row;
+    overflow: hidden;
+    /* outline: 2px solid blue; */
+}
+
+.playerCell,
+.emptyCell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* border: 1px solid red; */
+}

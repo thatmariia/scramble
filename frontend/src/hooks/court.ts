@@ -1,7 +1,7 @@
-import { useSessionName } from '../context/SessionContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { useApiQuery } from './useApiQuery';
 import { useApiMutation } from './useApiMutation';
+import { useRequiredSessionName } from './useRequiredSession';
 import {
     CourtService,
     type CourtDTO,
@@ -12,10 +12,14 @@ export const COURTS_QUERY_KEY = ['courts'] as const;
 
 // GET court (list all courts)
 export function useCourts() {
-    const { name: active } = useSessionName();
+    const active = useRequiredSessionName();
+
     return useApiQuery<CourtDTO[]>({
-        queryKey: COURTS_QUERY_KEY,
-        queryFn: () => CourtService.listCourts(),
+        queryKey: [...COURTS_QUERY_KEY, active],
+        queryFn: () =>
+            CourtService.listCourts({
+                sessionName: active,
+            }),
         enabled: !!active,
         staleTime: 0,
     });
@@ -24,13 +28,18 @@ export function useCourts() {
 // POST court (add new court)
 export function useAddCourt() {
     const queryClient = useQueryClient();
+    const active = useRequiredSessionName();
 
     return useApiMutation<CourtDTO, CourtCreate>({
-        mutationFn: (data) => CourtService.addCourt({ requestBody: data }),
-
+        mutationFn: (data) =>
+            CourtService.addCourt({
+                requestBody: data,
+                sessionName: active!,
+            }),
         onSuccess: (newCourt) => {
-            queryClient.setQueryData<CourtDTO[]>(COURTS_QUERY_KEY, (old) =>
-                old ? [...old, newCourt] : [newCourt],
+            queryClient.setQueryData<CourtDTO[]>(
+                [...COURTS_QUERY_KEY, active],
+                (old) => (old ? [...old, newCourt] : [newCourt])
             );
         },
     });
@@ -39,13 +48,19 @@ export function useAddCourt() {
 // DELETE court by ID
 export function useDeleteCourt() {
     const queryClient = useQueryClient();
+    const active = useRequiredSessionName();
+
 
     return useApiMutation<void, { courtId: string }>({
-        mutationFn: ({ courtId }) => CourtService.deleteCourtById({ courtId }),
-
+        mutationFn: ({ courtId }) =>
+            CourtService.deleteCourtById({
+                courtId,
+                sessionName: active!,
+            }),
         onSuccess: (_, { courtId }) => {
-            queryClient.setQueryData<CourtDTO[]>(COURTS_QUERY_KEY, (old) =>
-                old ? old.filter((c) => c.id !== courtId) : old,
+            queryClient.setQueryData<CourtDTO[]>(
+                [...COURTS_QUERY_KEY, active],
+                (old) => (old ? old.filter((c) => c.id !== courtId) : old)
             );
         },
     });
@@ -54,12 +69,18 @@ export function useDeleteCourt() {
 // DELETE all courts
 export function useDeleteAllCourts() {
     const queryClient = useQueryClient();
+    const active = useRequiredSessionName();
 
     return useApiMutation<void, void>({
-        mutationFn: () => CourtService.deleteAllCourts(),
-
+        mutationFn: () =>
+            CourtService.deleteAllCourts({
+                sessionName: active!,
+            }),
         onSuccess: () => {
-            queryClient.setQueryData<CourtDTO[]>(COURTS_QUERY_KEY, []);
+            queryClient.setQueryData<CourtDTO[]>(
+                [...COURTS_QUERY_KEY, active],
+                []
+            );
         },
     });
 }

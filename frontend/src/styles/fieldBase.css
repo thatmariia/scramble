@@ -1,0 +1,63 @@
+.fieldBase {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 0.9rem;
+    padding: var(--small-padding);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg);
+    box-shadow: var(--reverse-shadow-sm);
+    color: var(--color-text);
+    border: none;
+    height: 2rem;
+    /* or a consistent height if needed */
+    line-height: 1.2;
+}
+
+.input {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 0.9rem;
+    padding: var(--small-padding);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg);
+    box-shadow: var(--reverse-shadow-sm);
+    color: var(--color-text);
+    border: none;
+    height: 2rem;
+    border: 2px solid var(--color-surface);
+    /* or a consistent height if needed */
+    line-height: 1.2;
+}
+
+.input:focus {
+    outline: none;
+}
+
+.trigger {
+    flex: 1 1 0;
+    width: 50px;
+    box-sizing: border-box;
+    font-size: 0.9rem;
+    padding: var(--small-padding);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg);
+    box-shadow: var(--reverse-shadow-sm);
+    color: var(--color-text);
+    border: none;
+    height: 2rem;
+    border: 2px solid var(--color-surface);
+    /* or a consistent height if needed */
+    line-height: 1.2;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    cursor: pointer;
+}

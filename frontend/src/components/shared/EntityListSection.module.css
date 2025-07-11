@@ -1,0 +1,21 @@
+.section {
+    margin-bottom: var(--padding);
+    /* margin: 0; */
+}
+
+.title {
+    font-weight: 600;
+    /* color: var(--color-text); */
+    margin-top: 0;
+    text-decoration: underline;
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    padding-top: 8px;
+}

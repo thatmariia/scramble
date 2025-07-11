@@ -1,0 +1,136 @@
+@import './card.css';
+@import './buttons.css';
+@import './fieldBase.css';
+
+:root {
+  /* COLORS */
+  /* --color-bg: #f7f8f9; */
+  --color-bg: #F3F5F6;
+  --color-surface: #ffffff;
+  --color-surface-rgb: 255, 255, 255;
+  --color-shadow: rgba(0, 0, 0, 0.08);
+  --color-accent: #0070f3;
+  /* Use for primary buttons/links */
+  --color-accent-hover: #005dc1;
+  --color-danger: #e63946;
+  /* For delete buttons etc */
+  --color-danger-hover: #c62828;
+  --color-muted: #EDEDED;
+  --color-muted-hover: #E4E4E4;
+  --color-text: #333333;
+  --color-subtle-text: #666;
+  --color-sand: #f4f2e7;
+
+  --blur: blur(10px);
+
+  /* RADIUS + SHADOWS */
+  --radius-lg: 30px;
+  --radius-md: 16px;
+  --shadow-sm: 0 4px 10px var(--color-shadow);
+  --reverse-shadow-sm: inset 0 4px 10px var(--color-shadow);
+
+  /* FONT */
+  --font-sans: "SF Pro", -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* SPACING */
+  --small-padding: 6px 12px;
+  --padding: 16px;
+  --header-height: 85px;
+  --action-button-height: 30px;
+
+  /* TRANSITIONS */
+  --transition-fast: 0.25s ease-in-out;
+
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100px;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-surface);
+}
+
+::-moz-selection {
+  background: var(--color-accent);
+  color: var(--color-surface);
+}
+
+.no-select,
+.no-select * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -ms-user-select: none !important;
+}
+
+/* 
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: #646cff;
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+} */

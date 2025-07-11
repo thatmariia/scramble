@@ -1,27 +1,24 @@
 import type { ReactNode } from 'react';
+import styles from './EntityListItem.module.css';
 
 interface Props {
-    children: ReactNode;                 // “John (lvl 3) — #1”
-    primaryAction: ReactNode;            // Rest / Activate
-    dangerAction: ReactNode;             // Delete
-    bg?: string;                         // optional background override
+    children: ReactNode;
+    primaryAction: ReactNode;
+    dangerAction: ReactNode;  
 }
 
 export function EntityListItem({
     children,
     primaryAction,
     dangerAction,
-    bg = 'bg-gray-100',
 }: Props) {
     return (
-        <li
-            className={`flex items-center justify-between rounded px-3 py-1 ${bg}`}
-        >
-            <span>{children}</span>
-            <div className="space-x-2">
+        <li className={styles.item}>
+            <span className={styles.label}>{children}</span>
+            <div className={styles.actions}>
                 {primaryAction}
                 {dangerAction}
             </div>
         </li>
     );
-}
+} 

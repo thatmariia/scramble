@@ -1,0 +1,40 @@
+.item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: var(--radius-md);
+    position: relative;
+}
+
+.label {
+    flex: 1; /* allow label to fill space */
+    font-weight: 500; 
+    color: var(--color-subtle-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.actions {
+    display: flex;
+    gap: 0rem;
+    background-color: none;
+
+    /* hide actions by default */
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-fast);
+    pointer-events: none;
+
+    padding-left: 0.5rem;
+}
+
+.item:hover .actions {
+    /* show on hover */
+    opacity: 1;
+    pointer-events: auto; 
+}

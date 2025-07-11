@@ -2,52 +2,50 @@
 import { useState } from 'react';
 import type { Level } from '../../api';
 import { useAddPlayer } from '../../hooks/player';
+import { EntityFormWrapper } from './shared/FormWrapper';
+import { CustomSelect } from '../../elements/CustomSelect';
+import { LEVELS, LEVEL_VALUES, LEVEL_COLORS } from '../../constants/levels';
 
 export function PlayerForm({ onDone }: { onDone(): void }) {
     const addPlayer = useAddPlayer();
     const [name, setName] = useState('');
     const [level, setLevel] = useState<Level>(3 as Level);
 
+    const handleSubmit = () => {
+        addPlayer.mutate(
+            { name, level },
+            {
+                onSuccess: () => {
+                    setName('');
+                    setLevel(3 as Level);
+                    onDone();
+                },
+            },
+        );
+    };
+
     return (
-        <form
-            className="space-x-2"
-            onSubmit={(e) => {
-                e.preventDefault();
-                addPlayer.mutate(
-                    { name, level },
-                    {
-                        onSuccess: () => {
-                            setName('');
-                            setLevel(3 as Level);
-                            onDone();
-                        },
-                    },
-                );
-            }}
+        <EntityFormWrapper
+            onSubmit={handleSubmit}
+            onCancel={onDone}
+            isSubmitting={addPlayer.isPending}
         >
             <input
-                className="border rounded px-2 py-1 w-40"
+                className="input"
                 placeholder="Name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
             />
-            <select
-                className="border rounded px-2 py-1"
+            <CustomSelect
                 value={level}
-                onChange={(e) => setLevel(Number(e.target.value) as Level)}
-            >
-                {[1, 2, 3, 4, 5].map((lvl) => (
-                    <option key={lvl}>{lvl}</option>
-                ))}
-            </select>
-            <button
-                type="submit"
-                className="px-3 py-1 bg-blue-500 text-white rounded"
-                disabled={addPlayer.isPending}
-            >
-                Add
-            </button>
-        </form>
+                options={LEVEL_VALUES.map((lvl) => ({
+                    label: LEVELS[lvl],
+                    value: lvl as Level,
+                    color: LEVEL_COLORS[lvl as Level],
+                }))}
+                onChange={(val) => setLevel(val)}
+            />
+        </EntityFormWrapper>
     );
 }

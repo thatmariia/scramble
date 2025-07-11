@@ -1,23 +1,24 @@
-// src/hooks/rounds.ts
 import { useQueryClient } from '@tanstack/react-query';
 import { useApiMutation } from './useApiMutation';
+import { useRequiredSessionName } from './useRequiredSession';
 import {
   RoundService,
   type RoundDTO,
 } from '../api';
 
 
-export const CURRENT_ROUND_KEY = ['round', 'current'] as const;
+export const CURRENT_ROUND_KEY = ['round', 'current'] as const; 
 
 // POST round (start a new round)
 export function useStartRound() {
   const queryClient = useQueryClient();
+  const active = useRequiredSessionName();
 
   return useApiMutation<RoundDTO, void>({
-    mutationFn: () => RoundService.startRound(),
-
+    mutationFn: () => RoundService.startRound({ sessionName: active }),
     onSuccess: (newRound) => {
       queryClient.setQueryData<RoundDTO>(CURRENT_ROUND_KEY, newRound);
+      queryClient.invalidateQueries({ queryKey: CURRENT_ROUND_KEY });
     },
   });
 }
@@ -25,12 +26,13 @@ export function useStartRound() {
 // POST round (restart round)
 export function useRestartRound() {
   const queryClient = useQueryClient();
+  const active = useRequiredSessionName();
 
   return useApiMutation<RoundDTO, void>({
-    mutationFn: () => RoundService.restartRound(),
-
+    mutationFn: () => RoundService.restartRound({ sessionName: active }),
     onSuccess: (newRound) => {
       queryClient.setQueryData<RoundDTO>(CURRENT_ROUND_KEY, newRound);
+      queryClient.invalidateQueries({ queryKey: CURRENT_ROUND_KEY });
     },
   });
 }
@@ -38,12 +40,13 @@ export function useRestartRound() {
 // DELETE round (undo last round)
 export function useUndoRound() {
   const queryClient = useQueryClient();
+  const active = useRequiredSessionName();
 
   return useApiMutation<void, void>({
-    mutationFn: () => RoundService.undoRound(),
-
+    mutationFn: () => RoundService.undoRound({ sessionName: active }),
     onSuccess: () => {
       queryClient.removeQueries({ queryKey: CURRENT_ROUND_KEY });
+      queryClient.invalidateQueries({ queryKey: CURRENT_ROUND_KEY });
     },
   });
 }

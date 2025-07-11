@@ -1,0 +1,34 @@
+.title {
+    text-align: left;
+    font-size: 1.5em;
+    font-weight: 800;
+    /* margin-bottom: var(--padding); */
+    /* color: var(--color-text); */
+    /* margin-top: 0; */
+    margin: 0;
+    padding: 0;
+}
+
+.header {
+    all: unset;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    /* padding: var(--padding); */
+    font-size: 1rem;
+    font-weight: 600;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    /* color: var(--color-text); */
+    margin: 0;
+}
+
+.content {
+    padding: 0; 
+    padding-top: 8px;
+    /* flex: 1 1 auto; */
+    max-height: 100%;
+    overflow-y: auto;
+}

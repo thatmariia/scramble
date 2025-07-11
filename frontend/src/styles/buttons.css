@@ -1,0 +1,70 @@
+.icon {
+    width: 1em;
+    height: 1em;
+    stroke-width: 3; 
+}
+
+/* General button base */
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: var(--small-padding);
+    font-size: 0.9rem;
+    font-weight: 500;
+    border: none;
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast);
+    width: fit-content;
+}
+
+/* Variants */
+.button.primary {
+    background: var(--color-accent);
+    color: white;
+}
+
+.button.primary:hover {
+    background: var(--color-accent-hover);
+}
+
+.button.danger {
+    /* background: var(--color-danger);
+    color: white; */
+    color: var(--color-danger);
+    background: transparent;
+}
+
+.button.danger:hover {
+    background: var(--color-danger);
+    color: white;
+}
+
+.button.cancel {
+    background: var(--color-muted);
+    color: var(--color-text);
+}
+
+.button.cancel:hover {
+    background: var(--color-muted-hover);
+}
+
+.button.ghost {
+    background: transparent;
+    color: var(--color-accent);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+}
+
+.button.ghost:hover {
+    background: transparent;
+    color: var(--color-accent-hover);
+}
+
+/* Disabled state */
+.button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}

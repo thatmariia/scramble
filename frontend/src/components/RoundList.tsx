@@ -1,73 +1,39 @@
-import { useQueryClient } from '@tanstack/react-query';
-import {
-    useStartRound,
-    useRestartRound,
-} from '../hooks/round';
+import type { Match, Team, Player } from '../api';
+import { Round } from './round/Round';
 
-import type { RoundDTO, Match, Team, Player } from '../api';
+function PlayerItem({ player }: { player: Player }) {
+    return (
+        <li className="pl-4 list-disc">
+            {player.name} (lvl {player.level})
+        </li>
+    );
+}
 
-const CURRENT_ROUND_KEY = ['round', 'current'] as const;
+function TeamItem({ team, index }: { team: Team; index: number }) {
+    return (
+        <li className="ml-4">
+            <p className="font-semibold">Team {index + 1}</p>
+            <ul>{team.players?.map((p) => <PlayerItem key={p.id} player={p} />)}</ul>
+        </li>
+    );
+}
+
+function MatchItem({ match, index }: { match: Match; index: number }) {
+    return (
+        <ul className="space-y-4">
+            <li className="mb-4">
+                <p className="font-bold">
+                    Match {index + 1}
+                    {match.court ? ` — Court: ${match.court.name}` : ''}
+                </p>
+                <ul>{match.teams.map((t, i) => <TeamItem key={i} team={t} index={i} />)}</ul>
+            </li>
+        </ul>
+    );
+}
 
 export default function RoundList() {
-    const queryClient = useQueryClient();
-    const startRound = useStartRound();
-    const restartRound = useRestartRound();
-
-    /* ─── grab current round from cache ─── */
-    const currentRound = queryClient.getQueryData<RoundDTO>(CURRENT_ROUND_KEY);
-
-    /* ─── helpers ─── */
-    const renderPlayer = (p: Player) => (
-        <li key={p.id} className="pl-4 list-disc">
-            {p.name} (lvl {p.level})
-        </li>
-    );
-
-    const renderTeam = (team: Team, idx: number) => (
-        <li key={idx} className="ml-4">
-            <p className="font-semibold">Team {idx + 1}</p>
-            <ul>{team.players?.map(renderPlayer)}</ul>
-        </li>
-    );
-
-    const renderMatch = (match: Match, idx: number) => (
-        <li key={idx} className="mb-4">
-            <p className="font-bold">
-                Match {idx + 1}
-                {match.court ? ` — Court: ${match.court.name}` : ''}
-            </p>
-            <ul>{match.teams.map(renderTeam)}</ul>
-        </li>
-    );
-
-    /* ─── render ─── */
     return (
-        <div className="p-4 space-y-4">
-            <h3 className="text-3xl font-bold">Current Round</h3>
-
-            {currentRound ? (
-                <ul>{currentRound.matches?.map(renderMatch)}</ul>
-            ) : (
-                <p>No round in progress.</p>
-            )}
-
-            <div className="space-x-4 pt-2">
-                <button
-                    className="px-4 py-2 bg-blue-500 text-white rounded"
-                    onClick={() => startRound.mutate()}
-                    disabled={startRound.isPending}
-                >
-                    Start Round
-                </button>
-
-                <button
-                    className="px-4 py-2 bg-amber-500 text-white rounded"
-                    onClick={() => restartRound.mutate()}
-                    disabled={restartRound.isPending}
-                >
-                    Restart Round
-                </button>
-            </div>
-        </div>
+        <Round renderMatch={(match, idx) => <MatchItem key={idx} match={match} index={idx} />} />
     );
 }

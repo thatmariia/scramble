@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status, HTTPException
+from fastapi import APIRouter, status, HTTPException, Query
 from pydantic import BaseModel
 from scramble.core import Level
 from scramble.services import handlers
@@ -7,10 +7,8 @@ from scramble.adapters.api.cache import get_session
 
 router = APIRouter(tags=["player"])
 
-class PlayerBase(BaseModel):
-    session_name: str
 
-class PlayerCreate(PlayerBase):
+class PlayerCreate(BaseModel):
     name: str
     level: Level
 
@@ -22,16 +20,21 @@ class PlayerCreate(PlayerBase):
     response_model=PlayerDTO,
     status_code=status.HTTP_201_CREATED,
 )
-def add_player(payload: PlayerCreate):
+def add_player(
+    payload: PlayerCreate,
+    session_name: str = Query(..., description="Name of the session to add the player to")
+):
     """
     Add a new player to the current session.
 
     Parameters
     ----------
     payload : PlayerCreate
-        The player to add, containing the name and level of the player and the session name.
+        The player to add, containing the name and level of the player.
+    session_name : str
+        Name of the session to which the player will be added.
     """
-    session = get_session(payload.session_name)
+    session = get_session(session_name)
     player = handlers.add_player(session, payload.name, payload.level)
     return PlayerDTO.from_domain(player)
 
@@ -43,16 +46,16 @@ def add_player(payload: PlayerCreate):
     response_model=PlayerListDTO,
     status_code=status.HTTP_200_OK
 )
-def list_players(payload: PlayerBase):
+def list_players(session_name: str = Query(..., description="Name of the session to list players from")):
     """
     List all players in the current session.
 
     Parameters
     ----------
-    payload : PlayerBase
-        The session to list players from, containing the session name.
+    session_name : str
+        Name of the session from which to list players.
     """
-    session = get_session(payload.session_name)
+    session = get_session(session_name)
     active_list, resting_list = handlers.list_players(session)
     return PlayerListDTO(
         active=[PlayerDTO.from_domain(player) for player in active_list],
@@ -66,7 +69,10 @@ def list_players(payload: PlayerBase):
     summary="Delete player by ID.",
     status_code=status.HTTP_204_NO_CONTENT
 )
-def remove_player(session_name: str, player_id: str):
+def remove_player(
+    player_id: str,
+    session_name: str = Query(..., description="Name of the session to remove the player from")
+):
     """
     Remove a player by ID from the current session.
 
@@ -90,7 +96,7 @@ def remove_player(session_name: str, player_id: str):
     summary="Delete all players.",
     status_code=status.HTTP_204_NO_CONTENT
 )
-def clear_players(session_name: str):
+def clear_players(session_name: str = Query(..., description="Name of the session to clear all players from")):
     """
     Clear all players from the session.
 
@@ -110,7 +116,10 @@ def clear_players(session_name: str):
     response_model=PlayerListDTO,
     status_code=status.HTTP_200_OK
 )
-def toggle_rest(session_name: str, player_id: str):
+def toggle_rest(
+    player_id: str,
+    session_name: str = Query(..., description="Name of the session in which the player exists")
+):
     """
     Toggle resting state of a player.
 

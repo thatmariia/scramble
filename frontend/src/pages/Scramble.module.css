@@ -1,0 +1,131 @@
+/* overall grid: header row + content row */
+.page {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+    font-family: var(--font-sans);
+    isolation: isolate;
+    z-index: 0;
+    margin: 0;
+    padding: 0;
+
+    overflow: hidden;
+    position: relative;
+}
+
+.contentRow {
+    position: relative;
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    height: 100%;
+
+    /* position: fixed;
+    top: 0;
+    left: 0;
+    right: 0; */
+
+    padding-top: calc(var(--header-height) + var(--padding));
+    /* padding-bottom: var(--padding);
+    padding-left: var(--padding);
+    padding-right: var(--padding); */
+}
+
+/* top bar */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-right: var(--padding);
+    margin-left: var(--padding);
+    margin-top: var(--padding);
+    margin-bottom: var(--small-padding);
+    z-index: 30;
+
+    pointer-events: auto;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+}
+
+.actionButtons {
+    /* margin-right: var(--padding);
+    margin-left: var(--padding);
+    margin-top: var(--padding);
+    margin-bottom: var(--small-padding); */
+    margin-top: 0;
+    z-index: 30;
+    padding: var(--padding);
+}
+
+/* chevron button */
+.collapseBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform-origin: center;
+
+    border: none;
+    background: none;
+    color: var(--color-accent);
+    font-size: 30px;
+    line-height: 1;
+    padding: var(--small-padding);
+    cursor: pointer;
+    transition: transform var(--transition-fast);
+    margin: 0;
+}
+
+.collapseBtn:hover {
+    transform: scale(1.2);
+    color: var(--color-accent-hover);
+}
+
+/* 2-column content area */
+
+.main,
+.sidebar {
+    overflow-y: auto;
+}
+
+.main {
+    /* padding: var(--padding); */
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    z-index: 10;
+}
+
+.sidebar {
+    grid-area: sidebar;
+    height: 100%;
+    /* position: absolute;
+    top: 0;
+    right: 0; */
+    width: 320px;
+    padding: var(--padding);
+    overflow-y: auto;
+    /* background: var(--color-surface); */
+    background: transparent;
+    transition: transform var(--transition-fast), opacity var(--transition-fast);
+    /* box-shadow: var(--shadow-sm); */
+    z-index: 20;
+}
+
+/* collapsed sidebar */
+.sidebar.collapsed {
+    transform: translateX(100%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* animate the width change */
+.sidebar,
+.page {
+    transition: all var(--transition-fast);
+}

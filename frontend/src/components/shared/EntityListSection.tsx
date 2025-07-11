@@ -1,16 +1,17 @@
 import type { ReactNode } from 'react';
+import styles from './EntityListSection.module.css';
 
 interface Props<T> {
-    title: string;
+    title?: string;
     items: T[];
     render: (item: T) => ReactNode;
 }
 
 export function EntityListSection<T>({ title, items, render }: Props<T>) {
     return (
-        <section>
-            <h4 className="text-xl font-semibold mb-2">{title}</h4>
-            <ul className="space-y-1">{items.map(render)}</ul>
+        <section className={styles.section}>
+            {title && <span className={styles.title}>{title}</span>}
+            <ul className={styles.list}>{items.map(render)}</ul>
         </section>
     );
 }

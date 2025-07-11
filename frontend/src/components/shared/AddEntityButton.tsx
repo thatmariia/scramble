@@ -1,39 +1,33 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
+import styles from './AddEntityButton.module.css';
 
 interface Props {
-    buttonLabel: string;
+    entity: string; // e.g. "player", "court"
     renderForm: (close: () => void) => ReactNode;
-    color?: 'blue' | 'emerald';
 }
 
 export function AddEntityButton({
-    buttonLabel,
-    renderForm,
-    color = 'blue',
+    entity,
+    renderForm
 }: Props) {
     const [open, setOpen] = useState(false);
+    const close = () => setOpen(false); 
 
-    const close = () => setOpen(false);
+    const label = `+ add ${entity}`;
 
     return (
-        <div className="pt-4">
+        <div className={styles.wrapper}> 
             {open ? (
-                renderForm(close)
+                <>
+                    {renderForm(close)}
+                </>
             ) : (
                 <button
-                    className={`px-4 py-2 bg-${color}-500 text-white rounded`}
+                    className="button primary"
                     onClick={() => setOpen(true)}
                 >
-                    {buttonLabel}
-                </button>
-            )}
-            {open && (
-                <button
-                    className="ml-2 px-3 py-1 bg-gray-300 rounded"
-                    onClick={close}
-                >
-                    Cancel
+                    {label}
                 </button>
             )}
         </div>
