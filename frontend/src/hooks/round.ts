@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 import { useApiMutation } from './useApiMutation';
 import { useApiQuery } from './useApiQuery';
 import { useRequiredSessionName } from './useRequiredSession';
@@ -8,11 +9,25 @@ import {
 } from '../api';
 
 
-const ROUND_QUERY_KEY = ['round'] as const;
+export const ROUND_QUERY_KEY = ['round'] as const;
 export const CURRENT_ROUND_KEY = ['round', 'current'] as const; 
-export const ROUND_COUNT_KEY = ['round', 'count'] as const;
-export const ROUND_BY_INDEX_KEY = (index: number) =>
-  ['round', 'by-index', index] as const;
+export const ROUND_COUNT_KEY = (sessionName: string) => ['round', 'count', sessionName] as const;
+export const ROUND_BY_INDEX_KEY = (sessionName: string, index: number) =>
+  ['round', 'by-index', sessionName, index] as const;
+
+
+export function invalidateRoundQueries(queryClient: QueryClient, sessionName: string) {
+  queryClient.invalidateQueries({ queryKey: CURRENT_ROUND_KEY });
+  queryClient.invalidateQueries({ queryKey: ROUND_COUNT_KEY(sessionName) });
+
+  queryClient.invalidateQueries({
+    predicate: (query) =>
+      Array.isArray(query.queryKey) &&
+      query.queryKey[0] === 'round' &&
+      query.queryKey[1] === 'by-index' &&
+      query.queryKey[2] === sessionName,
+  });
+}
 
 
 // GET number of rounds in a session
@@ -20,8 +35,10 @@ export function useRoundCount() {
   const sessionName = useRequiredSessionName();
 
   return useApiQuery<number>({
-    queryKey: ROUND_COUNT_KEY,
+    queryKey: ROUND_COUNT_KEY(sessionName),
     queryFn: () => RoundService.getRoundCount({ sessionName }),
+    enabled: !!sessionName,
+    staleTime: Infinity,
   });
 }
 
@@ -30,9 +47,9 @@ export function useRoundByIndex(index: number) {
   const sessionName = useRequiredSessionName();
 
   return useApiQuery<RoundDTO>({
-    queryKey: ROUND_BY_INDEX_KEY(index),
+    queryKey: ROUND_BY_INDEX_KEY(sessionName, index),
     queryFn: () => RoundService.getRoundByIndex({ sessionName, index }),
-    enabled: index != null && index >= 0, // optional guard
+    enabled: index != null && index >= 0 && !!sessionName,
   });
 }
 
@@ -46,7 +63,7 @@ export function useStartRound() {
     onSuccess: (newRound) => {
       queryClient.setQueryData<RoundDTO>(CURRENT_ROUND_KEY, newRound);
       queryClient.invalidateQueries({ queryKey: CURRENT_ROUND_KEY });
-      queryClient.invalidateQueries({ queryKey: ROUND_QUERY_KEY });
+      invalidateRoundQueries(queryClient, active);
     },
   });
 }
@@ -61,7 +78,7 @@ export function useRestartRound() {
     onSuccess: (newRound) => {
       queryClient.setQueryData<RoundDTO>(CURRENT_ROUND_KEY, newRound);
       queryClient.invalidateQueries({ queryKey: CURRENT_ROUND_KEY });
-      queryClient.invalidateQueries({ queryKey: ROUND_QUERY_KEY });
+      invalidateRoundQueries(queryClient, active);
     },
   });
 }
@@ -76,7 +93,7 @@ export function useUndoRound() {
     onSuccess: () => {
       queryClient.removeQueries({ queryKey: CURRENT_ROUND_KEY });
       queryClient.invalidateQueries({ queryKey: CURRENT_ROUND_KEY });
-      queryClient.invalidateQueries({ queryKey: ROUND_QUERY_KEY });
+      invalidateRoundQueries(queryClient, active);
     },
   });
 }

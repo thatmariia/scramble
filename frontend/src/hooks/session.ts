@@ -8,7 +8,7 @@ import {
 } from '../api';
 import { COURTS_QUERY_KEY } from './court';
 import { PLAYERS_QUERY_KEY } from './player';
-import { CURRENT_ROUND_KEY } from './round';
+import { invalidateRoundQueries } from './round';
 
 export const SESSION_QUERY_KEY = ['session'] as const;
 export const SESSION_NAMES_QUERY_KEY = ['session-names'] as const;
@@ -45,7 +45,7 @@ export function useLoadSession() {
             // invalidate other state for that session
             queryClient.invalidateQueries({ queryKey: [...PLAYERS_QUERY_KEY, name] });
             queryClient.invalidateQueries({ queryKey: [...COURTS_QUERY_KEY, name] });
-            queryClient.invalidateQueries({ queryKey: [...CURRENT_ROUND_KEY, name] });
+            invalidateRoundQueries(queryClient, name);
         },
     });
   }
@@ -69,7 +69,7 @@ export function useNewSession() {
             // invalidate other session-scoped queries
             queryClient.invalidateQueries({ queryKey: [...PLAYERS_QUERY_KEY, name] });
             queryClient.invalidateQueries({ queryKey: [...COURTS_QUERY_KEY, name] });
-            queryClient.invalidateQueries({ queryKey: [...CURRENT_ROUND_KEY, name] });
+            invalidateRoundQueries(queryClient, name);
             queryClient.invalidateQueries({ queryKey: SESSION_NAMES_QUERY_KEY });
         },
     });
