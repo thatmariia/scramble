@@ -2,11 +2,13 @@ import { useState, useRef } from 'react';
 import { useFloating, autoUpdate, offset, flip, shift } from '@floating-ui/react';
 import styles from './CustomSelect.module.css';
 import Portal from './Portal';
+import { Slice } from 'lucide-react';
 
 interface Option<T> {
     label: string;
     value: T;
     color?: string;
+    slice?: number; // Optional, for slicing label
 }
 
 interface Props<T> {
@@ -45,7 +47,10 @@ export function CustomSelect<T>({ value, options, onChange }: Props<T>) {
                 }}
                 onClick={() => setOpen((v) => !v)}
             >
-                {selected?.label.slice(0, 3) || 'n/a'}
+                {selected?.slice
+                    ? selected.label.slice(0, selected.slice)
+                    : selected?.label || 'n/a'
+                }
             </button>
 
             {open && (

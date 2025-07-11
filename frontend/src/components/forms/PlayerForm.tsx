@@ -43,6 +43,7 @@ export function PlayerForm({ onDone }: { onDone(): void }) {
                     label: LEVELS[lvl],
                     value: lvl as Level,
                     color: LEVEL_COLORS[lvl as Level],
+                    slice: 3,
                 }))}
                 onChange={(val) => setLevel(val)}
             />
