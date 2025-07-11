@@ -1,5 +1,6 @@
 import typer
-from scramble.services import require_session, set_current_session, handlers
+from scramble.services import handlers
+from scramble.adapters.cli.state import get_session
 
 round_app = typer.Typer(help="Manage rounds")
 
@@ -9,7 +10,7 @@ def start_round():
     """
     Start a new round and add it to the round history.
     """
-    game_round = handlers.start_round()
+    game_round = handlers.start_round(get_session())
 
     typer.secho("Started round:", fg=typer.colors.GREEN, bold=True)
     separator = "~" * 40
@@ -23,7 +24,7 @@ def undo_round():
     """
     Undo the last round.
     """
-    handlers.undo_round()
+    handlers.undo_round(get_session())
     typer.secho("Last round undone (if existed).", fg=typer.colors.YELLOW)
 
 
@@ -32,7 +33,7 @@ def undo_and_start_new_round():
     """
     Undo the last round and start a new one.
     """
-    game_round = handlers.undo_and_start_new_round()
+    game_round = handlers.undo_and_start_new_round(get_session())
 
     typer.secho("Last round undone and new round started:", fg=typer.colors.GREEN, bold=True)
     separator = "~" * 40

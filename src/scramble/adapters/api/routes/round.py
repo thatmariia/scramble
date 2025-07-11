@@ -1,6 +1,7 @@
 from fastapi import APIRouter, status, HTTPException
 from scramble.services import handlers
 from scramble.adapters.api.schemas import RoundDTO
+from scramble.adapters.api.cache import get_session
 
 router = APIRouter(tags=["round"])
 
@@ -12,11 +13,17 @@ router = APIRouter(tags=["round"])
     response_model=RoundDTO,
     status_code=status.HTTP_201_CREATED,
 )
-def start_round():
+def start_round(session_name: str):
     """
     Start a new round and add it to the round history.
+
+    Parameters
+    ----------
+    session_name : str
+        Name of the session in which to start the round.
     """
-    game_round = handlers.start_round()
+    session = get_session(session_name)
+    game_round = handlers.start_round(session)
     return RoundDTO.from_domain(game_round)
 
 
@@ -27,12 +34,18 @@ def start_round():
     response_model=RoundDTO,
     status_code=status.HTTP_201_CREATED,
 )
-def undo_and_start_new_round():
+def undo_and_start_new_round(session_name: str):
     """
     Undo the last round and start a new one.
+
+    Parameters
+    ----------
+    session_name : str
+        Name of the session in which to undo the last round and start a new one.
     """
     try:
-        game_round = handlers.undo_and_start_new_round()
+        session = get_session(session_name)
+        game_round = handlers.undo_and_start_new_round(session)
         return RoundDTO.from_domain(game_round)
     except ValueError:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="No rounds to undo")
@@ -44,12 +57,18 @@ def undo_and_start_new_round():
     summary="Undo round.",
     status_code=status.HTTP_204_NO_CONTENT,
 )
-def undo_round():
+def undo_round(session_name: str):
     """
     Undo the last round.
+
+    Parameters
+    ----------
+    session_name : str
+        Name of the session in which to undo the last round.
     """
     try:
-        handlers.undo_round()
+        session = get_session(session_name)
+        handlers.undo_round(session)
     except ValueError:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="No rounds to undo")
 

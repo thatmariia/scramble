@@ -3,11 +3,14 @@ from pydantic import BaseModel
 from typing import List
 from scramble.services import handlers
 from scramble.adapters.api.schemas import CourtDTO
+from scramble.adapters.api.cache import get_session
 
 router = APIRouter(tags=["court"])
 
+class CourtBase(BaseModel):
+    session_name: str
 
-class CourtCreate(BaseModel):
+class CourtCreate(CourtBase):
     name: str
 
 
@@ -25,9 +28,10 @@ def add_court(payload: CourtCreate):
     Parameters
     ----------
     payload : CourtCreate
-        The court to add, containing the name of the court.
+        The court to add, containing the name of the court and the session name.
     """
-    court = handlers.add_court(payload.name)
+    session = get_session(payload.session_name)
+    court = handlers.add_court(session, payload.name)
     return CourtDTO.from_domain(court)
 
 
@@ -38,11 +42,17 @@ def add_court(payload: CourtCreate):
     response_model=List[CourtDTO],
     status_code=status.HTTP_200_OK
 )
-def list_courts():
+def list_courts(payload: CourtBase):
     """
     List all courts in the current session.
+
+    Parameters
+    ----------
+    payload : CourtBase
+        The session to list courts from, containing the session name.
     """
-    courts = handlers.list_courts()
+    session = get_session(payload.session_name)
+    courts = handlers.list_courts(session)
     return [CourtDTO.from_domain(court) for court in courts]
 
 
@@ -52,7 +62,7 @@ def list_courts():
     summary="Delete court by ID.",
     status_code=status.HTTP_204_NO_CONTENT
 )
-def remove_court(court_id: str):
+def remove_court(session_name: str, court_id: str):
     """
     Remove a court by ID.
 
@@ -60,9 +70,12 @@ def remove_court(court_id: str):
     ----------
     court_id : str
         ID of the court to remove.
+    session_name : str
+        Name of the session from which to remove the court.
     """
     try:
-        handlers.remove_court(court_id)
+        session = get_session(session_name)
+        handlers.remove_court(session, court_id)
     except ValueError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Court not found")
 
@@ -73,8 +86,14 @@ def remove_court(court_id: str):
     summary="Delete all courts.",
     status_code=status.HTTP_204_NO_CONTENT
 )
-def clear_courts():
+def clear_courts(session_name):
     """
     Clear all courts from the current session.
+
+    Parameters
+    ----------
+    session_name : str
+        Name of the session from which to clear all courts.
     """
-    handlers.clear_courts()
+    session = get_session(session_name)
+    handlers.clear_courts(session)

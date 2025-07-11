@@ -27,8 +27,6 @@ class Settings(Serializable):
     max_team_size: int = 5
     min_nr_teams_in_match: int = 2
     goal_configs: dict[Goal, GoalConfig] | None = None
-    log_enabled: bool = True
-    log_verbose: bool = False
 
     def __post_init__(self):
         self.max_team_size = max(self.min_team_size, self.max_team_size)
@@ -48,9 +46,7 @@ class Settings(Serializable):
         return "Settings:\n" + "\n" + \
                 f"Team size: {self.min_team_size}-{self.max_team_size}\n" + \
                 f"Min teams in match: {self.min_nr_teams_in_match}\n" + \
-                f"Goal configs: {goal_configs_str}\n" + \
-                f"Log enabled: {self.log_enabled}\n" + \
-                f"Log verbose: {self.log_verbose}\n"
+                f"Goal configs: {goal_configs_str}\n"
 
     @classmethod
     def from_dict(cls, data: dict) -> "Settings":
@@ -59,9 +55,7 @@ class Settings(Serializable):
             min_team_size=data.get("min_team_size", 2),
             max_team_size=data.get("max_team_size", 5),
             min_nr_teams_in_match=data.get("min_nr_teams_in_match", 2),
-            goal_configs=goal_configs,
-            log_enabled=data.get("log_enabled", 2),
-            log_verbose=data.get("log_verbose", 2)
+            goal_configs=goal_configs
         )
 
     def to_dict(self) -> dict:
@@ -69,7 +63,5 @@ class Settings(Serializable):
             "min_team_size": self.min_team_size,
             "max_team_size": self.max_team_size,
             "min_nr_teams_in_match": self.min_nr_teams_in_match,
-            "goal_configs": {goal.value: config.to_dict() for goal, config in self.goal_configs.items()},
-            "log_enabled": self.log_enabled,
-            "log_verbose": self.log_verbose
+            "goal_configs": {goal.value: config.to_dict() for goal, config in self.goal_configs.items()}
         }

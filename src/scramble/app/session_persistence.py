@@ -37,11 +37,8 @@ class SessionPersistence:
             with open(file_path, "w") as f:
                 json.dump(data.to_dict(), f, indent=4)
 
-        # update latest session name
-        SessionNameManager.set_latest(session.session_name)
-
     @staticmethod
-    def load(session_name: str | None = None) -> AppSession | None:
+    def load(session_name: str) -> AppSession:
         """
         Loads an AppSession from disk.
 
@@ -56,7 +53,6 @@ class SessionPersistence:
         AppSession | None
             The loaded AppSession object, or None if the session does not exist.
         """
-        session_name = session_name or SessionNameManager.get_latest()
         path = SESSIONS_DIR / session_name
         if not path.exists():
             raise FileNotFoundError(f"Session {session_name} not found")
@@ -72,8 +68,5 @@ class SessionPersistence:
             app_session.court_state = CourtState.from_dict(json.load(f))
         with open(path / "round_tracker.json", "r") as f:
             app_session.round_tracker = RoundTracker.from_dict(json.load(f))
-
-        # update latest session name
-        SessionNameManager.set_latest(session_name)
 
         return app_session
