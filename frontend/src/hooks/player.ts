@@ -16,7 +16,7 @@ export function usePlayers() {
   const active = useRequiredSessionName();
 
   return useApiQuery<PlayerListDTO>({
-    queryKey: PLAYERS_QUERY_KEY,
+    queryKey: [...PLAYERS_QUERY_KEY, active],
     queryFn: () =>
       PlayerService.listPlayers({
         sessionName: active,

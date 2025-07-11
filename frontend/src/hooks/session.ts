@@ -1,4 +1,3 @@
-// src/hooks/sessions.ts
 import { useQueryClient } from '@tanstack/react-query';
 import { useApiQuery } from './useApiQuery';
 import { useApiMutation } from './useApiMutation';
