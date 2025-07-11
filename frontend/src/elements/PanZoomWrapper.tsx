@@ -27,6 +27,7 @@ export function PanZoomWrapper({
     };
 
     const handleMouseDown = (e: React.MouseEvent) => {
+        e.preventDefault();
         setIsDragging(true);
         document.documentElement.classList.add('no-select');
         lastPos.current = { x: e.clientX, y: e.clientY };
@@ -80,7 +81,7 @@ export function PanZoomWrapper({
             </button>
             <div className={styles.roundContentWrapper}>  
                 <div
-                    className={styles.content}
+                    className={`${styles.content} ${isDragging ? 'no-select' : ''}`}
                     style={{
                         transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`
                     }}
