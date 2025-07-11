@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useLoadSession } from '../../hooks/session';
 import { EntityFormWrapper } from './shared/FormWrapper';
 import styles from './Form.module.css'; 
+import { toast } from 'sonner';
 
 interface Props {
     close(): void;
@@ -14,12 +15,20 @@ export default function LoadSessionForm({ close, setActive }: Props) {
     const [name, setName] = useState('');
 
     const handleSubmit = () => {
+        if (!name.trim()) {
+            toast.error('Please enter a session name');
+            return;
+        }
+
         loadSession.mutate(
-            { name: name || null },
+            { name },
             {
                 onSuccess: () => {
-                    setActive(name || null);
+                    setActive(name);
                     close();
+                },
+                onError: () => {
+                    toast.error(`Could not load session "${name}"`);
                 },
             }
         );
