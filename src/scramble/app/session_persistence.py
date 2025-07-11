@@ -70,3 +70,13 @@ class SessionPersistence:
             app_session.round_tracker = RoundTracker.from_dict(json.load(f))
 
         return app_session
+
+    @staticmethod
+    def list_session_names() -> list[str]:
+        """
+        Return the names of all sessions available to load.
+
+        Returns:
+            list[str]: list of session names
+        """
+        return [p.name for p in SESSIONS_DIR.iterdir() if p.is_dir()]

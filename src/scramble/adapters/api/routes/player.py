@@ -11,7 +11,7 @@ router = APIRouter(tags=["player"])
 class PlayerCreate(BaseModel):
     name: str
     level: Level
-
+    assignment: str = ""
 
 @router.post(
     "",
@@ -35,7 +35,7 @@ def add_player(
         Name of the session to which the player will be added.
     """
     session = get_session(session_name)
-    player = handlers.add_player(session, payload.name, payload.level)
+    player = handlers.add_player(session, payload.name, payload.level, payload.assignment)
     return PlayerDTO.from_domain(player)
 
 

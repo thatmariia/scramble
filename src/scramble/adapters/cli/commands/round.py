@@ -27,6 +27,32 @@ def undo_round():
     handlers.undo_round(get_session())
     typer.secho("Last round undone (if existed).", fg=typer.colors.YELLOW)
 
+@round_app.command("count")
+def count():
+    """
+    Get number of rounds in session.
+    """
+    session = get_session()
+    typer.secho(f"{len(session.round_tracker)} rounds in session.", fg=typer.colors.YELLOW)
+
+@round_app.command("get")
+def get(index: int):
+    """
+    Get number of rounds in session.
+
+    Parameters
+    ----------
+    index : str
+        The round index (0-based).
+    """
+    session = get_session()
+    round = session.round_tracker.get(index)
+    if round is None:
+        typer.secho(f"Round {index} not in session.", fg=typer.colors.BLUE)
+        return
+
+    typer.secho(f"{round}", fg=typer.colors.YELLOW)
+
 
 @round_app.command("undo-and-start")
 def undo_and_start_new_round():

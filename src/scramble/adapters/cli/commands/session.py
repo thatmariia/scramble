@@ -46,6 +46,13 @@ def load_session(
     typer.secho(f"Loaded session: {session.session_name}", fg=typer.colors.GREEN)
     set_session(session)
 
+@session_app.command("list")
+def list_session_names():
+    """
+    Retrieve the names of all saved sessions and print them to console
+    """
+    typer.secho(f"Sessions available:", fg=typer.colors.GREEN)
+    typer.secho(f"  {'\n  '.join(handlers.list_session_names())}")
 
 @session_app.command("default-settings")
 def export_default_settings(path: Path = typer.Argument(..., help="Where to write the settings JSON")):

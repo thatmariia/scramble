@@ -72,4 +72,69 @@ def undo_round(session_name: str = Query(..., description="Name of the session t
     except ValueError:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="No rounds to undo")
 
+@router.get(
+    "/round-count",
+    operation_id="get_round_count",
+    summary="Get the number of rounds in a session.",
+    response_model=int,
+    status_code=status.HTTP_200_OK
+)
+def get_round_count(session_name: str = Query(description="Session name")):
+    """
+    Get the number of rounds in a given session.
 
+    Parameters
+    ----------
+    session_name : str
+        The name of the session.
+
+    Returns
+    -------
+    int
+        The number of rounds in the session.
+    """
+    try:
+        session = get_session(session_name)
+        return len(session.round_tracker)
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+
+@router.get(
+    "/round",
+    operation_id="get_round_by_index",
+    summary="Get a specific round from a session by index.",
+    response_model=RoundDTO,  # Replace with actual DTO class
+    status_code=status.HTTP_200_OK
+)
+def get_round_by_index(
+    session_name: str = Query(description="Session name"),
+    index: int = Query(description="Round index (0-based)")
+):
+    """
+    Get a specific round from the session by index.
+
+    Parameters
+    ----------
+    session_name : str
+        The name of the session.
+    index : int
+        The index of the round to retrieve.
+
+    Returns
+    -------
+    RoundDTO
+        The round at the specified index.
+    """
+    try:
+        session = get_session(session_name)
+        round = session.round_tracker.get(index)
+        if round is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Round does not exist"
+            )
+        return RoundDTO.from_domain(round)
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")

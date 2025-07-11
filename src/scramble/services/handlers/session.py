@@ -49,3 +49,12 @@ def load_session(name: str) -> AppSession:
     """
     session = SessionPersistence.load(name)
     return session
+
+def list_session_names() -> list[str]:
+    """
+    Return the names of all sessions available to load.
+
+    Returns:
+        list[str]: list of session names
+    """
+    return SessionPersistence.list_session_names()

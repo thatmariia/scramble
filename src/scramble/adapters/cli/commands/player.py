@@ -9,7 +9,8 @@ player_app = typer.Typer(help="Manage players")
 @player_app.command("add")
 def add_player(
         name: str,
-        level: Level = typer.Option(..., help="Player's skill level")
+        level: Level = typer.Option(..., help="Player's skill level"),
+        assignment: str = typer.Option("", help="Player's assignment"),
 ):
     """
     Add a new player to the current session.
@@ -21,7 +22,7 @@ def add_player(
     level : Level
         The skill level of the player. Must be one of the predefined levels.
     """
-    player = handlers.add_player(get_session(), name, level)
+    player = handlers.add_player(get_session(), name, level, assignment)
     typer.secho(f"Added player #{player.id}: {player.name} ({player.level})", fg=typer.colors.GREEN)
 
 
