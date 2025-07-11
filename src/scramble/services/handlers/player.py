@@ -3,7 +3,7 @@ from scramble.app import AppSession
 from scramble.app.session_persistence import SessionPersistence
 
 
-def add_player(session: AppSession, name: str, level: Level) -> Player:
+def add_player(session: AppSession, name: str, level: Level, assignment: str = "") -> Player:
     """
     Add a new player to the current session.
 
@@ -21,7 +21,7 @@ def add_player(session: AppSession, name: str, level: Level) -> Player:
     Player
         The newly created player object.
     """
-    player = Player(name=name, level=level)
+    player = Player(name=name, level=level, assignment=assignment)
     session.player_state.add(player)
     SessionPersistence.save(session)
     return player

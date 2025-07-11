@@ -60,3 +60,21 @@ def load_session(name: str = Query(description="Session name")):
     except FileNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+
+@router.get(
+    "/names",
+    operation_id="list_session_names",
+    summary="List all saved session names.",
+    response_model=list[str],
+    status_code=status.HTTP_200_OK
+)
+def list_session_names():
+    """
+    Retrieve the names of all saved sessions.
+
+    Returns
+    -------
+    list of str
+        A list of all session names.
+    """
+    return handlers.list_session_names()

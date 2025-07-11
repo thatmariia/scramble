@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from collections import deque
 from scramble.utils import Serializable
 from scramble.core.round import Round
 from scramble.core.history_manager import HistoryManager
@@ -18,7 +17,7 @@ class RoundTracker(Serializable):
         A deque of rounds, where each round contains matches and resting players.
     """
     history_manager: HistoryManager
-    rounds: deque[Round]
+    rounds: list[Round]
 
     def __init__(self, history_manager: HistoryManager | None = None):
         """
@@ -31,7 +30,7 @@ class RoundTracker(Serializable):
             If None, a new HistoryManager instance will be created.
         """
         self.history_manager: HistoryManager = history_manager or HistoryManager()
-        self.rounds: deque[Round] = deque()
+        self.rounds: list[Round] = []
 
     @classmethod
     def from_dict(cls, data: dict) -> "RoundTracker":
@@ -58,6 +57,28 @@ class RoundTracker(Serializable):
             A list containing all rounds in the tracker.
         """
         return list(self.rounds)
+
+    def __len__(self):
+        return len(self.rounds)
+
+    def get(self, index: int) -> Round | None:
+        """
+        Get a round by index
+
+        Parameters
+        ----------
+        index : int
+            The index to get a round of.
+
+        Returns
+        ----------
+        Round | None
+            The nth round if it exists, None otherwise
+        """
+        if index < 0 or index >= len(self.rounds):
+            return None
+
+        return self.rounds[index]
 
     def clear(self):
         """
