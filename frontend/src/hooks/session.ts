@@ -2,7 +2,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useApiQuery } from './useApiQuery';
 import { useApiMutation } from './useApiMutation';
-import {
+import { 
     SessionService,
     type AppSessionDTO,
     type SessionCreate,
@@ -14,30 +14,29 @@ import { CURRENT_ROUND_KEY } from './round';
 export const SESSION_QUERY_KEY = ['session'] as const;
 
 // GET session (load by name or latest)
-export function useSession(name?: string | null) {
+export function useSession(name: string) {
     return useApiQuery<AppSessionDTO>({
-        queryKey: [...SESSION_QUERY_KEY, name ?? 'no session name'],
+        queryKey: [...SESSION_QUERY_KEY, name],
         queryFn: () => SessionService.loadSession({ name }),
-        staleTime: Infinity
-    });
+        staleTime: Infinity,
+      });
 }
 
 // GET session (load by name or latest), but with a mutation for refreshing
 export function useLoadSession() {
-    const qc = useQueryClient();
+    const queryClient = useQueryClient();
 
-    return useApiMutation<AppSessionDTO, { name?: string | null }>({
+    return useApiMutation<AppSessionDTO, { name: string}>({
         mutationFn: ({ name }) => SessionService.loadSession({ name }),
 
         onSuccess: (sess, { name }) => {
-            // write session into cache
-            const key = [...SESSION_QUERY_KEY, name ?? 'no session name'];
-            qc.setQueryData(key, sess);
+            const key = [...SESSION_QUERY_KEY, name];
+            queryClient.setQueryData(key, sess);
 
-            // fetch players / courts / round for that session
-            qc.invalidateQueries({ queryKey: PLAYERS_QUERY_KEY });
-            qc.invalidateQueries({ queryKey: COURTS_QUERY_KEY });
-            qc.invalidateQueries({ queryKey: CURRENT_ROUND_KEY });
+            // invalidate other state for that session
+            queryClient.invalidateQueries({ queryKey: [...PLAYERS_QUERY_KEY, name] });
+            queryClient.invalidateQueries({ queryKey: [...COURTS_QUERY_KEY, name] });
+            queryClient.invalidateQueries({ queryKey: [...CURRENT_ROUND_KEY, name] });
         },
     });
   }
@@ -51,15 +50,17 @@ export function useNewSession() {
             SessionService.newSession({ requestBody: data }),
 
         onSuccess: (newSession) => {
-            // Put the freshly-created session into cache
+            const name = newSession.session_name ?? 'no session name';
+
             queryClient.setQueryData<AppSessionDTO>(
-                [...SESSION_QUERY_KEY, newSession?.session_name ?? 'no session name'],
+                [...SESSION_QUERY_KEY, name],
                 newSession,
             );
-            // invalidate so they refetch for the new session
-            queryClient.invalidateQueries({ queryKey: PLAYERS_QUERY_KEY });
-            queryClient.invalidateQueries({ queryKey: COURTS_QUERY_KEY });
-            queryClient.invalidateQueries({ queryKey: CURRENT_ROUND_KEY });
+
+            // invalidate other session-scoped queries
+            queryClient.invalidateQueries({ queryKey: [...PLAYERS_QUERY_KEY, name] });
+            queryClient.invalidateQueries({ queryKey: [...COURTS_QUERY_KEY, name] });
+            queryClient.invalidateQueries({ queryKey: [...CURRENT_ROUND_KEY, name] });
         },
     });
 }

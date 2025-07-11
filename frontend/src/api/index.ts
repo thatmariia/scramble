@@ -9,6 +9,7 @@ export type { OpenAPIConfig } from './core/OpenAPI';
 
 export type { AppSessionDTO } from './models/AppSessionDTO';
 export type { Court } from './models/Court';
+export type { CourtBase } from './models/CourtBase';
 export type { CourtCreate } from './models/CourtCreate';
 export type { CourtDTO } from './models/CourtDTO';
 export type { CourtState } from './models/CourtState';
@@ -19,6 +20,7 @@ export type { HTTPValidationError } from './models/HTTPValidationError';
 export type { Level } from './models/Level';
 export type { Match } from './models/Match';
 export type { Player } from './models/Player';
+export type { PlayerBase } from './models/PlayerBase';
 export type { PlayerCreate } from './models/PlayerCreate';
 export type { PlayerDTO } from './models/PlayerDTO';
 export type { PlayerHistory } from './models/PlayerHistory';
