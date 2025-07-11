@@ -1,8 +1,9 @@
 import { useState, useRef } from 'react';
 import { useFloating, autoUpdate, offset, flip, shift } from '@floating-ui/react';
+import { FloatingPortal } from '@floating-ui/react';
 import styles from './CustomSelect.module.css';
 import Portal from './Portal';
-import { Slice } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Option<T> {
     label: string;
@@ -20,7 +21,7 @@ interface Props<T> {
 export function CustomSelect<T>({ value, options, onChange }: Props<T>) {
     const [open, setOpen] = useState(false);
 
-    const selected = options.find((opt) => opt.value === value);
+    const selected = options.find((opt) => String(opt.value) === String(value));
 
     // Floating UI setup
     const {
@@ -41,7 +42,7 @@ export function CustomSelect<T>({ value, options, onChange }: Props<T>) {
             <button
                 ref={refs.setReference}
                 type="button"
-                className="trigger"
+                className={`trigger ${styles.trigger}`}
                 style={{
                     backgroundColor: selected?.color || 'transparent',
                 }}
@@ -60,7 +61,9 @@ export function CustomSelect<T>({ value, options, onChange }: Props<T>) {
                         className={`card dropdown ${styles.dropdown}`}
                         style={{
                             ...floatingStyles,
-                            zIndex: 999,
+                            zIndex: 1001,
+                            position: 'absolute', // important
+                            pointerEvents: 'auto',
                         }}
                     >
                         {options.map((opt) => (
@@ -68,7 +71,7 @@ export function CustomSelect<T>({ value, options, onChange }: Props<T>) {
                                 key={String(opt.value)}
                                 className={styles.option}
                                 style={{
-                                    backgroundColor: opt.color || 'transparent',
+                                    backgroundColor: opt.color,
                                 }}
                                 onClick={() => {
                                     onChange(opt.value);
@@ -79,7 +82,7 @@ export function CustomSelect<T>({ value, options, onChange }: Props<T>) {
                             </li>
                         ))}
                     </ul>
-                </Portal>
+                </Portal> 
             )}
         </div>
     );

@@ -80,6 +80,11 @@ body {
   -ms-user-select: none !important;
 }
 
+#ui-portal {
+  position: relative;
+  z-index: 1000;
+}
+
 /* 
 a {
   font-weight: 500;

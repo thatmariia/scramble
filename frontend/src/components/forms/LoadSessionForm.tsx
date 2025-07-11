@@ -1,7 +1,7 @@
-// src/components/forms/LoadSessionForm.tsx
-import { useState } from 'react';
-import { useLoadSession } from '../../hooks/session';
 import { EntityFormWrapper } from './shared/FormWrapper';
+import { CustomSelect } from '../../elements/CustomSelect';
+import { useLoadSession, useSessionNames } from '../../hooks/session';
+import { useSessionName } from '../../context/SessionContext';
 import styles from './Form.module.css'; 
 import { toast } from 'sonner';
 
@@ -12,47 +12,48 @@ interface Props {
 
 export default function LoadSessionForm({ close, setActive }: Props) {
     const loadSession = useLoadSession();
-    const [name, setName] = useState('');
+    const { data: sessionNames = [], isLoading } = useSessionNames();
+    const { name, setName } = useSessionName();
 
-    const handleSubmit = () => {
-        const trimmed = name.trim();
-        if (!trimmed) {
-            toast.error('Please enter a session name');
-            return;
-        }
-
-        loadSession.mutate(
-            { name: trimmed },
-            {
-                onSuccess: () => {
-                    setActive(trimmed);
-                    close();
-                },
-                onError: () => {
-                    toast.error(`Could not load session "${trimmed}"`);
-                },
-            }
-        );
-    };
+    const options = sessionNames.map((n) => ({
+        label: n,
+        value: n,
+    }));
 
     return (
         <div>
             <p className={styles.title}>
                 Load a session
             </p>
-            <EntityFormWrapper
-                onSubmit={handleSubmit}
-                onCancel={close}
-                isSubmitting={loadSession.isPending}
-                submitLabel="Load"
-            >
-                <input
-                    className="input"
-                    placeholder="Name (optional)"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                />
-            </EntityFormWrapper>
+            <CustomSelect
+                value={name && sessionNames.includes(name) ? name : ''}
+                options={options}
+                onChange={(val) => {
+                    console.log('Selected session:', val);
+                    setName(val);
+
+                    const trimmed = val.trim();
+                    if (!trimmed) {
+                        toast.error('Please enter a session name');
+                        return;
+                    }
+
+                    loadSession.mutate(
+                        { name: trimmed },
+                        {
+                            onSuccess: () => {
+                                toast.success(`Loaded session "${trimmed}"`);
+                                setActive(trimmed);
+                                close();
+                            },
+                            onError: (err) => {
+                                toast.error(`Could not load session "${trimmed}"`);
+                                console.error(err);
+                            },
+                        }
+                    );
+                }}
+            />
         </div>
     );
 }
