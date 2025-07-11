@@ -7,7 +7,6 @@ import {
   type PlayerListDTO,
   type PlayerCreate,
   type PlayerDTO,
-  type PlayerBase,
 } from '../api';
 
 export const PLAYERS_QUERY_KEY = ['players'] as const; 
@@ -20,7 +19,7 @@ export function usePlayers() {
     queryKey: PLAYERS_QUERY_KEY,
     queryFn: () =>
       PlayerService.listPlayers({
-        requestBody: { session_name: active } as PlayerBase,
+        sessionName: active,
       }),
     enabled: !!active,
     staleTime: 0,
@@ -35,10 +34,8 @@ export function useAddPlayer() {
   return useApiMutation<PlayerDTO, PlayerCreate>({
     mutationFn: (data) =>
       PlayerService.addPlayer({
-        requestBody: {
-          ...data,
-          session_name: active,
-        },
+        requestBody: data,
+        sessionName: active,
       }),
     onSuccess: (newPlayer) => {
       queryClient.setQueryData<PlayerListDTO>(

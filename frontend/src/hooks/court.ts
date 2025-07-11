@@ -6,7 +6,6 @@ import {
     CourtService,
     type CourtDTO,
     type CourtCreate,
-    type CourtBase
 } from '../api';
 
 export const COURTS_QUERY_KEY = ['courts'] as const;
@@ -19,7 +18,7 @@ export function useCourts() {
         queryKey: [...COURTS_QUERY_KEY, active],
         queryFn: () =>
             CourtService.listCourts({
-                requestBody: { session_name: active } as CourtBase,
+                sessionName: active,
             }),
         enabled: !!active,
         staleTime: 0,
@@ -34,10 +33,8 @@ export function useAddCourt() {
     return useApiMutation<CourtDTO, CourtCreate>({
         mutationFn: (data) =>
             CourtService.addCourt({
-                requestBody: {
-                    ...data,
-                    session_name: active!,
-                },
+                requestBody: data,
+                sessionName: active!,
             }),
         onSuccess: (newCourt) => {
             queryClient.setQueryData<CourtDTO[]>(

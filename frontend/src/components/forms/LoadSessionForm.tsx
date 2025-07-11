@@ -15,20 +15,21 @@ export default function LoadSessionForm({ close, setActive }: Props) {
     const [name, setName] = useState('');
 
     const handleSubmit = () => {
-        if (!name.trim()) {
+        const trimmed = name.trim();
+        if (!trimmed) {
             toast.error('Please enter a session name');
             return;
         }
 
         loadSession.mutate(
-            { name },
+            { name: trimmed },
             {
                 onSuccess: () => {
-                    setActive(name);
+                    setActive(trimmed);
                     close();
                 },
                 onError: () => {
-                    toast.error(`Could not load session "${name}"`);
+                    toast.error(`Could not load session "${trimmed}"`);
                 },
             }
         );
