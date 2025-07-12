@@ -24,7 +24,7 @@ export default function Courts() {
             primaryAction={null /* no toggle for courts */}
             dangerAction={
                 <button
-                    className="button danger"
+                    className=" ghost"
                     onClick={() => deleteCourt.mutate({ courtId: c.id! })}
                     disabled={deleteCourt.isPending}
                 >

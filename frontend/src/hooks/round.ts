@@ -10,14 +10,15 @@ import {
 
 
 export const ROUND_QUERY_KEY = ['round'] as const;
-export const CURRENT_ROUND_KEY = ['round', 'current'] as const; 
+export const CURRENT_ROUND_KEY = (sessionName: string) =>
+  ['round', 'current', sessionName] as const;
 export const ROUND_COUNT_KEY = (sessionName: string) => ['round', 'count', sessionName] as const;
 export const ROUND_BY_INDEX_KEY = (sessionName: string, index: number) =>
   ['round', 'by-index', sessionName, index] as const;
 
 
 export function invalidateRoundQueries(queryClient: QueryClient, sessionName: string) {
-  queryClient.invalidateQueries({ queryKey: CURRENT_ROUND_KEY });
+  queryClient.invalidateQueries({ queryKey: CURRENT_ROUND_KEY(sessionName) });
   queryClient.invalidateQueries({ queryKey: ROUND_COUNT_KEY(sessionName) });
 
   queryClient.invalidateQueries({
@@ -61,8 +62,8 @@ export function useStartRound() {
   return useApiMutation<RoundDTO, void>({
     mutationFn: () => RoundService.startRound({ sessionName: active }),
     onSuccess: (newRound) => {
-      queryClient.setQueryData<RoundDTO>(CURRENT_ROUND_KEY, newRound);
-      queryClient.invalidateQueries({ queryKey: CURRENT_ROUND_KEY });
+      queryClient.setQueryData<RoundDTO>(CURRENT_ROUND_KEY(active), newRound);
+      queryClient.invalidateQueries({ queryKey: CURRENT_ROUND_KEY(active) });
       invalidateRoundQueries(queryClient, active);
     },
   });
@@ -76,8 +77,8 @@ export function useRestartRound() {
   return useApiMutation<RoundDTO, void>({
     mutationFn: () => RoundService.restartRound({ sessionName: active }),
     onSuccess: (newRound) => {
-      queryClient.setQueryData<RoundDTO>(CURRENT_ROUND_KEY, newRound);
-      queryClient.invalidateQueries({ queryKey: CURRENT_ROUND_KEY });
+      queryClient.setQueryData<RoundDTO>(CURRENT_ROUND_KEY(active), newRound);
+      queryClient.invalidateQueries({ queryKey: CURRENT_ROUND_KEY(active) });
       invalidateRoundQueries(queryClient, active);
     },
   });
@@ -91,8 +92,8 @@ export function useUndoRound() {
   return useApiMutation<void, void>({
     mutationFn: () => RoundService.undoRound({ sessionName: active }),
     onSuccess: () => {
-      queryClient.removeQueries({ queryKey: CURRENT_ROUND_KEY });
-      queryClient.invalidateQueries({ queryKey: CURRENT_ROUND_KEY });
+      queryClient.removeQueries({ queryKey: CURRENT_ROUND_KEY(active) });
+      queryClient.invalidateQueries({ queryKey: CURRENT_ROUND_KEY(active) });
       invalidateRoundQueries(queryClient, active);
     },
   });
