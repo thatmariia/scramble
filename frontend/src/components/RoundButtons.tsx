@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSessionName } from '../context/SessionContext';
 import { useQueryClient } from '@tanstack/react-query';
 import {
     CURRENT_ROUND_KEY,
@@ -12,6 +13,7 @@ import { CustomSelect } from '../elements/CustomSelect';
 import styles from './RoundButtons.module.css';
 
 export function RoundButtons() {
+    const { name: sessionName } = useSessionName();
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
     const startRound = useStartRound();
@@ -37,8 +39,8 @@ export function RoundButtons() {
     } = useRoundByIndex(selectedIndex !== null ? selectedIndex - 1 : -1);
 
     useEffect(() => {
-        if (selectedRound) {
-            queryClient.setQueryData(CURRENT_ROUND_KEY, selectedRound);
+        if (sessionName && selectedRound) {
+            queryClient.setQueryData(CURRENT_ROUND_KEY(sessionName), selectedRound);
         }
     }, [selectedRound, queryClient]);
 

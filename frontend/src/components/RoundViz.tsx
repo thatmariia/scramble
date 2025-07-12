@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { CURRENT_ROUND_KEY } from '../hooks/round';
+import { useCurrentRound } from '../hooks/round';
+import { useSessionName } from '../context/SessionContext';
 import type { RoundDTO, Match } from '../api';
 import { Round } from './round/Round';
 import { PlayerStamp } from '../elements/PlayerStamp';
@@ -59,7 +59,17 @@ function MatchItem({
 }
 
 export default function RoundViz() {
-    const { data: currentRound } = useQuery<RoundDTO>({ queryKey: CURRENT_ROUND_KEY });
+    const { name: sessionName } = useSessionName();
+
+    const { data: currentRound, isLoading, isError } = useCurrentRound();
+
+    if (!sessionName || isLoading) {
+        return <p className="muted">Loading round…</p>;
+    }
+
+    if (isError || !currentRound) {
+        return <p className="error">Failed to load round.</p>;
+    }
 
     const matches = currentRound?.matches ?? [];
 

@@ -30,6 +30,24 @@ export function invalidateRoundQueries(queryClient: QueryClient, sessionName: st
   });
 }
 
+// GET current round (from cache if set, else load last round)
+export function useCurrentRound() {
+  const sessionName = useRequiredSessionName();
+  const { data: roundCount = 0 } = useRoundCount();
+
+  const lastIndex = roundCount > 0 ? roundCount - 1 : -1;
+
+  return useApiQuery<RoundDTO>({
+    queryKey: CURRENT_ROUND_KEY(sessionName),
+    queryFn: () => {
+      if (lastIndex < 0) throw new Error('No rounds to load');
+      return RoundService.getRoundByIndex({ sessionName, index: lastIndex });
+    },
+    enabled: !!sessionName && lastIndex >= 0,
+    staleTime: 0,
+  });
+}
+
 
 // GET number of rounds in a session
 export function useRoundCount() {
