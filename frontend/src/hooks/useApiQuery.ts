@@ -18,21 +18,24 @@ export function useApiQuery<TData>({
     queryKey,
     queryFn,
     onError,          // pull it out so we can call it manually
+    enabled = true,
     ...options        // everything else goes straight through
 }: UseApiQueryOptions<TData>) {
     return useQuery<TData, Error>({
         queryKey,
-        // we intercept the error inside the query function itself
-        queryFn: async () => {
-            try {
-                return await queryFn();
-            } catch (err) {
-                const error = err as Error;
-                toast.error(`Query failed: ${error.message}`);
-                onError?.(error);          // user-supplied callback, if any
-                throw error;               // re-throw so React Query keeps state in sync
+        queryFn: enabled
+            ? async () => {
+                try {
+                    return await queryFn();
+                } catch (err) {
+                    const error = err as Error;
+                    toast.error(`Query failed: ${error.message}`);
+                    onError?.(error);
+                    throw error;
+                }
             }
-        },
-        ...options,                   // staleTime, gcTime, select, enabled, etc.
+            : undefined as any, // prevent eager construction of wrapper
+        enabled,
+        ...options,
     });
 }

@@ -36,14 +36,13 @@ export function useCurrentRound() {
   const { data: roundCount = 0 } = useRoundCount();
 
   const lastIndex = roundCount > 0 ? roundCount - 1 : -1;
+  const enabled = !!sessionName && lastIndex >= 0;
 
   return useApiQuery<RoundDTO>({
     queryKey: CURRENT_ROUND_KEY(sessionName),
-    queryFn: () => {
-      if (lastIndex < 0) throw new Error('No rounds to load');
-      return RoundService.getRoundByIndex({ sessionName, index: lastIndex });
-    },
-    enabled: !!sessionName && lastIndex >= 0,
+    queryFn: () =>
+      RoundService.getRoundByIndex({ sessionName, index: lastIndex }),
+    enabled,
     staleTime: 0,
   });
 }
@@ -62,13 +61,16 @@ export function useRoundCount() {
 }
 
 // GET round by index
+// inside useRound.ts
 export function useRoundByIndex(index: number) {
   const sessionName = useRequiredSessionName();
 
+  const enabled = index >= 0 && !!sessionName;
+
   return useApiQuery<RoundDTO>({
-    queryKey: ROUND_BY_INDEX_KEY(sessionName, index),
+    queryKey: enabled ? ROUND_BY_INDEX_KEY(sessionName, index) : ['noop'],
     queryFn: () => RoundService.getRoundByIndex({ sessionName, index }),
-    enabled: index != null && index >= 0 && !!sessionName,
+    enabled,
   });
 }
 
@@ -103,16 +105,36 @@ export function useRestartRound() {
 }
 
 // DELETE round (undo last round)
-export function useUndoRound() {
+export function useUndoRound(opts?: {
+  onSuccess?: (newCount: number) => void;
+}) {
   const queryClient = useQueryClient();
   const active = useRequiredSessionName();
 
-  return useApiMutation<void, void>({
+  return useApiMutation<number, void>({
     mutationFn: () => RoundService.undoRound({ sessionName: active }),
-    onSuccess: () => {
-      queryClient.removeQueries({ queryKey: CURRENT_ROUND_KEY(active) });
-      queryClient.invalidateQueries({ queryKey: CURRENT_ROUND_KEY(active) });
+
+    onSuccess: async (newCount) => {
       invalidateRoundQueries(queryClient, active);
+
+      // update cached round count
+      queryClient.setQueryData(ROUND_COUNT_KEY(active), newCount);
+
+      const lastIndex = newCount > 0 ? newCount - 1 : -1;
+
+      if (lastIndex >= 0) {
+        const lastRound = await queryClient.fetchQuery({
+          queryKey: ROUND_BY_INDEX_KEY(active, lastIndex),
+          queryFn: () =>
+            RoundService.getRoundByIndex({ sessionName: active, index: lastIndex }),
+        });
+
+        queryClient.setQueryData(CURRENT_ROUND_KEY(active), lastRound);
+      } else {
+        queryClient.removeQueries({ queryKey: CURRENT_ROUND_KEY(active) });
+      }
+
+      opts?.onSuccess?.(newCount);
     },
   });
 }

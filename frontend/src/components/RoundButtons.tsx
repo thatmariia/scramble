@@ -18,25 +18,35 @@ export function RoundButtons() {
 
     const startRound = useStartRound();
     const restartRound = useRestartRound();
-    const undoRound = useUndoRound();
+    const undoRound = useUndoRound({
+        onSuccess: (newCount) => {
+            setSelectedIndex(newCount > 0 ? newCount : null);
+        },
+    });
 
     const { data: roundCount = 0, isLoading: isCountLoading } = useRoundCount();
     const queryClient = useQueryClient();
 
-    // Select last round by default when roundCount changes
+    // select last round by default when roundCount changes
     useEffect(() => {
         if (roundCount > 0) {
-            setSelectedIndex((prev) => (prev === null ? roundCount : prev));
+            setSelectedIndex((prev) => {
+                if (prev === null || prev > roundCount) return roundCount;
+                return prev;
+            });
         } else {
             setSelectedIndex(null);
         }
     }, [roundCount]);
 
+    const effectiveIndex = selectedIndex !== null ? selectedIndex - 1 : -1;
+    const isValidIndex = effectiveIndex >= 0 && effectiveIndex < roundCount;
+
     const {
         data: selectedRound,
         isLoading: isRoundLoading,
         isError: isRoundError,
-    } = useRoundByIndex(selectedIndex !== null ? selectedIndex - 1 : -1);
+    } = useRoundByIndex(effectiveIndex);
 
     useEffect(() => {
         if (sessionName && selectedRound) {
