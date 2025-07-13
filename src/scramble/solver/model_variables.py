@@ -28,9 +28,11 @@ class ModelVariables:
     history: HistoryManager
     settings: Settings
     _player_combos = None
+    id_to_player: dict[str, Player] = None
 
     def __post_init__(self):
         self._player_combos = list(combinations(self.active_players, 2))
+        self.id_to_player = {player.id: player for player in self.active_players}
 
     def players_in_same_court_diff_teams(self, mdl: CpModel):
         """

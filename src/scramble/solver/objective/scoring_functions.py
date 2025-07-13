@@ -136,6 +136,36 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
     return sum(terms)
 
 
+def score_reduce_lvl_gap(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
+    """
+    Penalty for players in the same team having a large level difference.
+    Higher absolute level difference = higher penalty.
+
+    Conforms to the ScoreFunction protocol.
+    """
+    terms: list[IntVar] = []
+
+    if not mv.players_same_team:
+        mv.players_in_same_team(mdl)
+
+    if not mv.team_of_player:
+        mv.map_players_to_teams(mdl)
+
+    for player_i_id, player_j_id in mv.history.partner_tuples:
+        if (player_i_id, player_j_id) not in mv.players_same_team:
+            continue
+
+        lvl_diff = mdl.new_int_var(0, Level.max_value(), f"lvl_diff_{player_i_id}_{player_j_id}")
+        lvl_i = mv.id_to_player[player_i_id].level.value
+        lvl_j = mv.id_to_player[player_j_id].level.value
+        mdl.add(lvl_diff == lvl_i - lvl_j)
+
+        abs_lvl_diff = mdl.new_int_var(-Level.max_value(), Level.max_value(), f"abs_lvl_diff_{player_i_id}_{player_j_id}")
+        mdl.add_abs_equality(abs_lvl_diff, lvl_diff)
+
+    return sum(terms)
+
+
 def score_diversify_partners(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
     """
     Penalty for players playing with the same partner too often.
@@ -216,6 +246,7 @@ def score_maximize_courts_usage(mdl: CpModel, mv: ModelVariables) -> LinearExpr 
 SCORING_FUNCTIONS: dict[Goal, ScoringFunction] = {
     Goal.KEEP_IDEAL_TEAM_SIZE: score_keep_ideal_team_size,
     Goal.BALANCE_LVL: score_balance_lvl,
+    Goal.REDUCE_LVL_GAP: score_reduce_lvl_gap,
     Goal.DIVERSIFY_PARTNERS: score_diversify_partners,
     Goal.DIVERSIFY_OPPONENTS: score_diversify_opponents,
     Goal.MAXIMIZE_COURTS_USAGE: score_maximize_courts_usage,
