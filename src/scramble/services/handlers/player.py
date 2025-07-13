@@ -26,7 +26,7 @@ def get_max_player_assignment(session: AppSession) -> int:
     if not assignments:
         return 0
     try:
-        return max(int(assignment) for assignment in assignments)
+        return max(int(assignment) for assignment in assignments if assignment.isdigit())
     except ValueError as e:
         raise ValueError("Assignments must be numeric values.") from e
 
