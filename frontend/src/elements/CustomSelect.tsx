@@ -65,7 +65,7 @@ export function CustomSelect<T>({ value, options, onChange, fixedWidth }: Props<
                 className={`trigger ${styles.trigger}`}
                 style={{
                     backgroundColor: selected?.color || 'transparent',
-                    width: fixedWidth ?? 'auto',
+                    width: fixedWidth,
                 }}
                 onClick={() => setOpen((v) => !v)}
             >
