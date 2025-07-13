@@ -63,13 +63,13 @@ export default function RoundViz() {
 
     const { data: currentRound, isLoading, isError } = useCurrentRound();
 
-    if (!sessionName || isLoading) {
-        return <p className="muted">Loading round…</p>;
-    }
+    // if (!sessionName || isLoading) {
+    //     return <p className="muted">Loading round…</p>;
+    // }
 
-    if (isError || !currentRound) {
-        return <p className="error">Failed to load round.</p>;
-    }
+    // if (isError || !currentRound) {
+    //     return <p className="error">Failed to load round.</p>;
+    // }
 
     const matches = currentRound?.matches ?? [];
 
