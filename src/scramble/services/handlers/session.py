@@ -28,9 +28,13 @@ def new_session(name: str, settings_path: Path | None) -> AppSession:
         settings = Settings()
 
     session = AppSession(settings=settings, session_name=name)
-    SessionPersistence.save(session)
 
-    return session
+    # check if the session name is already taken
+    if not SessionPersistence.exists(name):
+        SessionPersistence.save(session)
+        return session
+
+    raise ValueError(f"Session name {name} already exists. Please choose a different name.")
 
 
 def load_session(name: str) -> AppSession:

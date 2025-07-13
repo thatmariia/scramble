@@ -80,3 +80,20 @@ class SessionPersistence:
             list[str]: list of session names
         """
         return [p.name for p in SESSIONS_DIR.iterdir() if p.is_dir()]
+
+    @staticmethod
+    def exists(session_name: str) -> bool:
+        """
+        Check if a session with the given name already exists.
+
+        Parameters
+        ----------
+        session_name : str
+            The name of the session to check.
+
+        Returns
+        -------
+        bool
+            True if the session exists, False otherwise.
+        """
+        return (SESSIONS_DIR / session_name).exists()
