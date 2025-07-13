@@ -24,12 +24,9 @@ class PlayerCreate(BaseModel):
 def get_max_player_assignment(
     session_name: str = Query(..., description="Name of the session to get the maximum assignment from")
 ):
-    try:
-        session = get_session(session_name)
-        max_assignment = handlers.get_max_player_assignment(session)
-        return max_assignment
-    except ValueError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Assignments must be numeric values.")
+    session = get_session(session_name)
+    max_assignment = handlers.get_max_player_assignment(session)
+    return max_assignment
 
 @router.post(
     "",

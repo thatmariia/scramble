@@ -16,19 +16,14 @@ def get_max_player_assignment(session: AppSession) -> int:
     -------
     int
         The maximum assignment number, or 0 if no players are present.
-
-    Raises
-    ------
-    ValueError
-        If the assignments cannot be converted to integers.
     """
     assignments = session.player_state.all_assignments()
     if not assignments:
         return 0
-    try:
-        return max(int(assignment) for assignment in assignments if assignment.isdigit())
-    except ValueError as e:
-        raise ValueError("Assignments must be numeric values.") from e
+    int_assignments = [int(assignment) for assignment in assignments if assignment.isdigit()]
+    if not int_assignments:
+        return 0
+    return max(int_assignments)
 
 
 def add_player(session: AppSession, name: str, level: Level, assignment: str = "") -> Player:
