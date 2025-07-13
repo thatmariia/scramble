@@ -3,7 +3,6 @@ import Session from '../components/Session';
 import Players from '../components/Players';
 import Courts from '../components/Courts';
 import { RoundButtons } from '../components/RoundButtons';
-import RoundList from '../components/RoundList';
 import RoundViz from '../components/RoundViz';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 

@@ -68,7 +68,7 @@ export function useRoundCount() {
     queryKey: ROUND_COUNT_KEY(sessionName),
     queryFn: () => RoundService.getRoundCount({ sessionName }),
     enabled: !!sessionName,
-    staleTime: Infinity,
+    staleTime: 0,
   });
 }
 
@@ -78,13 +78,6 @@ export function useRoundByIndex(index: number) {
   const sessionName = useRequiredSessionName();
   const enabled = index >= 0 && !!sessionName;
 
-  // toast.error(
-  //   '[useRoundByIndex]' + sessionName + ' ' + index,
-  //   {
-  //     description: `Fetching round ${index} for session ${sessionName} (enabled? ${enabled})`,
-  //     duration: 3000,
-  //   }
-  // );
   console.log('[useRoundByIndex] sessionName:', sessionName, 'index:', index, 'enabled:', enabled);
 
   const key = ROUND_BY_INDEX_KEY(sessionName, index);
@@ -143,7 +136,7 @@ export function useUndoRound(opts?: {
       opts?.onError?.(error);
     },
     onSuccess: async (newCount) => {
-      invalidateRoundQueries(queryClient, active);
+      // invalidateRoundQueries(queryClient, active);
 
       // update cached round count
       queryClient.setQueryData(ROUND_COUNT_KEY(active), newCount);
@@ -151,13 +144,8 @@ export function useUndoRound(opts?: {
       const lastIndex = newCount > 0 ? newCount - 1 : -1;
 
       if (lastIndex >= 0) {
-        // const lastRound = await queryClient.fetchQuery({
-        //   queryKey: ROUND_BY_INDEX_KEY(active, lastIndex),
-        //   queryFn: () =>
-        //     RoundService.getRoundByIndex({ sessionName: active, index: lastIndex }),
-        // });
-
-        // queryClient.setQueryData(CURRENT_ROUND_KEY(active), lastRound);
+        const lastRound = await RoundService.getRoundByIndex({ sessionName: active, index: lastIndex });
+        queryClient.setQueryData(CURRENT_ROUND_KEY(active), lastRound);
       } else {
         queryClient.removeQueries({ queryKey: CURRENT_ROUND_KEY(active) });
       }
