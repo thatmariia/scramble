@@ -102,37 +102,6 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
 
             terms.append(abs_diff)
 
-            # abs_diffs[(team1_id, team2_id)] = abs_diff
-
-    # # build pairwise imbalance only when teams share a court
-    # for court in mv.courts:
-    #     for team1_id in range(mv.nr_teams):
-    #         for team2_id in range(team1_id + 1, mv.nr_teams):
-    #             both_on_court_and_active = define_and_var(
-    #                 mdl,
-    #                 f"both_on_court_active_t{team1_id}_t{team2_id}_c{court.id}",
-    #                 [
-    #                     mv.team_on_court[(team1_id, court.id)],
-    #                     mv.team_on_court[(team2_id, court.id)],
-    #                     mv.team_active[team1_id],
-    #                     mv.team_active[team2_id],
-    #                 ],
-    #             )
-    #             left = mdl.new_int_var(0, max_total * max_players, f"left_t{team1_id}_t{team2_id}_c{court.id}")
-    #             right = mdl.new_int_var(0, max_total * max_players, f"right_t{team1_id}_t{team2_id}_c{court.id}")
-    #
-    #             mdl.add_multiplication_equality(left, [total_lvl[team1_id], team_size[team2_id]])
-    #             mdl.add_multiplication_equality(right, [total_lvl[team2_id], team_size[team1_id]])
-    #
-    #             diff = mdl.new_int_var(-max_total, max_total, f"avg_diff_t{team1_id}_t{team2_id}_c{court.id}")
-    #             abs_diff = mdl.new_int_var(0, max_total, f"abs_avg_diff_t{team1_id}_t{team2_id}_c{court.id}")
-    #
-    #             mdl.add(diff == left - right).only_enforce_if(both_on_court_and_active)
-    #             mdl.add(diff == 0).only_enforce_if(both_on_court_and_active.Not())
-    #             mdl.add_abs_equality(abs_diff, diff)
-    #
-    #             terms.append(abs_diff)
-
     return sum(terms)
 
 
