@@ -170,8 +170,9 @@ class ScrambleSolver:
         # get goals sorted by descending weight (i.e., highest priority first)
         sorted_goals = sorted(
             [
-                (goal, self.settings.goal_configs[goal].weight, expr)
-                for goal, expr in expressions.items()
+                (goal, cfg.weight, expressions[goal])
+                for goal, cfg in self.settings.goal_configs.items()
+                if cfg.enabled and cfg.weight > 0 and goal in expressions
             ],
             key=lambda t: -t[1],  # descending weight = priority
         )
@@ -242,7 +243,8 @@ class ScrambleSolver:
         self.add_constraints()
         self.set_objective()
 
-        status = self.solver.Solve(self.model)
+        # status = self.solver.Solve(self.model)
+        status = self.solver.StatusName()
 
         if status in [cp.OPTIMAL, cp.FEASIBLE]:
             matches = self._matches_from_solutions()
