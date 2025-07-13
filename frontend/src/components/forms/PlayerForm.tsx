@@ -38,13 +38,15 @@ export function PlayerForm({ onDone }: { onDone(): void }) {
                 required
             />
             <CustomSelect
-                value={level}
+                value={level} 
                 options={LEVEL_VALUES.map((lvl) => ({
                     label: LEVELS[lvl],
                     value: lvl as Level,
                     color: LEVEL_COLORS[lvl as Level],
+                    slice: 3,
                 }))}
                 onChange={(val) => setLevel(val)}
+                fixedWidth="4em"
             />
         </EntityFormWrapper>
     );

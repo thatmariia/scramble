@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, status, HTTPException, Query
 from scramble.services import handlers
 from scramble.adapters.api.schemas import RoundDTO
@@ -55,7 +57,8 @@ def undo_and_start_new_round(session_name: str = Query(..., description="Name of
     "",
     operation_id="undo_round",
     summary="Undo round.",
-    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=int,
+    status_code=status.HTTP_200_OK,
 )
 def undo_round(session_name: str = Query(..., description="Name of the session to undo the last round in")):
     """
@@ -65,10 +68,16 @@ def undo_round(session_name: str = Query(..., description="Name of the session t
     ----------
     session_name : str
         Name of the session in which to undo the last round.
+
+    Returns
+    -------
+    int
+        The number of rounds remaining after undoing the last round.
     """
     try:
         session = get_session(session_name)
         handlers.undo_round(session)
+        return len(session.round_tracker)
     except ValueError:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="No rounds to undo")
 
@@ -130,10 +139,12 @@ def get_round_by_index(
         session = get_session(session_name)
         round = session.round_tracker.get(index)
         if round is None:
+            logging.warning(f"round does not exist at index {index}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Round does not exist"
             )
+
         return RoundDTO.from_domain(round)
     except FileNotFoundError:
         raise HTTPException(

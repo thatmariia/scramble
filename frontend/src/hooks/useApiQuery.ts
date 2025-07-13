@@ -17,22 +17,32 @@ type UseApiQueryOptions<TData> = Omit<
 export function useApiQuery<TData>({
     queryKey,
     queryFn,
-    onError,          // pull it out so we can call it manually
-    ...options        // everything else goes straight through
+    onError,
+    enabled = true,
+    ...options
 }: UseApiQueryOptions<TData>) {
+    const randomId = Math.random().toString(36).substring(2, 15);
     return useQuery<TData, Error>({
         queryKey,
-        // we intercept the error inside the query function itself
         queryFn: async () => {
+            console.debug(randomId, '[useApiQuery] Executing query:', queryKey, 'enabled:', enabled);
+            if (!enabled) {
+                console.debug(randomId, '[useApiQuery] Query is disabled, returning rejected promise');
+                // Never gets executed if enabled is false, but just in case
+                return Promise.reject(new Error('Query disabled'));
+            }
             try {
+                console.debug(randomId, '[useApiQuery] Calling query function for:', queryKey);
                 return await queryFn();
             } catch (err) {
+                console.error(randomId, '[useApiQuery] Query failed:', queryKey, err);
                 const error = err as Error;
                 toast.error(`Query failed: ${error.message}`);
-                onError?.(error);          // user-supplied callback, if any
-                throw error;               // re-throw so React Query keeps state in sync
+                onError?.(error);
+                throw error;
             }
         },
-        ...options,                   // staleTime, gcTime, select, enabled, etc.
+        enabled,
+        ...options,
     });
 }

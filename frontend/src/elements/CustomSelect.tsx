@@ -1,24 +1,32 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useFloating, autoUpdate, offset, flip, shift } from '@floating-ui/react';
+import { FloatingPortal } from '@floating-ui/react';
 import styles from './CustomSelect.module.css';
 import Portal from './Portal';
+import { toast } from 'sonner';
 
 interface Option<T> {
     label: string;
     value: T;
     color?: string;
+    slice?: number; // Optional, for slicing label
 }
 
 interface Props<T> {
     value: T;
     options: Option<T>[];
     onChange: (val: T) => void;
+    fixedWidth?: string | number; // e.g., "10rem", 200, etc.
 }
 
-export function CustomSelect<T>({ value, options, onChange }: Props<T>) {
+export function CustomSelect<T>({ value, options, onChange, fixedWidth }: Props<T>) {
     const [open, setOpen] = useState(false);
 
-    const selected = options.find((opt) => opt.value === value);
+    const selected = options.find((opt) => String(opt.value) === String(value));
+    const displayLabel =
+        selected?.slice
+            ? selected.label.slice(0, selected.slice)
+            : selected?.label ?? 'n/a';
 
     // Floating UI setup
     const {
@@ -34,18 +42,36 @@ export function CustomSelect<T>({ value, options, onChange }: Props<T>) {
         placement: 'bottom-end', // align right edges
     });
 
+    const [visibleLabel, setVisibleLabel] = useState(displayLabel);
+    const [fading, setFading] = useState(false);
+
+    // when displayLabel changes, animate the transition
+    useEffect(() => {
+        if (displayLabel !== visibleLabel) {
+            setFading(true);
+            const timeout = setTimeout(() => {
+                setVisibleLabel(displayLabel);
+                setFading(false);
+            }, 200); // match your fade duration
+            return () => clearTimeout(timeout);
+        }
+    }, [displayLabel]);
+
     return (
         <div className={styles.wrapper} ref={refs.setReference}>
             <button
                 ref={refs.setReference}
                 type="button"
-                className="trigger"
+                className={`trigger ${styles.trigger}`}
                 style={{
                     backgroundColor: selected?.color || 'transparent',
+                    width: fixedWidth ?? 'auto',
                 }}
                 onClick={() => setOpen((v) => !v)}
             >
-                {selected?.label.slice(0, 3) || 'n/a'}
+                <span className={`${styles.label} ${fading ? styles.fading : ''}`}>
+                    {visibleLabel}
+                </span>
             </button>
 
             {open && (
@@ -55,7 +81,9 @@ export function CustomSelect<T>({ value, options, onChange }: Props<T>) {
                         className={`card dropdown ${styles.dropdown}`}
                         style={{
                             ...floatingStyles,
-                            zIndex: 999,
+                            zIndex: 1001,
+                            position: 'absolute', // important
+                            pointerEvents: 'auto',
                         }}
                     >
                         {options.map((opt) => (
@@ -63,7 +91,7 @@ export function CustomSelect<T>({ value, options, onChange }: Props<T>) {
                                 key={String(opt.value)}
                                 className={styles.option}
                                 style={{
-                                    backgroundColor: opt.color || 'transparent',
+                                    backgroundColor: opt.color,
                                 }}
                                 onClick={() => {
                                     onChange(opt.value);
@@ -74,7 +102,7 @@ export function CustomSelect<T>({ value, options, onChange }: Props<T>) {
                             </li>
                         ))}
                     </ul>
-                </Portal>
+                </Portal> 
             )}
         </div>
     );

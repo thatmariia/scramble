@@ -1,4 +1,3 @@
-// src/components/Dropdown.tsx
 import {
     useFloating,
     autoUpdate,
@@ -50,17 +49,24 @@ export default function Dropdown({
     // Close on outside click
     useEffect(() => {
         if (!open) return;
+
         const handleClick = (e: MouseEvent) => {
-            if (
-                !triggerRef.current?.contains(e.target as Node) &&
-                !refs.floating.current?.contains(e.target as Node)
-            ) {
+            const target = e.target as Node;
+
+            const clickedOutside =
+                !triggerRef.current?.contains(target) &&
+                !refs.floating.current?.contains(target) &&
+                !(target instanceof HTMLElement && target.closest('.floating-escape'));
+
+            if (clickedOutside) {
                 onClose();
             }
         };
+
         document.addEventListener('mousedown', handleClick);
         return () => document.removeEventListener('mousedown', handleClick);
-    }, [open, triggerRef, dropdownRef, onClose]);
+    }, [open, triggerRef, refs.floating, onClose]);
+    
 
     if (!open) return null;
 

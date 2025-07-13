@@ -40,7 +40,7 @@ export default function Players() {
             }
             dangerAction={
                 <button
-                    className="button danger"
+                    className="button danger ghost"
                     onClick={() => deletePlayer.mutate({ playerId: p.id! })}
                     disabled={deletePlayer.isPending}
                 >

@@ -16,5 +16,11 @@ export default defineConfig({
         rewrite: path => path.replace(/^\/api/, ''),
       }
     }
+  },
+  build: {
+    sourcemap: true, // for production builds
+  },
+  esbuild: {
+    sourcemap: 'inline', // ensures dev-mode source maps too
   }
-})
+});

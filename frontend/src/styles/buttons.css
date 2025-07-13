@@ -16,8 +16,13 @@
     border: none;
     border-radius: var(--radius-lg);
     cursor: pointer;
-    transition: background var(--transition-fast), color var(--transition-fast);
+    transition: background var(--transition-fast), color var(--transition-fast), opacity var(--transition-fast);
     width: fit-content;
+}
+
+.button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 
 /* Variants */
@@ -33,11 +38,23 @@
 .button.danger {
     /* background: var(--color-danger);
     color: white; */
+    color: var(--color-surface);
+    background: var(--color-danger);
+}
+
+.button.danger:hover {
+    color: var(--color-surface);
+    background: var(--color-danger-hover);
+}
+
+.button.danger.ghost { 
+    /* background: var(--color-danger);
+    color: white; */
     color: var(--color-danger);
     background: transparent;
 }
 
-.button.danger:hover {
+.button.danger.ghost:hover {
     background: var(--color-danger);
     color: white;
 }
