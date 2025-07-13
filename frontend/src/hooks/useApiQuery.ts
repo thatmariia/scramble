@@ -17,24 +17,31 @@ type UseApiQueryOptions<TData> = Omit<
 export function useApiQuery<TData>({
     queryKey,
     queryFn,
-    onError,          // pull it out so we can call it manually
+    onError,
     enabled = true,
-    ...options        // everything else goes straight through
+    ...options
 }: UseApiQueryOptions<TData>) {
+    const randomId = Math.random().toString(36).substring(2, 15);
     return useQuery<TData, Error>({
         queryKey,
-        queryFn: enabled
-            ? async () => {
-                try {
-                    return await queryFn();
-                } catch (err) {
-                    const error = err as Error;
-                    toast.error(`Query failed: ${error.message}`);
-                    onError?.(error);
-                    throw error;
-                }
+        queryFn: async () => {
+            console.debug(randomId, '[useApiQuery] Executing query:', queryKey, 'enabled:', enabled);
+            if (!enabled) {
+                console.debug(randomId, '[useApiQuery] Query is disabled, returning rejected promise');
+                // Never gets executed if enabled is false, but just in case
+                return Promise.reject(new Error('Query disabled'));
             }
-            : undefined as any, // prevent eager construction of wrapper
+            try {
+                console.debug(randomId, '[useApiQuery] Calling query function for:', queryKey);
+                return await queryFn();
+            } catch (err) {
+                console.error(randomId, '[useApiQuery] Query failed:', queryKey, err);
+                const error = err as Error;
+                toast.error(`Query failed: ${error.message}`);
+                onError?.(error);
+                throw error;
+            }
+        },
         enabled,
         ...options,
     });

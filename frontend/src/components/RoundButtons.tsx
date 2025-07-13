@@ -15,13 +15,23 @@ import styles from './RoundButtons.module.css';
 export function RoundButtons() {
     const { name: sessionName } = useSessionName();
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+    const [prevIndex, setPrevIndex] = useState<number | null>(null);
 
     const startRound = useStartRound();
     const restartRound = useRestartRound();
     const undoRound = useUndoRound({
+        onQuery: () => {
+            setPrevIndex(selectedIndex);
+            setSelectedIndex(null);
+            console.log('[RoundButtons] undoing round, setting selectedIndex to null');
+        },
         onSuccess: (newCount) => {
             setSelectedIndex(newCount > 0 ? newCount : null);
         },
+        onError: (error) => {
+            console.error('Failed to undo round:', error);
+            setSelectedIndex(prevIndex);
+        }
     });
 
     const { data: roundCount = 0, isLoading: isCountLoading } = useRoundCount();
@@ -41,6 +51,7 @@ export function RoundButtons() {
 
     const effectiveIndex = selectedIndex !== null ? selectedIndex - 1 : -1;
     const isValidIndex = effectiveIndex >= 0 && effectiveIndex < roundCount;
+    console.log('[RoundButtons] effectiveIndex:', effectiveIndex, 'isValidIndex:', isValidIndex);
 
     const {
         data: selectedRound,

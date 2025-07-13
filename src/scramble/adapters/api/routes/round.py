@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, status, HTTPException, Query
 from scramble.services import handlers
 from scramble.adapters.api.schemas import RoundDTO
@@ -137,10 +139,12 @@ def get_round_by_index(
         session = get_session(session_name)
         round = session.round_tracker.get(index)
         if round is None:
+            logging.warning(f"round does not exist at index {index}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Round does not exist"
             )
+
         return RoundDTO.from_domain(round)
     except FileNotFoundError:
         raise HTTPException(

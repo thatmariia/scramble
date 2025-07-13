@@ -7,6 +7,7 @@ import {
   RoundService,
   type RoundDTO,
 } from '../api';
+import { toast } from 'sonner';
 
 
 export const ROUND_QUERY_KEY = ['round'] as const;
@@ -31,17 +32,28 @@ export function invalidateRoundQueries(queryClient: QueryClient, sessionName: st
 }
 
 // GET current round (from cache if set, else load last round)
-export function useCurrentRound() {
-  const sessionName = useRequiredSessionName();
-  const { data: roundCount = 0 } = useRoundCount();
+export function useCurrentRoundIndex() {
+  const { data: roundCount, isLoading, error } = useRoundCount();
+
+  if (isLoading || roundCount === undefined) {
+    return { lastIndex: undefined, isLoading: true, error };
+  }
 
   const lastIndex = roundCount > 0 ? roundCount - 1 : -1;
-  const enabled = !!sessionName && lastIndex >= 0;
+  return { lastIndex, isLoading: false, error: null };
+}
+
+export function useCurrentRound() {
+  const sessionName = useRequiredSessionName();
+  const { lastIndex, isLoading } = useCurrentRoundIndex();
+
+  const enabled = !!sessionName && lastIndex !== undefined && lastIndex >= 0;
+
+  console.log('[useCurrentRound] sessionName:', sessionName, 'lastIndex:', lastIndex, 'enabled:', enabled);
 
   return useApiQuery<RoundDTO>({
     queryKey: CURRENT_ROUND_KEY(sessionName),
-    queryFn: () =>
-      RoundService.getRoundByIndex({ sessionName, index: lastIndex }),
+    queryFn: () => RoundService.getRoundByIndex({ sessionName, index: lastIndex! }),
     enabled,
     staleTime: 0,
   });
@@ -64,11 +76,20 @@ export function useRoundCount() {
 // inside useRound.ts
 export function useRoundByIndex(index: number) {
   const sessionName = useRequiredSessionName();
-
   const enabled = index >= 0 && !!sessionName;
 
+  // toast.error(
+  //   '[useRoundByIndex]' + sessionName + ' ' + index,
+  //   {
+  //     description: `Fetching round ${index} for session ${sessionName} (enabled? ${enabled})`,
+  //     duration: 3000,
+  //   }
+  // );
+  console.log('[useRoundByIndex] sessionName:', sessionName, 'index:', index, 'enabled:', enabled);
+
+  const key = ROUND_BY_INDEX_KEY(sessionName, index);
   return useApiQuery<RoundDTO>({
-    queryKey: enabled ? ROUND_BY_INDEX_KEY(sessionName, index) : ['noop'],
+    queryKey: key,
     queryFn: () => RoundService.getRoundByIndex({ sessionName, index }),
     enabled,
   });
@@ -106,14 +127,21 @@ export function useRestartRound() {
 
 // DELETE round (undo last round)
 export function useUndoRound(opts?: {
+  onQuery?: () => void;
   onSuccess?: (newCount: number) => void;
+  onError?: (error: Error) => void;
 }) {
   const queryClient = useQueryClient();
   const active = useRequiredSessionName();
 
   return useApiMutation<number, void>({
-    mutationFn: () => RoundService.undoRound({ sessionName: active }),
-
+    mutationFn: () => {
+      opts?.onQuery?.();
+      return RoundService.undoRound({ sessionName: active });
+    },
+    onError: (error) => {
+      opts?.onError?.(error);
+    },
     onSuccess: async (newCount) => {
       invalidateRoundQueries(queryClient, active);
 
@@ -123,13 +151,13 @@ export function useUndoRound(opts?: {
       const lastIndex = newCount > 0 ? newCount - 1 : -1;
 
       if (lastIndex >= 0) {
-        const lastRound = await queryClient.fetchQuery({
-          queryKey: ROUND_BY_INDEX_KEY(active, lastIndex),
-          queryFn: () =>
-            RoundService.getRoundByIndex({ sessionName: active, index: lastIndex }),
-        });
+        // const lastRound = await queryClient.fetchQuery({
+        //   queryKey: ROUND_BY_INDEX_KEY(active, lastIndex),
+        //   queryFn: () =>
+        //     RoundService.getRoundByIndex({ sessionName: active, index: lastIndex }),
+        // });
 
-        queryClient.setQueryData(CURRENT_ROUND_KEY(active), lastRound);
+        // queryClient.setQueryData(CURRENT_ROUND_KEY(active), lastRound);
       } else {
         queryClient.removeQueries({ queryKey: CURRENT_ROUND_KEY(active) });
       }
