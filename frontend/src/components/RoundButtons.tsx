@@ -26,7 +26,7 @@ export function RoundButtons() {
     const undoRound = useUndoRound({
         onQuery: () => {
             setPrevIndex(selectedIndex);
-            setSelectedIndex(null);
+            // setSelectedIndex(null);
             console.log('[RoundButtons] undoing round, setting selectedIndex to null');
         },
         onSuccess: (newCount) => {
@@ -82,14 +82,20 @@ export function RoundButtons() {
     return (
         <div>
             <div className={styles.actionButtons}>
-                {roundCount > 0 && (
+                {/* {roundCount > 0 && (
                     <CustomSelect<number>
                         value={selectedIndex ?? 0}
                         options={options}
                         onChange={(val) => setSelectedIndex(val)}
                     />
-                )}
-                
+                )} */}
+                <CustomSelect<number>
+                    value={selectedIndex ?? 0}
+                    options={options}
+                    onChange={(val) => setSelectedIndex(val)}
+                    fixedWidth="8em"
+                />
+
                 <button
                     className="button primary"
                     onClick={() => startRound.mutate()}
@@ -98,24 +104,21 @@ export function RoundButtons() {
                     start round
                 </button>
 
-                {!isCountLoading && roundCount > 0 && isLastRound && (
-                    <>
-                        <button
-                            className="button primary"
-                            onClick={() => restartRound.mutate()}
-                            disabled={restartRound.isPending}
-                        >
-                            restart round
-                        </button>
-                        <button
-                            className="button danger"
-                            onClick={() => undoRound.mutate()}
-                            disabled={undoRound.isPending}
-                        >
-                            undo round
-                        </button>
-                    </>
-                )}
+                <button
+                    className="button primary"
+                    onClick={() => restartRound.mutate()}
+                    disabled={restartRound.isPending || !isLastRound || roundCount === 0 || isRoundLoading}
+                >
+                    restart round
+                </button>
+
+                <button
+                    className="button danger"
+                    onClick={() => undoRound.mutate()}
+                    disabled={restartRound.isPending || !isLastRound || roundCount === 0 || isRoundLoading}
+                >
+                    undo round
+                </button>
             </div>
         </div>
     );

@@ -16,9 +16,10 @@ interface Props<T> {
     value: T;
     options: Option<T>[];
     onChange: (val: T) => void;
+    fixedWidth?: string | number; // e.g., "10rem", 200, etc.
 }
 
-export function CustomSelect<T>({ value, options, onChange }: Props<T>) {
+export function CustomSelect<T>({ value, options, onChange, fixedWidth }: Props<T>) {
     const [open, setOpen] = useState(false);
 
     const selected = options.find((opt) => String(opt.value) === String(value));
@@ -45,6 +46,7 @@ export function CustomSelect<T>({ value, options, onChange }: Props<T>) {
                 className={`trigger ${styles.trigger}`}
                 style={{
                     backgroundColor: selected?.color || 'transparent',
+                    width: fixedWidth ?? 'auto',
                 }}
                 onClick={() => setOpen((v) => !v)}
             >

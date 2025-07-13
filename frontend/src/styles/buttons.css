@@ -20,6 +20,11 @@
     width: fit-content;
 }
 
+.button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
 /* Variants */
 .button.primary {
     background: var(--color-accent);
