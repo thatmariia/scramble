@@ -17,7 +17,11 @@ export function RoundButtons() {
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
     const [prevIndex, setPrevIndex] = useState<number | null>(null);
 
-    const startRound = useStartRound();
+    const startRound = useStartRound({
+        onSuccess: (newCount) => {
+            setSelectedIndex(newCount);
+        },
+    });
     const restartRound = useRestartRound();
     const undoRound = useUndoRound({
         onQuery: () => {

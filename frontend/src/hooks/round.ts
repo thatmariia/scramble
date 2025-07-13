@@ -89,16 +89,22 @@ export function useRoundByIndex(index: number) {
 }
 
 // POST round (start a new round) 
-export function useStartRound() {
+export function useStartRound(opts?: { onSuccess?: (newCount: number) => void }) {
   const queryClient = useQueryClient();
   const active = useRequiredSessionName();
 
   return useApiMutation<RoundDTO, void>({
     mutationFn: () => RoundService.startRound({ sessionName: active }),
     onSuccess: (newRound) => {
-      queryClient.setQueryData<RoundDTO>(CURRENT_ROUND_KEY(active), newRound);
-      queryClient.invalidateQueries({ queryKey: CURRENT_ROUND_KEY(active) });
-      invalidateRoundQueries(queryClient, active);
+      const prevCount = queryClient.getQueryData<number>(ROUND_COUNT_KEY(active)) ?? 0;
+      const newCount = prevCount + 1;
+      const newIndex = newCount - 1;
+
+      queryClient.setQueryData(ROUND_COUNT_KEY(active), newCount);
+      queryClient.setQueryData(CURRENT_ROUND_KEY(active), newRound);
+      queryClient.setQueryData(ROUND_BY_INDEX_KEY(active, newIndex), newRound);
+
+      opts?.onSuccess?.(newCount);
     },
   });
 }
@@ -111,8 +117,15 @@ export function useRestartRound() {
   return useApiMutation<RoundDTO, void>({
     mutationFn: () => RoundService.restartRound({ sessionName: active }),
     onSuccess: (newRound) => {
-      queryClient.setQueryData<RoundDTO>(CURRENT_ROUND_KEY(active), newRound);
-      queryClient.invalidateQueries({ queryKey: CURRENT_ROUND_KEY(active) });
+      // get round count before invalidating
+      const roundCount = queryClient.getQueryData<number>(ROUND_COUNT_KEY(active)) ?? 1;
+      const index = roundCount - 1;
+
+      // update caches
+      queryClient.setQueryData(CURRENT_ROUND_KEY(active), newRound);
+      queryClient.setQueryData(ROUND_BY_INDEX_KEY(active, index), newRound);
+
+      // optionally refetch if backend might differ
       invalidateRoundQueries(queryClient, active);
     },
   });
