@@ -7,6 +7,9 @@
     font-weight: 600;
     line-height: 1;
     white-space: nowrap; 
+    width: 1em;
+    align-content: center;
+    text-align: center;
 }
 
 .wrapper {

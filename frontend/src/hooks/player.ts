@@ -10,6 +10,23 @@ import {
 } from '../api';
 
 export const PLAYERS_QUERY_KEY = ['players'] as const; 
+export const MAX_PLAYER_ASSIGNMENT_KEY = (sessionName: string) =>
+  ['players', 'max-assignment', sessionName] as const;
+
+// GET max player assignment number
+export function useMaxPlayerAssignment() {
+  const active = useRequiredSessionName();
+
+  return useApiQuery<number>({
+    queryKey: MAX_PLAYER_ASSIGNMENT_KEY(active),
+    queryFn: () =>
+      PlayerService.getMaxPlayerAssignment({
+        sessionName: active,
+      }),
+    enabled: !!active,
+    staleTime: 0,
+  });
+}
 
 // GET player (list all players)
 export function usePlayers() {

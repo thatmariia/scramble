@@ -6,6 +6,15 @@ from scramble.adapters.cli.state import get_session
 player_app = typer.Typer(help="Manage players")
 
 
+@player_app.command("get-max-assignment")
+def get_max_assignment():
+    """
+    Get the maximum player assignment number in the current session.
+    """
+    max_assignment = handlers.get_max_player_assignment(get_session())
+    typer.secho(f"Maximum player assignment: {max_assignment}", fg=typer.colors.GREEN)
+
+
 @player_app.command("add")
 def add_player(
         name: str,

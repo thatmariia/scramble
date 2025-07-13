@@ -13,6 +13,21 @@ class PlayerCreate(BaseModel):
     level: Level
     assignment: str = ""
 
+
+@router.get(
+    "/assignments",
+    operation_id="get_max_player_assignment",
+    summary="Get maximum player assignment.",
+    response_model=int,
+    status_code=status.HTTP_200_OK,
+)
+def get_max_player_assignment(
+    session_name: str = Query(..., description="Name of the session to get the maximum assignment from")
+):
+    session = get_session(session_name)
+    max_assignment = handlers.get_max_player_assignment(session)
+    return max_assignment
+
 @router.post(
     "",
     operation_id="add_player",
