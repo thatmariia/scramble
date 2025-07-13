@@ -34,8 +34,15 @@ def new_session(payload: SessionCreate):
     settings_path = None
     if payload.settings_path:
         settings_path = Path(payload.settings_path)
-    session = handlers.new_session(payload.name, settings_path)
-    return AppSessionDTO.from_domain(session)
+
+    try:
+        session = handlers.new_session(payload.name, settings_path)
+        return AppSessionDTO.from_domain(session)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Session name '{payload.name}' already exists. Please choose a different name."
+        )
 
 
 @router.get(
