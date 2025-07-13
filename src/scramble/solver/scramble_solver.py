@@ -10,8 +10,7 @@ from scramble.settings import Settings, Goal
 from scramble.solver.model_variables import ModelVariables
 from scramble.solver.hints import add_startup_hints, add_hints_from_round
 from scramble.solver.constraints import add_constraints, add_symmetry_breaking
-from scramble.solver.objective import score_round
-from scramble.solver.utils import rough_upper_bound
+from scramble.solver.objective import score_round, rough_upper_bound
 from scramble.solver.utils import define_and_var
 
 LOGGER = logging.getLogger(__name__)
@@ -93,6 +92,7 @@ class ScrambleSolver:
         )
         self._mv = None
         self._prev_round = prev_round
+        self._final_status = None
         LOGGER.debug(f"number of teams: {self.nr_teams}")
 
     def build_model(self):
@@ -178,18 +178,24 @@ class ScrambleSolver:
             key=lambda t: -t[1],  # descending weight = priority
         )
 
+        prev_obj_var: IntVar | None = None  # the var of the previous level
+        best_prev: int | None = None  # best value found for previous level
+
         for idx, (goal, _, expr) in enumerate(sorted_goals):
-            ub = rough_upper_bound(self._mv, goal)
-            obj_var = self.model.NewIntVar(0, ub, f"obj_{goal.name.lower()}")
-            self.model.Add(obj_var == expr)
+            if prev_obj_var is not None:
+                self.model.add(prev_obj_var <= best_prev)  # fix the previous objective variable
+
+            ub = rough_upper_bound(self._mv, goal) or 0
+            obj_var = self.model.new_int_var(0, ub, f"obj_{idx}_{goal.name.lower()}")
+            self.model.add(obj_var == expr)
+
             self.model.minimize(obj_var)
+            self._final_status = self.solver.Solve(self.model)
+            if self._final_status not in (cp.OPTIMAL, cp.FEASIBLE):
+                raise RuntimeError(f"No feasible solution when optimising {goal.name}")
 
-            status = self.solver.Solve(self.model)
-            if status not in [cp.OPTIMAL, cp.FEASIBLE]:
-                raise RuntimeError(f"No feasible solution found optimizing {goal.name}")
-
-            value = self.solver.Value(obj_var)
-            self.model.Add(obj_var == value)  # fix for subsequent rounds
+            best_prev = self.solver.Value(obj_var)
+            prev_obj_var = obj_var
 
     def _matches_from_solutions(self) -> list[Match]:
         """
@@ -245,9 +251,7 @@ class ScrambleSolver:
         self.add_constraints()
         self.set_objective()
 
-        status = self.solver.Solve(self.model)
-
-        if status in [cp.OPTIMAL, cp.FEASIBLE]:
+        if (self._final_status is not None) and (self._final_status in [cp.OPTIMAL, cp.FEASIBLE]):
             matches = self._matches_from_solutions()
             game_round = Round(matches)
             LOGGER.debug(f"Solution found:\n{game_round}")
