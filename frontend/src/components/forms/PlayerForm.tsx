@@ -1,7 +1,7 @@
 // src/components/players/PlayerForm.tsx
 import { useState } from 'react';
 import type { Level } from '../../api';
-import { useAddPlayer } from '../../hooks/player';
+import { useAddPlayer, useMaxPlayerAssignment } from '../../hooks/player';
 import { EntityFormWrapper } from './shared/FormWrapper';
 import { CustomSelect } from '../../elements/CustomSelect';
 import { LEVELS, LEVEL_VALUES, LEVEL_COLORS } from '../../constants/levels';
@@ -10,10 +10,15 @@ export function PlayerForm({ onDone }: { onDone(): void }) {
     const addPlayer = useAddPlayer();
     const [name, setName] = useState('');
     const [level, setLevel] = useState<Level>(3 as Level);
+    const { data: maxAssignment, isLoading } = useMaxPlayerAssignment();
 
     const handleSubmit = () => {
+        if (maxAssignment === undefined || isLoading) return;
+
+        const assignment = String(maxAssignment + 1);
+
         addPlayer.mutate(
-            { name, level },
+            { name, level, assignment },
             {
                 onSuccess: () => {
                     setName('');
@@ -28,7 +33,7 @@ export function PlayerForm({ onDone }: { onDone(): void }) {
         <EntityFormWrapper
             onSubmit={handleSubmit}
             onCancel={onDone}
-            isSubmitting={addPlayer.isPending}
+            isSubmitting={addPlayer.isPending || isLoading}
         >
             <input
                 className="input"
