@@ -12,6 +12,8 @@ class Goal(str, Enum):
         Ensures that teams have the ideal number of players.
     BALANCE_LVL : str
         Ensures that teams in a match are balanced in terms of player level.
+    REDUCE_LVL_GAP : str
+        Reduces the gap in levels within teams.
     DIVERSIFY_PARTNERS : str
         Ensures that players play with different partners across matches.
     DIVERSIFY_OPPONENTS : str
