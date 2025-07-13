@@ -162,9 +162,31 @@ class ScrambleSolver:
 
     def set_objective(self):
         """
-        Sets the weighted sum of scoring functions as the objective to minimize.
+        Sets up lexicographic (priority-based) optimization by sequentially minimizing goals
+        in order of descending priority (highest weight = highest priority).
         """
-        self.model.Minimize(score_round(self.model, self._mv))
+        expressions = score_round(self.model, self._mv)
+
+        # get goals sorted by descending weight (i.e., highest priority first)
+        sorted_goals = sorted(
+            [
+                (goal, self.settings.goal_configs[goal].weight, expr)
+                for goal, expr in expressions.items()
+            ],
+            key=lambda t: -t[1],  # descending weight = priority
+        )
+
+        for idx, (goal, _, expr) in enumerate(sorted_goals):
+            obj_var = self.model.NewIntVar(0, 10 ** 6, f"obj_{goal.name.lower()}")
+            self.model.Add(obj_var == expr)
+            self.model.minimize(obj_var)
+
+            status = self.solver.Solve(self.model)
+            if status not in [cp.OPTIMAL, cp.FEASIBLE]:
+                raise RuntimeError(f"No feasible solution found optimizing {goal.name}")
+
+            value = self.solver.Value(obj_var)
+            self.model.Add(obj_var == value)  # fix for subsequent rounds
 
     def _matches_from_solutions(self) -> list[Match]:
         """
