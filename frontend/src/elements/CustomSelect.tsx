@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useFloating, autoUpdate, offset, flip, shift } from '@floating-ui/react';
 import { FloatingPortal } from '@floating-ui/react';
 import styles from './CustomSelect.module.css';
@@ -23,6 +23,10 @@ export function CustomSelect<T>({ value, options, onChange, fixedWidth }: Props<
     const [open, setOpen] = useState(false);
 
     const selected = options.find((opt) => String(opt.value) === String(value));
+    const displayLabel =
+        selected?.slice
+            ? selected.label.slice(0, selected.slice)
+            : selected?.label ?? 'n/a';
 
     // Floating UI setup
     const {
@@ -38,6 +42,21 @@ export function CustomSelect<T>({ value, options, onChange, fixedWidth }: Props<
         placement: 'bottom-end', // align right edges
     });
 
+    const [visibleLabel, setVisibleLabel] = useState(displayLabel);
+    const [fading, setFading] = useState(false);
+
+    // when displayLabel changes, animate the transition
+    useEffect(() => {
+        if (displayLabel !== visibleLabel) {
+            setFading(true);
+            const timeout = setTimeout(() => {
+                setVisibleLabel(displayLabel);
+                setFading(false);
+            }, 200); // match your fade duration
+            return () => clearTimeout(timeout);
+        }
+    }, [displayLabel]);
+
     return (
         <div className={styles.wrapper} ref={refs.setReference}>
             <button
@@ -50,10 +69,9 @@ export function CustomSelect<T>({ value, options, onChange, fixedWidth }: Props<
                 }}
                 onClick={() => setOpen((v) => !v)}
             >
-                {selected?.slice
-                    ? selected.label.slice(0, selected.slice)
-                    : selected?.label || 'n/a'
-                }
+                <span className={`${styles.label} ${fading ? styles.fading : ''}`}>
+                    {visibleLabel}
+                </span>
             </button>
 
             {open && (

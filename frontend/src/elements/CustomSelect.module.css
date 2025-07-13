@@ -14,6 +14,16 @@
     /* justify-content: left; */
 }
 
+.label {
+    display: inline-block;
+    transition: opacity var(--transition-fast);
+    opacity: 1;
+}
+
+.trigger .label-enter {
+    opacity: 0;
+}
+
 .dropdown {
     top: 110%;
     right: 0;

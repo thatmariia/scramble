@@ -78,17 +78,12 @@ export function RoundButtons() {
             : [];
     
     const isLastRound = selectedIndex === roundCount;
+    const canRestartOrUndo =
+        isLastRound && roundCount > 0 && !isRoundLoading;
 
     return (
         <div>
             <div className={styles.actionButtons}>
-                {/* {roundCount > 0 && (
-                    <CustomSelect<number>
-                        value={selectedIndex ?? 0}
-                        options={options}
-                        onChange={(val) => setSelectedIndex(val)}
-                    />
-                )} */}
                 <CustomSelect<number>
                     value={selectedIndex ?? 0}
                     options={options}
@@ -107,7 +102,7 @@ export function RoundButtons() {
                 <button
                     className="button primary"
                     onClick={() => restartRound.mutate()}
-                    disabled={restartRound.isPending || !isLastRound || roundCount === 0 || isRoundLoading}
+                    disabled={restartRound.isPending || !canRestartOrUndo}
                 >
                     restart round
                 </button>
@@ -115,7 +110,7 @@ export function RoundButtons() {
                 <button
                     className="button danger"
                     onClick={() => undoRound.mutate()}
-                    disabled={restartRound.isPending || !isLastRound || roundCount === 0 || isRoundLoading}
+                    disabled={restartRound.isPending || !canRestartOrUndo}
                 >
                     undo round
                 </button>

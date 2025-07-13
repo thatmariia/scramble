@@ -16,7 +16,7 @@
     border: none;
     border-radius: var(--radius-lg);
     cursor: pointer;
-    transition: background var(--transition-fast), color var(--transition-fast);
+    transition: background var(--transition-fast), color var(--transition-fast), opacity var(--transition-fast);
     width: fit-content;
 }
 
