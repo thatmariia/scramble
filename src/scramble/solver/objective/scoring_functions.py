@@ -126,15 +126,16 @@ def score_reduce_lvl_gap(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVa
 
         same_team = mv.players_same_team[(player_i_id, player_j_id)]
 
-        lvl_diff = mdl.new_int_var(0, Level.max_value(), f"lvl_diff_{player_i_id}_{player_j_id}")
+        lvl_diff = mdl.new_int_var(-Level.max_value(), Level.max_value(), f"lvl_diff_{player_i_id}_{player_j_id}")
         lvl_i = mv.id_to_player[player_i_id].level.value
         lvl_j = mv.id_to_player[player_j_id].level.value
-        mdl.add(lvl_diff == lvl_i - lvl_j)
+        mdl.add(lvl_diff == lvl_i - lvl_j).only_enforce_if(same_team)
+        mdl.add(lvl_diff == 0).only_enforce_if(same_team.Not())
 
-        abs_lvl_diff = mdl.new_int_var(-Level.max_value(), Level.max_value(), f"abs_lvl_diff_{player_i_id}_{player_j_id}")
+        abs_lvl_diff = mdl.new_int_var(0, Level.max_value(), f"abs_lvl_diff_{player_i_id}_{player_j_id}")
         mdl.add_abs_equality(abs_lvl_diff, lvl_diff)
 
-        terms.append(abs_lvl_diff * same_team)
+        terms.append(abs_lvl_diff)
 
     return sum(terms)
 
