@@ -82,6 +82,14 @@ export function RoundButtons() {
     return (
         <div>
             <div className={styles.actionButtons}>
+                {roundCount > 0 && (
+                    <CustomSelect<number>
+                        value={selectedIndex ?? 0}
+                        options={options}
+                        onChange={(val) => setSelectedIndex(val)}
+                    />
+                )}
+                
                 <button
                     className="button primary"
                     onClick={() => startRound.mutate()}
@@ -107,14 +115,6 @@ export function RoundButtons() {
                             undo round
                         </button>
                     </>
-                )}
-
-                {roundCount > 0 && (
-                    <CustomSelect<number>
-                        value={selectedIndex ?? 0}
-                        options={options}
-                        onChange={(val) => setSelectedIndex(val)}
-                    />
                 )}
             </div>
         </div>
