@@ -72,6 +72,8 @@ export function RoundButtons() {
                 value: i + 1,
             }))
             : [];
+    
+    const isLastRound = selectedIndex === roundCount;
 
     return (
         <div>
@@ -84,7 +86,7 @@ export function RoundButtons() {
                     start round
                 </button>
 
-                {!isCountLoading && roundCount > 0 && (
+                {!isCountLoading && roundCount > 0 && isLastRound && (
                     <>
                         <button
                             className="button primary"
