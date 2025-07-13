@@ -11,6 +11,7 @@ from scramble.solver.model_variables import ModelVariables
 from scramble.solver.hints import add_startup_hints, add_hints_from_round
 from scramble.solver.constraints import add_constraints, add_symmetry_breaking
 from scramble.solver.objective import score_round
+from scramble.solver.utils import rough_upper_bound
 from scramble.solver.utils import define_and_var
 
 LOGGER = logging.getLogger(__name__)
@@ -79,7 +80,7 @@ class ScrambleSolver:
 
         self.model = cp.CpModel()
         self.solver = cp.CpSolver()
-        self.solver.parameters.log_search_progress = False
+        self.solver.parameters.log_search_progress = True
         self.solver.parameters.num_search_workers = min(4, multiprocessing.cpu_count())
         self.solver.parameters.random_seed = 1
         # self.solver.parameters.linearization_level = 1
@@ -178,7 +179,8 @@ class ScrambleSolver:
         )
 
         for idx, (goal, _, expr) in enumerate(sorted_goals):
-            obj_var = self.model.NewIntVar(0, 10 ** 6, f"obj_{goal.name.lower()}")
+            ub = rough_upper_bound(self._mv, goal)
+            obj_var = self.model.NewIntVar(0, ub, f"obj_{goal.name.lower()}")
             self.model.Add(obj_var == expr)
             self.model.minimize(obj_var)
 
@@ -243,8 +245,7 @@ class ScrambleSolver:
         self.add_constraints()
         self.set_objective()
 
-        # status = self.solver.Solve(self.model)
-        status = self.solver.StatusName()
+        status = self.solver.Solve(self.model)
 
         if status in [cp.OPTIMAL, cp.FEASIBLE]:
             matches = self._matches_from_solutions()

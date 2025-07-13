@@ -59,6 +59,28 @@ class HistoryManager(Serializable):
         """
         self.player_histories.clear()
 
+    def get_all_partners_counts(self) -> int:
+        """
+        Computes the total number of non-unique partners across all players.
+
+        Returns
+        -------
+        int
+            The total number of partners across all players.
+        """
+        return sum(history.get_all_partners_counts() for history in self.player_histories.values())
+
+    def get_all_opponents_counts(self) -> int:
+        """
+        Computes the total number of non-unique opponents across all players.
+
+        Returns
+        -------
+        int
+            The total number of opponents across all players.
+        """
+        return sum(history.get_all_opponents_counts() for history in self.player_histories.values())
+
     def get_player_history(self, player_id: str) -> PlayerHistory:
         """
         Retrieves the PlayerHistory for the given player ID.
