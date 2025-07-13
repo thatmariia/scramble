@@ -3,6 +3,34 @@ from scramble.app import AppSession
 from scramble.app.session_persistence import SessionPersistence
 
 
+def get_max_player_assignment(session: AppSession) -> int:
+    """
+    Get the maximum assignment number for players in the current session.
+
+    Parameters
+    ----------
+    session : AppSession
+        The current application session.
+
+    Returns
+    -------
+    int
+        The maximum assignment number, or 0 if no players are present.
+
+    Raises
+    ------
+    ValueError
+        If the assignments cannot be converted to integers.
+    """
+    assignments = session.player_state.all_assignments()
+    if not assignments:
+        return 0
+    try:
+        return max(int(assignment) for assignment in assignments)
+    except ValueError as e:
+        raise ValueError("Assignments must be numeric values.") from e
+
+
 def add_player(session: AppSession, name: str, level: Level, assignment: str = "") -> Player:
     """
     Add a new player to the current session.

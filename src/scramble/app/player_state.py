@@ -122,3 +122,18 @@ class PlayerState(Serializable):
             return self.active_players[player_id]
         else:
             raise ValueError(f"Player with ID {player_id} not found in active or resting players.")
+
+    def all_assignments(self) -> list[str]:
+        """
+        Returns a dictionary of all player assignments, combining active and resting players.
+
+        Returns
+        -------
+        list[str]:
+            A list of player assignments, both active and resting.
+        """
+        active_assignments = [player.assignment for player in self.active_list()]
+        resting_assignments = [player.assignment for player in self.resting_list()]
+        if not active_assignments and not resting_assignments:
+            return []
+        return active_assignments + resting_assignments
