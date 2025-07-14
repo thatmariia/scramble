@@ -27,8 +27,6 @@ class PlayerHistory(Serializable):
             f"{combined_df.to_string()}\n"
         )
 
-
-
     @classmethod
     def from_dict(cls, data: dict) -> "PlayerHistory":
         return cls(
@@ -41,6 +39,28 @@ class PlayerHistory(Serializable):
             "partners": self.partners,
             "opponents": self.opponents,
         }
+
+    def get_all_partners_counts(self) -> int:
+        """
+        Computes the total number of non-unique partners the player has played with.
+
+        Returns
+        -------
+        int
+            The total number of partners the player has played with.
+        """
+        return sum(self.partners.values())
+
+    def get_all_opponents_counts(self) -> int:
+        """
+        Computes the total number of non-unique opponents the player has played against.
+
+        Returns
+        -------
+        int
+            The total number of opponents the player has played against.
+        """
+        return sum(self.opponents.values())
 
     def get_partner_frequency(self, other_id: str) -> int:
         """

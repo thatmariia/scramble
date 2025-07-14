@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from itertools import combinations_with_replacement
+from copy import deepcopy
 from scramble.utils import Serializable
 from scramble.core import Level
 from scramble.settings.goal import Goal
@@ -29,14 +30,17 @@ class Settings(Serializable):
     goal_configs: dict[Goal, GoalConfig] | None = None
 
     def __post_init__(self):
+        # ensure that min_team_size and max_team_size are valid
         self.max_team_size = max(self.min_team_size, self.max_team_size)
+
+        # ensure goal_configs is initialized, default values if some goals not provided
         if self.goal_configs is None:
-            self.goal_configs = DEFAULT_GOAL_CONFIGS.copy()
+            self.goal_configs = deepcopy(DEFAULT_GOAL_CONFIGS)
         else:
             # Ensure that all default goals are present in the goal_configs
             for goal in DEFAULT_GOAL_CONFIGS:
                 if goal not in self.goal_configs:
-                    self.goal_configs[goal] = DEFAULT_GOAL_CONFIGS[goal]
+                    self.goal_configs[goal] = deepcopy(DEFAULT_GOAL_CONFIGS[goal])
 
     def __str__(self):
         goal_configs_str = "None"
@@ -65,3 +69,5 @@ class Settings(Serializable):
             "min_nr_teams_in_match": self.min_nr_teams_in_match,
             "goal_configs": {goal.value: config.to_dict() for goal, config in self.goal_configs.items()}
         }
+
+

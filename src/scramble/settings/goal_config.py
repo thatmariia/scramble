@@ -22,6 +22,9 @@ class GoalConfig(Serializable):
     enabled: bool = True
     weight: int = 1
 
+    def __str__(self):
+        return f"goal={self.goal}, enabled={self.enabled}, weight={self.weight}"
+
     @classmethod
     def from_dict(cls, data: dict) -> "GoalConfig":
         return cls(
