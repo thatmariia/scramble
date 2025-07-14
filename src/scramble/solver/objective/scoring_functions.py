@@ -102,36 +102,40 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
 
             terms.append(abs_diff)
 
-            # abs_diffs[(team1_id, team2_id)] = abs_diff
+    return sum(terms)
 
-    # # build pairwise imbalance only when teams share a court
-    # for court in mv.courts:
-    #     for team1_id in range(mv.nr_teams):
-    #         for team2_id in range(team1_id + 1, mv.nr_teams):
-    #             both_on_court_and_active = define_and_var(
-    #                 mdl,
-    #                 f"both_on_court_active_t{team1_id}_t{team2_id}_c{court.id}",
-    #                 [
-    #                     mv.team_on_court[(team1_id, court.id)],
-    #                     mv.team_on_court[(team2_id, court.id)],
-    #                     mv.team_active[team1_id],
-    #                     mv.team_active[team2_id],
-    #                 ],
-    #             )
-    #             left = mdl.new_int_var(0, max_total * max_players, f"left_t{team1_id}_t{team2_id}_c{court.id}")
-    #             right = mdl.new_int_var(0, max_total * max_players, f"right_t{team1_id}_t{team2_id}_c{court.id}")
-    #
-    #             mdl.add_multiplication_equality(left, [total_lvl[team1_id], team_size[team2_id]])
-    #             mdl.add_multiplication_equality(right, [total_lvl[team2_id], team_size[team1_id]])
-    #
-    #             diff = mdl.new_int_var(-max_total, max_total, f"avg_diff_t{team1_id}_t{team2_id}_c{court.id}")
-    #             abs_diff = mdl.new_int_var(0, max_total, f"abs_avg_diff_t{team1_id}_t{team2_id}_c{court.id}")
-    #
-    #             mdl.add(diff == left - right).only_enforce_if(both_on_court_and_active)
-    #             mdl.add(diff == 0).only_enforce_if(both_on_court_and_active.Not())
-    #             mdl.add_abs_equality(abs_diff, diff)
-    #
-    #             terms.append(abs_diff)
+
+def score_reduce_lvl_gap(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
+    """
+    Penalty for players in the same team having a large level difference.
+    Higher absolute level difference = higher penalty.
+
+    Conforms to the ScoreFunction protocol.
+    """
+    terms: list[IntVar] = []
+
+    if not mv.players_same_team:
+        mv.players_in_same_team(mdl)
+
+    if not mv.team_of_player:
+        mv.map_players_to_teams(mdl)
+
+    for player_i_id, player_j_id in mv.history.partner_tuples:
+        if (player_i_id, player_j_id) not in mv.players_same_team:
+            continue
+
+        same_team = mv.players_same_team[(player_i_id, player_j_id)]
+
+        lvl_diff = mdl.new_int_var(-Level.max_value(), Level.max_value(), f"lvl_diff_{player_i_id}_{player_j_id}")
+        lvl_i = mv.id_to_player[player_i_id].level.value
+        lvl_j = mv.id_to_player[player_j_id].level.value
+        mdl.add(lvl_diff == lvl_i - lvl_j).only_enforce_if(same_team)
+        mdl.add(lvl_diff == 0).only_enforce_if(same_team.Not())
+
+        abs_lvl_diff = mdl.new_int_var(0, Level.max_value(), f"abs_lvl_diff_{player_i_id}_{player_j_id}")
+        mdl.add_abs_equality(abs_lvl_diff, lvl_diff)
+
+        terms.append(abs_lvl_diff)
 
     return sum(terms)
 
@@ -216,6 +220,7 @@ def score_maximize_courts_usage(mdl: CpModel, mv: ModelVariables) -> LinearExpr 
 SCORING_FUNCTIONS: dict[Goal, ScoringFunction] = {
     Goal.KEEP_IDEAL_TEAM_SIZE: score_keep_ideal_team_size,
     Goal.BALANCE_LVL: score_balance_lvl,
+    Goal.REDUCE_LVL_GAP: score_reduce_lvl_gap,
     Goal.DIVERSIFY_PARTNERS: score_diversify_partners,
     Goal.DIVERSIFY_OPPONENTS: score_diversify_opponents,
     Goal.MAXIMIZE_COURTS_USAGE: score_maximize_courts_usage,

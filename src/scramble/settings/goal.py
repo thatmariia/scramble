@@ -12,6 +12,8 @@ class Goal(str, Enum):
         Ensures that teams have the ideal number of players.
     BALANCE_LVL : str
         Ensures that teams in a match are balanced in terms of player level.
+    REDUCE_LVL_GAP : str
+        Reduces the gap in levels within teams.
     DIVERSIFY_PARTNERS : str
         Ensures that players play with different partners across matches.
     DIVERSIFY_OPPONENTS : str
@@ -21,6 +23,7 @@ class Goal(str, Enum):
     """
     KEEP_IDEAL_TEAM_SIZE = "Teams should have the ideal number of players."
     BALANCE_LVL = "Teams in a match should be balanced in terms of level."
+    REDUCE_LVL_GAP = "Reduce the gap in levels within teams."
     DIVERSIFY_PARTNERS = "Players should play with different partners."
     DIVERSIFY_OPPONENTS = "Players should play against different opponents."
     MAXIMIZE_COURTS_USAGE = "Maximize the usage of available courts."
