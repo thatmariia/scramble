@@ -3,7 +3,7 @@ from scramble.core import Level
 from scramble.settings import Goal
 from scramble.solver.model_variables import ModelVariables
 from scramble.solver.objective.function_protocol import ScoringFunction
-from scramble.solver.utils import define_and_var, define_or_var
+from scramble.solver.utils import define_and_var, define_or_var, absolute_slack
 
 
 # --- Individual goal scoring functions ---
@@ -22,13 +22,14 @@ def score_keep_ideal_team_size(mdl: CpModel, mv: ModelVariables) -> LinearExpr |
     terms: list[IntVar] = []
     for team_id in range(mv.nr_teams):
         # calculate the deviation from the ideal team size
-        diff = mdl.new_int_var(-len(mv.active_players), len(mv.active_players), f"diff_t{team_id}")
-        abs_diff = mdl.new_int_var(0, len(mv.active_players), f"abs_diff_t{team_id}")
+        diff = mdl.new_int_var(-mv.settings.max_team_size, mv.settings.max_team_size, f"diff_t{team_id}")
+        # abs_diff = mdl.new_int_var(0, len(mv.active_players), f"abs_diff_t{team_id}")
 
         team_size = sum(mv.player_in_team[player.id, team_id] for player in mv.active_players)
         mdl.add(diff == team_size - ideal_team_size).only_enforce_if(mv.team_active[team_id])
         mdl.add(diff == 0).only_enforce_if(mv.team_active[team_id].Not())
-        mdl.add_abs_equality(abs_diff, diff)
+        # mdl.add_abs_equality(abs_diff, diff)
+        abs_diff = absolute_slack(mdl, diff, f"abs_diff_t{team_id}", mv.settings.max_team_size)
 
         terms.append(abs_diff)
     return sum(terms)
@@ -45,7 +46,6 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
 
     max_lvl = max(p.level.value for p in mv.active_players)
     max_total = max_lvl * mv.settings.max_team_size
-    max_players = len(mv.active_players)
 
     total_lvl: dict[int, IntVar] = {}
     team_size: dict[int, IntVar] = {}
@@ -87,18 +87,19 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
                 ],
             )
 
-            left = mdl.new_int_var(0, max_total * max_players, f"left_t{team1_id}_t{team2_id}")
-            right = mdl.new_int_var(0, max_total * max_players, f"right_t{team1_id}_t{team2_id}")
+            left = mdl.new_int_var(0, max_total * mv.settings.max_team_size, f"left_t{team1_id}_t{team2_id}")
+            right = mdl.new_int_var(0, max_total * mv.settings.max_team_size, f"right_t{team1_id}_t{team2_id}")
 
             mdl.add_multiplication_equality(left, [total_lvl[team1_id], team_size[team2_id]])
             mdl.add_multiplication_equality(right, [total_lvl[team2_id], team_size[team1_id]])
 
             diff = mdl.new_int_var(-max_total, max_total, f"avg_diff_t{team1_id}_t{team2_id}")
-            abs_diff = mdl.new_int_var(0, max_total, f"abs_avg_diff_t{team1_id}_t{team2_id}")
+            # abs_diff = mdl.new_int_var(0, max_total, f"abs_avg_diff_t{team1_id}_t{team2_id}")
 
             mdl.add(diff == left - right).only_enforce_if(both_on_court_and_active)
             mdl.add(diff == 0).only_enforce_if(both_on_court_and_active.Not())
-            mdl.add_abs_equality(abs_diff, diff)
+            # mdl.add_abs_equality(abs_diff, diff)
+            abs_diff = absolute_slack(mdl, diff, f"abs_avg_diff_t{team1_id}_t{team2_id}", max_total)
 
             terms.append(abs_diff)
 
@@ -132,8 +133,9 @@ def score_reduce_lvl_gap(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVa
         mdl.add(lvl_diff == lvl_i - lvl_j).only_enforce_if(same_team)
         mdl.add(lvl_diff == 0).only_enforce_if(same_team.Not())
 
-        abs_lvl_diff = mdl.new_int_var(0, Level.max_value(), f"abs_lvl_diff_{player_i_id}_{player_j_id}")
-        mdl.add_abs_equality(abs_lvl_diff, lvl_diff)
+        # abs_lvl_diff = mdl.new_int_var(0, Level.max_value(), f"abs_lvl_diff_{player_i_id}_{player_j_id}")
+        # mdl.add_abs_equality(abs_lvl_diff, lvl_diff)
+        abs_lvl_diff = absolute_slack(mdl, lvl_diff, f"abs_lvl_diff_{player_i_id}_{player_j_id}", Level.max_value())
 
         terms.append(abs_lvl_diff)
 

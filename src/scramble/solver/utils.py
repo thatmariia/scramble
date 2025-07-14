@@ -1,4 +1,11 @@
-from ortools.sat.python.cp_model import CpModel
+from ortools.sat.python.cp_model import CpModel, IntVar
+
+
+def absolute_slack(mdl: CpModel, x: IntVar, name: str, ub: int) -> IntVar:
+    s = mdl.NewIntVar(0, ub, name)
+    mdl.Add(s >=  x)
+    mdl.Add(s >= -x)
+    return s
 
 
 def define_and_var_imp(mdl, a, b, name):
