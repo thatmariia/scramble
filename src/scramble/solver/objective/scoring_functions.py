@@ -1,4 +1,5 @@
 from ortools.sat.python.cp_model import CpModel, IntVar, LinearExpr, Domain
+import math
 from scramble.core import Level
 from scramble.settings import Goal
 from scramble.solver.model_variables import ModelVariables
@@ -46,9 +47,13 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
 
     max_lvl = max(p.level.value for p in mv.active_players)
     max_total = max_lvl * mv.settings.max_team_size
+    team_sizes = list(range(mv.settings.min_team_size, mv.settings.max_team_size + 1))
+    lcm_sizes = math.lcm(*team_sizes)
+    size_scales = {size: lcm_sizes // size for size in team_sizes}
 
     total_lvl: dict[int, IntVar] = {}
     team_size: dict[int, IntVar] = {}
+    scaled_avg: dict[int, IntVar] = {}
     for team_id in range(mv.nr_teams):
         team_size[team_id] = mdl.new_int_var(0, mv.settings.max_team_size, f"team_size_t{team_id}")
         mdl.add(
@@ -66,11 +71,20 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
             )
         )
 
+        table = []
+        for size in team_sizes:
+            scaled_lvl = mdl.new_int_var(0, size_scales[size] * max_lvl * mv.settings.max_team_size, f"tot_scaled_t{team_id}_k{size}")
+            mdl.add(scaled_lvl == size_scales[size] * total_lvl[team_id])
+            table.append(scaled_lvl)
+
+        idx = mdl.new_int_var(0, len(team_sizes) - 1, f"idx_t{team_id}")
+        mdl.add(idx == team_size[team_id] - team_sizes[0])
+        scaled_avg[team_id] = mdl.new_int_var(0, lcm_sizes * max_total, f"scaled_avg_t{team_id}")
+        mdl.add_element(idx, table, scaled_avg[team_id])
+
     if not mv.court_of_team:
         mv.map_teams_to_courts(mdl)
 
-    # build penalty terms for each pair of teams
-    # abs_diffs: dict[tuple[int, int], IntVar] = {}
     for team1_id in range(mv.nr_teams):
         for team2_id in range(team1_id + 1, mv.nr_teams):
             same_court = mdl.new_bool_var(f"same_court_{team1_id}_{team2_id}")
@@ -87,21 +101,13 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
                 ],
             )
 
-            left = mdl.new_int_var(0, max_total * mv.settings.max_team_size, f"left_t{team1_id}_t{team2_id}")
-            right = mdl.new_int_var(0, max_total * mv.settings.max_team_size, f"right_t{team1_id}_t{team2_id}")
+            bound = lcm_sizes * max_lvl * mv.settings.max_team_size
+            gap = mdl.new_int_var(-bound, bound, f"gap_t{team1_id}_t{team2_id}")
+            mdl.add(gap == scaled_avg[team1_id] - scaled_avg[team2_id]).only_enforce_if(both_on_court_and_active)
+            mdl.add(gap == 0).only_enforce_if(both_on_court_and_active.Not())
+            abs_gap = absolute_slack(mdl, gap, f"abs_gap_t{team1_id}_t{team2_id}", lcm_sizes * max_lvl)
 
-            mdl.add_multiplication_equality(left, [total_lvl[team1_id], team_size[team2_id]])
-            mdl.add_multiplication_equality(right, [total_lvl[team2_id], team_size[team1_id]])
-
-            diff = mdl.new_int_var(-max_total, max_total, f"avg_diff_t{team1_id}_t{team2_id}")
-            # abs_diff = mdl.new_int_var(0, max_total, f"abs_avg_diff_t{team1_id}_t{team2_id}")
-
-            mdl.add(diff == left - right).only_enforce_if(both_on_court_and_active)
-            mdl.add(diff == 0).only_enforce_if(both_on_court_and_active.Not())
-            # mdl.add_abs_equality(abs_diff, diff)
-            abs_diff = absolute_slack(mdl, diff, f"abs_avg_diff_t{team1_id}_t{team2_id}", max_total)
-
-            terms.append(abs_diff)
+            terms.append(abs_gap)
 
     return sum(terms)
 
