@@ -113,18 +113,33 @@ def score_reduce_lvl_gap(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVa
         team_has_lvl[(team_id, level)] = b
 
     for team_id in range(mv.nr_teams):
-        min_lvl = mdl.new_int_var(Level.min_value(), Level.max_value(), f"min_lvl_t{team_id}")
-        max_lvl = mdl.new_int_var(Level.min_value(), Level.max_value(), f"max_lvl_t{team_id}")
-
+        # min
+        is_min = {lvl: mdl.new_bool_var(f"t{team_id}_is_min_lvl_{lvl}") for lvl in Level.all_values()}
+        mdl.add(sum(is_min.values()) == 1)
         for lvl in Level.all_values():
-            present = team_has_lvl[(team_id, lvl)]
-            mdl.add(min_lvl <= lvl).only_enforce_if(present)
-            mdl.add(max_lvl >= lvl).only_enforce_if(present)
+            mdl.add_implication(is_min[lvl], team_has_lvl[(team_id, lvl)])
 
-        mdl.add(min_lvl == 0).only_enforce_if(mv.team_active[team_id].Not())
-        mdl.add(max_lvl == 0).only_enforce_if(mv.team_active[team_id].Not())
+        min_lvl = mdl.new_int_var(Level.min_value(), Level.max_value(), f"min_lvl_t{team_id}")
+        mdl.add(min_lvl == sum(lvl * is_min[lvl] for lvl in Level.all_values()))
 
-        rng = mdl.new_int_var(0, Level.max_value() - Level.min_value(), f"lvl_rng_t{team_id}")
+        # max
+        is_max = {lvl: mdl.new_bool_var(f"t{team_id}_is_max_lvl_{lvl}") for lvl in Level.all_values()}
+        mdl.add(sum(is_max.values()) == 1)
+        for lvl in Level.all_values():
+            mdl.add_implication(is_max[lvl], team_has_lvl[(team_id, lvl)])
+
+        max_lvl = mdl.new_int_var(Level.min_value(), Level.max_value(), f"max_lvl_t{team_id}")
+        mdl.add(max_lvl == sum(lvl * is_max[lvl] for lvl in Level.all_values()))
+
+        # deactivate if team is not active
+        mdl.add(min_lvl == Level.min_value()).only_enforce_if(mv.team_active[team_id].Not())
+        mdl.add(max_lvl == Level.min_value()).only_enforce_if(mv.team_active[team_id].Not())
+
+        for b in (*is_min.values(), *is_max.values()):
+            mdl.add(b == 0).only_enforce_if(mv.team_active[team_id].Not())
+
+        # calculate the range
+        rng = mdl.new_int_var(0, Level.max_value() - Level.min_value(), f"lvl_range_t{team_id}")
         mdl.add(rng == max_lvl - min_lvl).only_enforce_if(mv.team_active[team_id])
         mdl.add(rng == 0).only_enforce_if(mv.team_active[team_id].Not())
 
