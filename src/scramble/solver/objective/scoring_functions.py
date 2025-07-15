@@ -82,26 +82,14 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
         scaled_avg[team_id] = mdl.new_int_var(0, lcm_sizes * max_total, f"scaled_avg_t{team_id}")
         mdl.add_element(idx, table, scaled_avg[team_id])
 
-    if not mv.court_of_team:
-        mv.map_teams_to_courts(mdl)
+    # if not mv.court_of_team:
+    #     mv.map_teams_to_courts(mdl)
 
+    bound = lcm_sizes * max_lvl * mv.settings.max_team_size  # compute once
     for team1_id in range(mv.nr_teams):
         for team2_id in range(team1_id + 1, mv.nr_teams):
-            same_court = mdl.new_bool_var(f"same_court_{team1_id}_{team2_id}")
-            mdl.add(mv.court_of_team[team1_id] == mv.court_of_team[team2_id]).only_enforce_if(same_court)
-            mdl.add(mv.court_of_team[team1_id] != mv.court_of_team[team2_id]).only_enforce_if(same_court.Not())
+            both_on_court_and_active = mv.teams_on_same_court(mdl, team1_id, team2_id)
 
-            both_on_court_and_active = define_and_var(
-                mdl,
-                f"both_on_court_active_t{team1_id}_t{team2_id}",
-                [
-                    same_court,
-                    mv.team_active[team1_id],
-                    mv.team_active[team2_id],
-                ],
-            )
-
-            bound = lcm_sizes * max_lvl * mv.settings.max_team_size
             gap = mdl.new_int_var(-bound, bound, f"gap_t{team1_id}_t{team2_id}")
             mdl.add(gap == scaled_avg[team1_id] - scaled_avg[team2_id]).only_enforce_if(both_on_court_and_active)
             mdl.add(gap == 0).only_enforce_if(both_on_court_and_active.Not())

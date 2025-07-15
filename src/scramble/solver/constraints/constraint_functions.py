@@ -103,8 +103,13 @@ def constraint_team_active(mdl: CpModel, mv: ModelVariables):
         size = mdl.new_int_var(0, len(mv.active_players), f"size_t{team_id}")
         mdl.add(size == sum(team_players))
 
-        mdl.add(size >= 1).only_enforce_if(mv.team_active[team_id])
-        mdl.add(size == 0).only_enforce_if(mv.team_active[team_id].Not())
+        # mdl.add(size >= 1).only_enforce_if(mv.team_active[team_id])
+        # mdl.add(size == 0).only_enforce_if(mv.team_active[team_id].Not())
+
+        is_non_zero = mdl.new_bool_var(f"team_{team_id}_is_non_zero")
+        mdl.add(size >= 1).only_enforce_if(is_non_zero)
+        mdl.add(size == 0).only_enforce_if(is_non_zero.Not())
+        mdl.add(mv.team_active[team_id] == is_non_zero)
 
 
 def constraint_team_mapping(mdl: CpModel, mv: ModelVariables):
@@ -138,8 +143,13 @@ def constraint_court_active(mdl: CpModel, mv: ModelVariables):
         size = mdl.new_int_var(0, mv.nr_teams, f"size_court_{court.id}")
         mdl.add(size == sum(teams_on_court))
 
-        mdl.add(size >= 1).only_enforce_if(mv.court_active[court.id])
-        mdl.add(size == 0).only_enforce_if(mv.court_active[court.id].Not())
+        # mdl.add(size >= 1).only_enforce_if(mv.court_active[court.id])
+        # mdl.add(size == 0).only_enforce_if(mv.court_active[court.id].Not())
+
+        is_non_zero = mdl.new_bool_var(f"court_{court.id}_is_non_zero")
+        mdl.add(size >= 1).only_enforce_if(is_non_zero)
+        mdl.add(size == 0).only_enforce_if(is_non_zero.Not())
+        mdl.add(mv.court_active[court.id] == is_non_zero)
 
 
 # --- Constraint function registry ---

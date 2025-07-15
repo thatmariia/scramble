@@ -3,7 +3,7 @@ from ortools.sat.python.cp_model import CpModel, IntVar
 from itertools import combinations
 from scramble.settings import Settings
 from scramble.core import Player, HistoryManager, Court
-from scramble.solver.utils import define_and_var, define_and_var_imp
+from scramble.solver.utils import define_and_var, define_and_var_imp, define_or_var
 # from scramble.solver.bounds import UpperBoundsComputer
 from scramble.settings import Goal
 from scramble.core import Level
@@ -21,7 +21,7 @@ class ModelVariables:
     court_active: dict
     team_of_player: dict
     court_of_player: dict
-    court_of_team: list
+    # court_of_team: list
     players_same_team: dict
     players_same_court: dict
     players_same_court_diff_teams: dict
@@ -32,11 +32,13 @@ class ModelVariables:
     settings: Settings
     _player_combos = None
     id_to_player: dict[str, Player] = None
+    _teams_same_court_cache = None
 
     def __post_init__(self):
         self._player_combos = list(combinations(self.active_players, 2))
         self.id_to_player = {player.id: player for player in self.active_players}
         self.scale_weights()
+        self._teams_same_court_cache = {}
 
     def scale_weights(self):
         def scale_weight(w_value, w_max, scale):
@@ -177,20 +179,50 @@ class ModelVariables:
 
         self.court_of_player = court_of_player
 
-    def map_teams_to_courts(self, mdl: CpModel):
+    def teams_on_same_court(self, mdl: CpModel, t1: int, t2: int):
         """
-        Map teams to courts, returning a list of IntVars where each index corresponds to a team.
+        Lazily creates and returns a BoolVar that is true iff
+        teams t1 and t2 are assigned to the *same* court AND both teams are active.
         """
-        court_id2idx = {court.id: i for i, court in enumerate(self.courts)}
+        key = (min(t1, t2), max(t1, t2))
+        if key in self._teams_same_court_cache:
+            return self._teams_same_court_cache[key]
 
-        court_idx_of_team: list[IntVar] = []
-        for team_id in range(self.nr_teams):
-            court_idx = mdl.new_int_var(0, len(self.courts) - 1, f"court_idx_t{team_id}")
-            court_idx_of_team.append(court_idx)
-            for court_id, idx in court_id2idx.items():
-                mdl.add(court_idx == idx).only_enforce_if(self.team_on_court[(team_id, court_id)])
+        same_on_court = [
+            define_and_var(
+                mdl,
+                f"t{t1}_t{t2}_both_on_{c.id}",
+                [self.team_on_court[(t1, c.id)],
+                 self.team_on_court[(t2, c.id)]]
+            )
+            for c in self.courts
+        ]
+        var = define_and_var(
+            mdl,
+            f"t{t1}_t{t2}_same_court_and_active",
+            [
+                define_or_var(mdl, f"t{t1}_t{t2}_same_court", same_on_court),
+                self.team_active[t1],
+                self.team_active[t2],
+            ]
+        )
+        self._teams_same_court_cache[key] = var
+        return var
 
-        self.court_of_team = court_idx_of_team
+    # def map_teams_to_courts(self, mdl: CpModel):
+    #     """
+    #     Map teams to courts, returning a list of IntVars where each index corresponds to a team.
+    #     """
+    #     court_id2idx = {court.id: i for i, court in enumerate(self.courts)}
+    #
+    #     court_idx_of_team: list[IntVar] = []
+    #     for team_id in range(self.nr_teams):
+    #         court_idx = mdl.new_int_var(0, len(self.courts) - 1, f"court_idx_t{team_id}")
+    #         court_idx_of_team.append(court_idx)
+    #         for court_id, idx in court_id2idx.items():
+    #             mdl.add(court_idx == idx).only_enforce_if(self.team_on_court[(team_id, court_id)])
+    #
+    #     self.court_of_team = court_idx_of_team
 
 
 class UpperBoundsComputer:

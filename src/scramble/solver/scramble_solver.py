@@ -80,7 +80,7 @@ class ScrambleSolver:
         self.model = cp.CpModel()
         self.solver = cp.CpSolver()
         self.solver.parameters.log_search_progress = False
-        self.solver.parameters.num_search_workers = min(4, multiprocessing.cpu_count())
+        self.solver.parameters.num_search_workers = min(8, multiprocessing.cpu_count())
         self.solver.parameters.random_seed = 1
         # self.solver.parameters.linearization_level = 1
         # self.solver.parameters.max_presolve_iterations = 2
@@ -136,7 +136,7 @@ class ScrambleSolver:
             court_active=self.vars["court_active"],
             team_of_player={},  # filled in later on as needed
             court_of_player={},  # filled in later on as needed
-            court_of_team=[],  # filled in later on as needed
+            # court_of_team=[],  # filled in later on as needed
             players_same_team={},  # filled in later on as needed
             players_same_court={},  # filled in later on as needed
             players_same_court_diff_teams={},  # filled in later on as needed
@@ -148,10 +148,11 @@ class ScrambleSolver:
         )
 
     def add_hints(self):
-        if self._prev_round:
-            add_hints_from_round(self.model, self._mv, self._prev_round)
-        else:
-            add_startup_hints(self.model, self._mv)
+        add_startup_hints(self.model, self._mv)
+        # if self._prev_round:
+        #     add_hints_from_round(self.model, self._mv, self._prev_round)
+        # else:
+        #     add_startup_hints(self.model, self._mv)
 
     def add_constraints(self):
         """
@@ -226,6 +227,7 @@ class ScrambleSolver:
             matches = self._matches_from_solutions()
             game_round = Round(matches)
             LOGGER.debug(f"Solution found:\n{game_round}")
+            print(self.solver.ResponseStats())
             return game_round
         else:
             raise RuntimeError("No feasible solution found")
