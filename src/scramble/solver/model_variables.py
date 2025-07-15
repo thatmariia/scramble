@@ -24,6 +24,7 @@ class ModelVariables:
     history: HistoryManager
     settings: Settings
     id_to_player: dict[str, Player] = None
+    _player_ids: list[str] = None
     _teams_same_court_cache = None
     _players_same_court_diff_teams_cache = None
     _players_same_court_cache = None
@@ -32,6 +33,7 @@ class ModelVariables:
     _player_team_on_court_cache = None
 
     def __post_init__(self):
+        self._player_ids = [player.id for player in self.active_players]
         self.id_to_player = {player.id: player for player in self.active_players}
         self.scale_weights()
         self._teams_same_court_cache = {}
@@ -71,6 +73,22 @@ class ModelVariables:
         # print("Scaled Weights:")
         # for _, config in self.settings.goal_configs.items():
         #     print(config)
+
+    def player_exists(self, player_id: str) -> bool:
+        """
+        Checks if a player with the given ID exists in the model variables.
+
+        Parameters
+        ----------
+        player_id : str
+            The ID of the player to check.
+
+        Returns
+        -------
+        bool
+            True if the player exists, False otherwise.
+        """
+        return player_id in self._player_ids
 
     def teams_on_same_court(self, mdl: CpModel, t1: int, t2: int):
         """

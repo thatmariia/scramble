@@ -96,17 +96,18 @@ def score_reduce_lvl_gap(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVa
     terms: list[IntVar] = []
 
     for player_i_id, player_j_id in mv.history.partner_tuples:
-        same_team = mv.players_in_same_team(mdl, player_i_id, player_j_id)
+        if mv.player_exists(player_i_id) and mv.player_exists(player_j_id):
+            same_team = mv.players_in_same_team(mdl, player_i_id, player_j_id)
 
-        lvl_diff = mdl.new_int_var(-Level.max_value(), Level.max_value(), f"lvl_diff_{player_i_id}_{player_j_id}")
-        lvl_i = mv.id_to_player[player_i_id].level.value
-        lvl_j = mv.id_to_player[player_j_id].level.value
-        mdl.add(lvl_diff == lvl_i - lvl_j).only_enforce_if(same_team)
-        mdl.add(lvl_diff == 0).only_enforce_if(same_team.Not())
+            lvl_diff = mdl.new_int_var(-Level.max_value(), Level.max_value(), f"lvl_diff_{player_i_id}_{player_j_id}")
+            lvl_i = mv.id_to_player[player_i_id].level.value
+            lvl_j = mv.id_to_player[player_j_id].level.value
+            mdl.add(lvl_diff == lvl_i - lvl_j).only_enforce_if(same_team)
+            mdl.add(lvl_diff == 0).only_enforce_if(same_team.Not())
 
-        abs_lvl_diff = absolute_slack(mdl, lvl_diff, f"abs_lvl_diff_{player_i_id}_{player_j_id}", Level.max_value())
+            abs_lvl_diff = absolute_slack(mdl, lvl_diff, f"abs_lvl_diff_{player_i_id}_{player_j_id}", Level.max_value())
 
-        terms.append(abs_lvl_diff)
+            terms.append(abs_lvl_diff)
 
     return sum(terms)
 
@@ -121,9 +122,10 @@ def score_diversify_partners(mdl: CpModel, mv: ModelVariables) -> LinearExpr | I
     terms: list[IntVar] = []
 
     for player_i_id, player_j_id in mv.history.partner_tuples:
-        freq = mv.history.get_partner_frequency(player_i_id, player_j_id)
-        same_team = mv.players_in_same_team(mdl, player_i_id, player_j_id)
-        terms.append(same_team * freq)
+        if mv.player_exists(player_i_id) and mv.player_exists(player_j_id):
+            freq = mv.history.get_partner_frequency(player_i_id, player_j_id)
+            same_team = mv.players_in_same_team(mdl, player_i_id, player_j_id)
+            terms.append(same_team * freq)
     return sum(terms)
 
 
@@ -137,9 +139,10 @@ def score_diversify_opponents(mdl: CpModel, mv: ModelVariables) -> LinearExpr | 
     terms: list[IntVar] = []
 
     for player_i_id, player_j_id in mv.history.opponent_tuples:
-        freq = mv.history.get_opponent_frequency(player_i_id, player_j_id)
-        valid_pair = mv.players_in_same_court_diff_team(mdl, player_i_id, player_j_id)
-        terms.append(valid_pair * freq)
+        if mv.player_exists(player_i_id) and mv.player_exists(player_j_id):
+            freq = mv.history.get_opponent_frequency(player_i_id, player_j_id)
+            valid_pair = mv.players_in_same_court_diff_team(mdl, player_i_id, player_j_id)
+            terms.append(valid_pair * freq)
 
     return sum(terms)
 

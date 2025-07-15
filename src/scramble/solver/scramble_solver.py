@@ -226,7 +226,7 @@ class ScrambleSolver:
             matches = self._matches_from_solutions()
             game_round = Round(matches)
             LOGGER.debug(f"Solution found:\n{game_round}")
-            print(self.solver.ResponseStats())
+            # print(self.solver.ResponseStats())
             return game_round
         else:
             raise RuntimeError("No feasible solution found")
