@@ -50,17 +50,8 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
     size_scales = {size: lcm_sizes // size for size in team_sizes}
 
     total_lvl: dict[int, IntVar] = {}
-    team_size: dict[int, IntVar] = {}
     scaled_avg: dict[int, IntVar] = {}
     for team_id in range(mv.nr_teams):
-        team_size[team_id] = mdl.new_int_var(0, mv.settings.max_team_size, f"team_size_t{team_id}")
-        mdl.add(
-            team_size[team_id] == sum(
-                mv.player_in_team[(player.id, team_id)]
-                for player in mv.active_players
-            )
-        )
-
         total_lvl[team_id] = mdl.new_int_var(0, max_total, f"total_lvl_t{team_id}")
         mdl.add(
             total_lvl[team_id] == sum(
@@ -68,7 +59,6 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
                 for player in mv.active_players
             )
         )
-
         table = []
         for size in team_sizes:
             scaled_lvl = mdl.new_int_var(0, size_scales[size] * max_lvl * mv.settings.max_team_size, f"tot_scaled_t{team_id}_k{size}")
@@ -76,11 +66,11 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
             table.append(scaled_lvl)
 
         idx = mdl.new_int_var(0, len(team_sizes) - 1, f"idx_t{team_id}")
-        mdl.add(idx == team_size[team_id] - team_sizes[0])
+        mdl.add(idx == mv.team_size[team_id] - team_sizes[0])
         scaled_avg[team_id] = mdl.new_int_var(0, lcm_sizes * max_total, f"scaled_avg_t{team_id}")
         mdl.add_element(idx, table, scaled_avg[team_id])
 
-    bound = lcm_sizes * max_lvl * mv.settings.max_team_size  # compute once
+    bound = lcm_sizes * max_total
     for team1_id in range(mv.nr_teams):
         for team2_id in range(team1_id + 1, mv.nr_teams):
             both_on_court_and_active = mv.teams_on_same_court(mdl, team1_id, team2_id)

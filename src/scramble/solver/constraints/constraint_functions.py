@@ -88,7 +88,7 @@ def constraint_player_mapping(mdl: CpModel, mv: ModelVariables):
         mdl.add(sum(teams_with_player) == 1)
 
 
-def constraint_team_active(mdl: CpModel, mv: ModelVariables):
+def constraint_team_active_and_size(mdl: CpModel, mv: ModelVariables):
     """
     Ensures that each team is active if it has players.
 
@@ -100,15 +100,14 @@ def constraint_team_active(mdl: CpModel, mv: ModelVariables):
             for player in mv.active_players
         ]
 
-        size = mdl.new_int_var(0, len(mv.active_players), f"size_t{team_id}")
-        mdl.add(size == sum(team_players))
+        mdl.add(mv.team_size[team_id] == sum(team_players))
 
         # mdl.add(size >= 1).only_enforce_if(mv.team_active[team_id])
         # mdl.add(size == 0).only_enforce_if(mv.team_active[team_id].Not())
 
         is_non_zero = mdl.new_bool_var(f"team_{team_id}_is_non_zero")
-        mdl.add(size >= 1).only_enforce_if(is_non_zero)
-        mdl.add(size == 0).only_enforce_if(is_non_zero.Not())
+        mdl.add(mv.team_size[team_id] >= 1).only_enforce_if(is_non_zero)
+        mdl.add(mv.team_size[team_id] == 0).only_enforce_if(is_non_zero.Not())
         mdl.add(mv.team_active[team_id] == is_non_zero)
 
 
@@ -160,7 +159,7 @@ CONSTRAINT_FUNCTIONS: list[ConstraintFunction] = [
     constraint_team_size,
     constraint_min_nr_teams_on_court,
     constraint_player_mapping,
-    constraint_team_active,
+    constraint_team_active_and_size,
     constraint_team_mapping,
     constraint_court_active,
 ]

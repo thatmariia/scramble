@@ -19,6 +19,7 @@ class ModelVariables:
     team_on_court: dict
     team_active: dict
     court_active: dict
+    team_size: dict
     nr_teams: int
     active_players: list[Player]
     courts: list[Court]

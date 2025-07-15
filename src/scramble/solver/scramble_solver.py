@@ -106,8 +106,12 @@ class ScrambleSolver:
         self.vars["team_on_court"] = {}
         self.vars["team_active"] = {}
         self.vars["court_active"] = {}
+        self.vars["team_size"] = {}
 
         for team_id in range(self.nr_teams):
+            self.vars["team_size"][team_id] = self.model.new_int_var(
+                0, self.settings.max_team_size, f"team_size_{team_id}"
+            )
             for player in self.active_players:
                 self.vars["player_in_team"][(player.id, team_id)] = self.model.new_bool_var(
                     f"player_{player.id}_in_team_{team_id}"
@@ -134,6 +138,7 @@ class ScrambleSolver:
             team_on_court=self.vars["team_on_court"],
             team_active=self.vars["team_active"],
             court_active=self.vars["court_active"],
+            team_size=self.vars["team_size"],
             nr_teams=self.nr_teams,
             active_players=self.active_players,
             courts=self.courts,
