@@ -29,6 +29,7 @@ class ModelVariables:
     _players_same_court_cache = None
     _players_same_team_cache = None
     _player_on_court_cache = None
+    _player_team_on_court_cache = None
 
     def __post_init__(self):
         self.id_to_player = {player.id: player for player in self.active_players}
@@ -38,6 +39,7 @@ class ModelVariables:
         self._players_same_court_cache = {}
         self._players_same_team_cache = {}
         self._player_on_court_cache = {}
+        self._player_team_on_court_cache = {}
 
     def scale_weights(self):
         def scale_weight(w_value, w_max, scale):
@@ -168,19 +170,23 @@ class ModelVariables:
         if key in self._player_on_court_cache:
             return self._player_on_court_cache[key]
 
+        per_team_lits = []
+        for team_id in range(self.nr_teams):
+            and_key = (player_id, team_id, court_id)
+            if and_key not in self._player_team_on_court_cache:
+                self._player_team_on_court_cache[and_key] = define_and_var(
+                    mdl,
+                    f"{player_id}_t{team_id}_on_c{court_id}",
+                    [self.player_in_team[(player_id, team_id)],
+                     self.team_on_court[(team_id, court_id)]]
+                )
+            per_team_lits.append(self._player_team_on_court_cache[and_key])
+
         var = define_or_var(
             mdl,
             f"{player_id}_on_court_{court_id}",
-            [
-                define_and_var(
-                    mdl,
-                    f"{player_id}_on_court_{court_id}",
-                    [self.player_in_team[(player_id, t)], self.team_on_court[(t, court_id)]]
-                )
-                for t in range(self.nr_teams)
-            ]
+            per_team_lits
         )
-
         self._player_on_court_cache[key] = var
         return var
 
