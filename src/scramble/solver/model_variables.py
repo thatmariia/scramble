@@ -146,16 +146,18 @@ class ModelVariables:
         if key in self._players_same_court_cache:
             return self._players_same_court_cache[key]
 
-        per_court = [
-            define_and_var(
-                mdl,
-                f"{p1_id}_{p2_id}_both_on_{c.id}",
-                [self._player_on_court(mdl, p1_id, c.id), self._player_on_court(mdl, p2_id, c.id)]
-            )
-            for c in self.courts
-        ]
-
-        var = define_or_var(mdl, f"{p1_id}_{p2_id}_same_court", per_court)
+        var = define_or_var(
+            mdl,
+            f"{p1_id}_{p2_id}_same_court",
+            [
+                define_and_var(
+                    mdl,
+                    f"{p1_id}_{p2_id}_both_on_{c.id}",
+                    [self._player_on_court(mdl, p1_id, c.id), self._player_on_court(mdl, p2_id, c.id)]
+                )
+                for c in self.courts
+            ]
+        )
         self._players_same_court_cache[key] = var
         return var
 
@@ -167,15 +169,19 @@ class ModelVariables:
         if key in self._player_on_court_cache:
             return self._player_on_court_cache[key]
 
-        per_team = [
-            define_and_var(
-                mdl,
-                f"{player_id}_on_court_{court_id}_team_{t}",
-                [self.player_in_team[(player_id, t)], self.team_on_court[(t, court_id)]]
-            )
-            for t in range(self.nr_teams)
-        ]
-        var = define_or_var(mdl,  f"{player_id}_on_court_{court_id}", per_team)
+        var = define_or_var(
+            mdl,
+            f"{player_id}_on_court_{court_id}",
+            [
+                define_and_var(
+                    mdl,
+                    f"{player_id}_on_court_{court_id}",
+                    [self.player_in_team[(player_id, t)], self.team_on_court[(t, court_id)]]
+                )
+                for t in range(self.nr_teams)
+            ]
+        )
+
         self._player_on_court_cache[key] = var
         return var
 
