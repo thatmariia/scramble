@@ -1,10 +1,8 @@
 from dataclasses import dataclass
 from ortools.sat.python.cp_model import CpModel, IntVar
-from itertools import combinations
 from scramble.settings import Settings
 from scramble.core import Player, HistoryManager, Court
 from scramble.solver.utils import define_and_var, define_and_var_imp, define_or_var
-# from scramble.solver.bounds import UpperBoundsComputer
 from scramble.settings import Goal
 from scramble.core import Level
 

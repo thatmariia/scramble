@@ -109,8 +109,11 @@ class HistoryManager(Serializable):
         partner_tuples = []
         for player_id, history in self.player_histories.items():
             for partner_id, frequency in history.partners.items():
+                sorted_key = tuple(sorted((player_id, partner_id)))
+                if sorted_key in partner_tuples:
+                    continue
                 if frequency > 0:
-                    partner_tuples.append((player_id, partner_id))
+                    partner_tuples.append(sorted_key)
         return partner_tuples
 
     def get_opponent_tuples(self) -> list[tuple[str, str]]:
@@ -125,8 +128,11 @@ class HistoryManager(Serializable):
         opponent_tuples = []
         for player_id, history in self.player_histories.items():
             for opponent_id, frequency in history.opponents.items():
+                sorted_key = tuple(sorted((player_id, opponent_id)))
+                if sorted_key in opponent_tuples:
+                    continue
                 if frequency > 0:
-                    opponent_tuples.append((player_id, opponent_id))
+                    opponent_tuples.append(sorted_key)
         return opponent_tuples
 
     def get_partner_frequency(self, player_id1: str, player_id2: str) -> int:
