@@ -22,9 +22,9 @@ class ModelVariables:
     team_of_player: dict
     court_of_player: dict
     # court_of_team: list
-    players_same_team: dict
-    players_same_court: dict
-    players_same_court_diff_teams: dict
+    # players_same_team: dict
+    # players_same_court: dict
+    # players_same_court_diff_teams: dict
     nr_teams: int
     active_players: list[Player]
     courts: list[Court]
@@ -33,12 +33,18 @@ class ModelVariables:
     _player_combos = None
     id_to_player: dict[str, Player] = None
     _teams_same_court_cache = None
+    _players_same_court_diff_teams_cache = None
+    _players_same_court_cache = None
+    _players_same_team_cache = None
 
     def __post_init__(self):
         self._player_combos = list(combinations(self.active_players, 2))
         self.id_to_player = {player.id: player for player in self.active_players}
         self.scale_weights()
         self._teams_same_court_cache = {}
+        self._players_same_court_diff_teams_cache = {}
+        self._players_same_court_cache = {}
+        self._players_same_team_cache = {}
 
     def scale_weights(self):
         def scale_weight(w_value, w_max, scale):
@@ -71,114 +77,7 @@ class ModelVariables:
         # for _, config in self.settings.goal_configs.items():
         #     print(config)
 
-    def players_in_same_court_diff_teams(self, mdl: CpModel):
-        """
-        Create a constraint that ensures players are on the same court if they are paired together
-        but belong to different teams.
-        This is done by creating a binary variable for each player pair and enforcing that they
-        are on the same court if the variable is set.
-        """
-        if not self.players_same_court:
-            self.players_on_same_court(mdl)
-
-        if not self.players_same_team:
-            self.players_in_same_team(mdl)
-
-        players_same_court_diff_teams = {}
-        for player1, player2 in self._player_combos:
-            if player1.id == player2.id:
-                continue
-            same_court = self.players_same_court[(player1.id, player2.id)]
-            same_team = self.players_same_team[(player1.id, player2.id)]
-
-            valid_pair = define_and_var_imp(
-                mdl,
-                same_court,
-                same_team.Not(),
-                f"players_same_court_diff_teams_{player1.id}_{player2.id}"
-            )
-
-            players_same_court_diff_teams[(player1.id, player2.id)] = valid_pair
-            players_same_court_diff_teams[(player2.id, player1.id)] = valid_pair
-
-        self.players_same_court_diff_teams = players_same_court_diff_teams
-
-    def players_on_same_court(self, mdl: CpModel):
-        if not self.court_of_player:
-            self.map_players_to_courts(mdl)
-
-        players_same_court = {}
-        for player1, player2 in self._player_combos:
-            if player1.id == player2.id:
-                continue
-            same_court = mdl.new_bool_var(f"same_court_{player1.id}_{player2.id}")
-            mdl.add(self.court_of_player[player1.id] == self.court_of_player[player2.id]).only_enforce_if(same_court)
-            mdl.add(self.court_of_player[player1.id] != self.court_of_player[player2.id]).only_enforce_if(same_court.Not())
-            players_same_court[(player1.id, player2.id)] = same_court
-            players_same_court[(player2.id, player1.id)] = same_court
-
-        self.players_same_court = players_same_court
-
-    def players_in_same_team(self, mdl: CpModel):
-        """
-        Create a constraint that ensures players are in the same team if they are paired together.
-        This is done by creating a binary variable for each player pair and enforcing that they
-        belong to the same team if the variable is set.
-        """
-        if not self.team_of_player:
-            self.map_players_to_teams(mdl)
-
-        players_same_team = {}
-        for player1, player2 in self._player_combos:
-            if player1.id == player2.id:
-                continue
-            same_team = mdl.new_bool_var(f"same_team_{player1.id}_{player2.id}")
-            mdl.add(self.team_of_player[player1.id] == self.team_of_player[player2.id]).only_enforce_if(same_team)
-            mdl.add(self.team_of_player[player1.id] != self.team_of_player[player2.id]).only_enforce_if(same_team.Not())
-            players_same_team[(player1.id, player2.id)] = same_team
-            players_same_team[(player2.id, player1.id)] = same_team
-
-        self.players_same_team = players_same_team
-
-    def map_players_to_teams(self, mdl: CpModel):
-        """
-        Map players to teams, returning a dictionary where keys are player IDs and values are IntVars representing team indices.
-        """
-        team_of_player: dict[str, IntVar] = {}
-        for player in self.active_players:
-            tid = mdl.new_int_var(0, self.nr_teams - 1, f"team_of_{player.id}")
-            team_of_player[player.id] = tid
-            for team_id in range(self.nr_teams):
-                mdl.add(tid == team_id).only_enforce_if(self.player_in_team[(player.id, team_id)])
-
-        self.team_of_player = team_of_player
-
-    def map_players_to_courts(self, mdl: CpModel):
-        """
-        Map players to courts, returning a dictionary where keys are player IDs and values are IntVars representing court indices.
-        """
-        court_id2idx = {court.id: i for i, court in enumerate(self.courts)}
-
-        court_of_player: dict[str, IntVar] = {}
-        for player in self.active_players:
-            cvar = mdl.new_int_var(0, len(self.courts) - 1, f"court_of_{player.id}")
-            court_of_player[player.id] = cvar
-            # self.model.add_element(team_of_player[player.id], court_idx_of_team, cvar)
-            for team_id in range(self.nr_teams):
-                for court_id, court_idx in court_id2idx.items():
-                    # player p is in team t AND team t is on court cid → p is on that court
-                    cond = define_and_var(
-                        mdl,
-                        f"{player.id}_in_t{team_id}_on_c{court_id}",
-                        [
-                            self.player_in_team[(player.id, team_id)],
-                            self.team_on_court[(team_id, court_id)]
-                        ]
-                    )
-                    mdl.add(cvar == court_idx).only_enforce_if(cond)
-
-        self.court_of_player = court_of_player
-
+    # new
     def teams_on_same_court(self, mdl: CpModel, t1: int, t2: int):
         """
         Lazily creates and returns a BoolVar that is true iff
@@ -188,7 +87,7 @@ class ModelVariables:
         if key in self._teams_same_court_cache:
             return self._teams_same_court_cache[key]
 
-        same_on_court = [
+        same_court = [
             define_and_var(
                 mdl,
                 f"t{t1}_t{t2}_both_on_{c.id}",
@@ -201,7 +100,7 @@ class ModelVariables:
             mdl,
             f"t{t1}_t{t2}_same_court_and_active",
             [
-                define_or_var(mdl, f"t{t1}_t{t2}_same_court", same_on_court),
+                define_or_var(mdl, f"t{t1}_t{t2}_same_court", same_court),
                 self.team_active[t1],
                 self.team_active[t2],
             ]
@@ -209,20 +108,73 @@ class ModelVariables:
         self._teams_same_court_cache[key] = var
         return var
 
-    # def map_teams_to_courts(self, mdl: CpModel):
-    #     """
-    #     Map teams to courts, returning a list of IntVars where each index corresponds to a team.
-    #     """
-    #     court_id2idx = {court.id: i for i, court in enumerate(self.courts)}
-    #
-    #     court_idx_of_team: list[IntVar] = []
-    #     for team_id in range(self.nr_teams):
-    #         court_idx = mdl.new_int_var(0, len(self.courts) - 1, f"court_idx_t{team_id}")
-    #         court_idx_of_team.append(court_idx)
-    #         for court_id, idx in court_id2idx.items():
-    #             mdl.add(court_idx == idx).only_enforce_if(self.team_on_court[(team_id, court_id)])
-    #
-    #     self.court_of_team = court_idx_of_team
+    def players_in_same_team(self, mdl: CpModel, p1_id: str, p2_id: str) -> IntVar:
+        key = tuple(sorted((p1_id, p2_id)))
+        if key in self._players_same_team_cache:
+            return self._players_same_team_cache[key]
+
+        both_in_same_team = [
+            define_and_var(
+                mdl,
+                f"{p1_id}_{p2_id}_both_in_team_{t}",
+                [self.player_in_team[(p1_id, t)], self.player_in_team[(p2_id, t)]]
+            )
+            for t in range(self.nr_teams)
+        ]
+
+        same_team = define_or_var(
+            mdl,
+            f"same_team_{p1_id}_{p2_id}",
+            both_in_same_team
+        )
+
+        self._players_same_team_cache[key] = same_team
+        return same_team
+
+    # new
+    def players_on_same_court(self, mdl: CpModel, p1_id: str, p2_id: str) -> IntVar:
+        key = tuple(sorted((p1_id, p2_id)))
+        if key in self._players_same_court_cache:
+            return self._players_same_court_cache[key]
+
+        vars_per_court = []
+        for court in self.courts:
+            for t1 in range(self.nr_teams):
+                for t2 in range(self.nr_teams):
+                    # player p1 in team t1 AND p2 in t2 AND both teams on same court
+                    cond = define_and_var(
+                        mdl,
+                        f"{p1_id}_{p2_id}_t{t1}_t{t2}_on_c{court.id}",
+                        [
+                            self.player_in_team[(p1_id, t1)],
+                            self.player_in_team[(p2_id, t2)],
+                            self.team_on_court[(t1, court.id)],
+                            self.team_on_court[(t2, court.id)],
+                        ]
+                    )
+                    vars_per_court.append(cond)
+
+        result = define_or_var(mdl, f"{p1_id}_{p2_id}_same_court", vars_per_court)
+        self._players_same_court_cache[key] = result
+        return result
+
+    # new
+    def players_in_same_court_diff_team(self, mdl: CpModel, p1_id: str, p2_id: str) -> IntVar:
+        key = tuple(sorted((p1_id, p2_id)))
+        if key in self._players_same_court_diff_teams_cache:
+            return self._players_same_court_diff_teams_cache[key]
+
+        same_court = self.players_on_same_court(mdl, p1_id, p2_id)
+        same_team = self.players_in_same_team(mdl, p1_id, p2_id)
+
+        var = define_and_var_imp(
+            mdl,
+            same_court,
+            same_team.Not(),
+            f"players_same_court_diff_teams_{p1_id}_{p2_id}"
+        )
+        self._players_same_court_diff_teams_cache[key] = var
+        return var
 
 
 class UpperBoundsComputer:

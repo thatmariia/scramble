@@ -109,17 +109,8 @@ def score_reduce_lvl_gap(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVa
     """
     terms: list[IntVar] = []
 
-    if not mv.players_same_team:
-        mv.players_in_same_team(mdl)
-
-    if not mv.team_of_player:
-        mv.map_players_to_teams(mdl)
-
     for player_i_id, player_j_id in mv.history.partner_tuples:
-        if (player_i_id, player_j_id) not in mv.players_same_team:
-            continue
-
-        same_team = mv.players_same_team[(player_i_id, player_j_id)]
+        same_team = mv.players_in_same_team(mdl, player_i_id, player_j_id)
 
         lvl_diff = mdl.new_int_var(-Level.max_value(), Level.max_value(), f"lvl_diff_{player_i_id}_{player_j_id}")
         lvl_i = mv.id_to_player[player_i_id].level.value
@@ -145,18 +136,9 @@ def score_diversify_partners(mdl: CpModel, mv: ModelVariables) -> LinearExpr | I
     """
     terms: list[IntVar] = []
 
-    if not mv.players_same_team:
-        mv.players_in_same_team(mdl)
-
-    if not mv.team_of_player:
-        mv.map_players_to_teams(mdl)
-
     for player_i_id, player_j_id in mv.history.partner_tuples:
-        if (player_i_id, player_j_id) not in mv.players_same_team:
-            continue
-
         freq = mv.history.get_partner_frequency(player_i_id, player_j_id)
-        same_team = mv.players_same_team[(player_i_id, player_j_id)]
+        same_team = mv.players_in_same_team(mdl, player_i_id, player_j_id)
         terms.append(same_team * freq)
     return sum(terms)
 
@@ -170,15 +152,9 @@ def score_diversify_opponents(mdl: CpModel, mv: ModelVariables) -> LinearExpr | 
     """
     terms: list[IntVar] = []
 
-    if not mv.players_same_court_diff_teams:
-        mv.players_in_same_court_diff_teams(mdl)
-
     for player_i_id, player_j_id in mv.history.opponent_tuples:
-        if (player_i_id, player_j_id) not in mv.players_same_court_diff_teams:
-            continue
-
         freq = mv.history.get_opponent_frequency(player_i_id, player_j_id)
-        valid_pair = mv.players_same_court_diff_teams[(player_i_id, player_j_id)]
+        valid_pair = mv.players_in_same_court_diff_team(mdl, player_i_id, player_j_id)
         terms.append(valid_pair * freq)
 
     return sum(terms)
