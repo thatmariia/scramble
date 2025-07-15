@@ -47,35 +47,36 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
     max_total = max_lvl * mv.settings.max_team_size
     team_sizes = list(range(mv.settings.min_team_size, mv.settings.max_team_size + 1))
     lcm_sizes = math.lcm(*team_sizes)
-    size_scales = {size: lcm_sizes // size for size in team_sizes}
+    scaled_max_total = lcm_sizes * max_total
 
-    total_lvl: dict[int, IntVar] = {}
     scaled_avg: dict[int, IntVar] = {}
     for team_id in range(mv.nr_teams):
-        total_lvl[team_id] = mdl.new_int_var(0, max_total, f"total_lvl_t{team_id}")
+        total_team_lvl = mdl.new_int_var(0, max_total, f"total_lvl_t{team_id}")
         mdl.add(
-            total_lvl[team_id] == sum(
+            total_team_lvl == sum(
                 player.level * mv.player_in_team[(player.id, team_id)]
                 for player in mv.active_players
             )
         )
-        table = []
-        for size in team_sizes:
-            scaled_lvl = mdl.new_int_var(0, size_scales[size] * max_lvl * mv.settings.max_team_size, f"tot_scaled_t{team_id}_k{size}")
-            mdl.add(scaled_lvl == size_scales[size] * total_lvl[team_id])
-            table.append(scaled_lvl)
+        safe_size = mdl.new_int_var(1, mv.settings.max_team_size, f"safe_size_t{team_id}")
+        mdl.add(safe_size == mv.team_size[team_id]).only_enforce_if(mv.team_active[team_id])
+        mdl.add(safe_size == 1).only_enforce_if(mv.team_active[team_id].Not())
 
-        idx = mdl.new_int_var(0, len(team_sizes) - 1, f"idx_t{team_id}")
-        mdl.add(idx == mv.team_size[team_id] - team_sizes[0])
-        scaled_avg[team_id] = mdl.new_int_var(0, lcm_sizes * max_total, f"scaled_avg_t{team_id}")
-        mdl.add_element(idx, table, scaled_avg[team_id])
+        lcm_scaled_total_team_lvl = mdl.new_int_var(0, scaled_max_total, f"lcm_scaled_total_lvl_t{team_id}")
+        mdl.add(lcm_scaled_total_team_lvl == total_team_lvl * lcm_sizes)
 
-    bound = lcm_sizes * max_total
+        scaled_avg_team_lvl = mdl.new_int_var(0, lcm_sizes * max_total, f"scaled_avg_t{team_id}")
+        mdl.add_division_equality(
+            scaled_avg_team_lvl, lcm_scaled_total_team_lvl, safe_size
+        )
+
+        scaled_avg[team_id] = scaled_avg_team_lvl
+
     for team1_id in range(mv.nr_teams):
         for team2_id in range(team1_id + 1, mv.nr_teams):
             both_on_court_and_active = mv.teams_on_same_court(mdl, team1_id, team2_id)
 
-            gap = mdl.new_int_var(-bound, bound, f"gap_t{team1_id}_t{team2_id}")
+            gap = mdl.new_int_var(-scaled_max_total, scaled_max_total, f"gap_t{team1_id}_t{team2_id}")
             mdl.add(gap == scaled_avg[team1_id] - scaled_avg[team2_id]).only_enforce_if(both_on_court_and_active)
             mdl.add(gap == 0).only_enforce_if(both_on_court_and_active.Not())
             abs_gap = absolute_slack(mdl, gap, f"abs_gap_t{team1_id}_t{team2_id}", lcm_sizes * max_lvl)
