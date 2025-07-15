@@ -19,18 +19,11 @@ class ModelVariables:
     team_on_court: dict
     team_active: dict
     court_active: dict
-    # team_of_player: dict
-    # court_of_player: dict
-    # court_of_team: list
-    # players_same_team: dict
-    # players_same_court: dict
-    # players_same_court_diff_teams: dict
     nr_teams: int
     active_players: list[Player]
     courts: list[Court]
     history: HistoryManager
     settings: Settings
-    # _player_combos = None
     id_to_player: dict[str, Player] = None
     _teams_same_court_cache = None
     _players_same_court_diff_teams_cache = None
@@ -39,7 +32,6 @@ class ModelVariables:
     _player_on_court_cache = None
 
     def __post_init__(self):
-        # self._player_combos = list(combinations(self.active_players, 2))
         self.id_to_player = {player.id: player for player in self.active_players}
         self.scale_weights()
         self._teams_same_court_cache = {}
@@ -79,7 +71,6 @@ class ModelVariables:
         # for _, config in self.settings.goal_configs.items():
         #     print(config)
 
-    # new
     def teams_on_same_court(self, mdl: CpModel, t1: int, t2: int):
         """
         Lazily creates and returns a BoolVar that is true iff
@@ -133,7 +124,6 @@ class ModelVariables:
         self._players_same_team_cache[key] = same_team
         return same_team
 
-    # new
     def players_in_same_court_diff_team(self, mdl: CpModel, p1_id: str, p2_id: str) -> IntVar:
         key = tuple(sorted((p1_id, p2_id)))
         if key in self._players_same_court_diff_teams_cache:
@@ -151,7 +141,6 @@ class ModelVariables:
         self._players_same_court_diff_teams_cache[key] = var
         return var
 
-        # new
     def _players_on_same_court(self, mdl: CpModel, p1_id: str, p2_id: str) -> IntVar:
         key = tuple(sorted((p1_id, p2_id)))
         if key in self._players_same_court_cache:

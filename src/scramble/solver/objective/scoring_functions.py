@@ -24,12 +24,10 @@ def score_keep_ideal_team_size(mdl: CpModel, mv: ModelVariables) -> LinearExpr |
     for team_id in range(mv.nr_teams):
         # calculate the deviation from the ideal team size
         diff = mdl.new_int_var(-mv.settings.max_team_size, mv.settings.max_team_size, f"diff_t{team_id}")
-        # abs_diff = mdl.new_int_var(0, len(mv.active_players), f"abs_diff_t{team_id}")
 
         team_size = sum(mv.player_in_team[player.id, team_id] for player in mv.active_players)
         mdl.add(diff == team_size - ideal_team_size).only_enforce_if(mv.team_active[team_id])
         mdl.add(diff == 0).only_enforce_if(mv.team_active[team_id].Not())
-        # mdl.add_abs_equality(abs_diff, diff)
         abs_diff = absolute_slack(mdl, diff, f"abs_diff_t{team_id}", mv.settings.max_team_size)
 
         terms.append(abs_diff)
@@ -82,9 +80,6 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
         scaled_avg[team_id] = mdl.new_int_var(0, lcm_sizes * max_total, f"scaled_avg_t{team_id}")
         mdl.add_element(idx, table, scaled_avg[team_id])
 
-    # if not mv.court_of_team:
-    #     mv.map_teams_to_courts(mdl)
-
     bound = lcm_sizes * max_lvl * mv.settings.max_team_size  # compute once
     for team1_id in range(mv.nr_teams):
         for team2_id in range(team1_id + 1, mv.nr_teams):
@@ -118,8 +113,6 @@ def score_reduce_lvl_gap(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVa
         mdl.add(lvl_diff == lvl_i - lvl_j).only_enforce_if(same_team)
         mdl.add(lvl_diff == 0).only_enforce_if(same_team.Not())
 
-        # abs_lvl_diff = mdl.new_int_var(0, Level.max_value(), f"abs_lvl_diff_{player_i_id}_{player_j_id}")
-        # mdl.add_abs_equality(abs_lvl_diff, lvl_diff)
         abs_lvl_diff = absolute_slack(mdl, lvl_diff, f"abs_lvl_diff_{player_i_id}_{player_j_id}", Level.max_value())
 
         terms.append(abs_lvl_diff)
@@ -177,7 +170,6 @@ def score_maximize_courts_usage(mdl: CpModel, mv: ModelVariables) -> LinearExpr 
         total_teams = mdl.new_int_var(0, mv.nr_teams, f"total_teams_on_{court.id}")
         mdl.add(total_teams == sum(teams_on_court))
 
-        # penalty = teams on court - min required (if positive)
         overload = mdl.new_int_var(0, mv.nr_teams, f"overload_{court.id}")
         mdl.add(overload == total_teams - min_teams).only_enforce_if(mv.court_active[court.id])
         mdl.add(overload == 0).only_enforce_if(mv.court_active[court.id].Not())
