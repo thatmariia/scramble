@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import math
 from ortools.sat.python.cp_model import CpModel, IntVar
 from scramble.settings import Settings
 from scramble.core import Player, HistoryManager, Court
@@ -44,10 +45,10 @@ class ModelVariables:
         self._player_team_on_court_cache = {}
 
     def scale_weights(self):
-        def scale_weight(w_value, w_max, scale):
+        def scale_weight(w_value, w_max):
             if w_max == 0:
                 return 0
-            return int((w_value / w_max) * scale)
+            return int(w_value * w_max)
 
         ubc = UpperBoundsComputer(self)
         upper_bounds = ubc.compute_upper_bounds()
@@ -65,7 +66,7 @@ class ModelVariables:
         for goal, config in self.settings.goal_configs.items():
             if config.enabled:
                 w_max = upper_bounds[goal]
-                config.weight = scale_weight(config.weight, w_max, max_weight)
+                config.weight = scale_weight(config.weight, w_max)
             else:
                 config.weight = 0
 
@@ -227,7 +228,14 @@ class UpperBoundsComputer:
         dict[Goal, int]
             A dictionary mapping each goal to its computed upper bound.
         """
-        return {goal: self.compute_upper_bound(goal) for goal in self.mv.settings.goal_configs.keys()}
+        raw_ubs = {goal: self.compute_upper_bound(goal) for goal in self.mv.settings.goal_configs.keys()}
+        raw_ub_values = list(raw_ubs.values())
+        print(f"*** RAW max {max(raw_ub_values)} ***")
+        ub_gcd = math.gcd(*raw_ub_values)
+        print(f"*** GCD {ub_gcd} ***")
+        scaled_ubs = {goal: ub // ub_gcd for goal, ub in raw_ubs.items()}
+        print(f"*** SCALED max {max(scaled_ubs.values())} ***")
+        return scaled_ubs
 
     def compute_upper_bound(self, goal: Goal) -> int:
         """
@@ -258,16 +266,29 @@ class UpperBoundsComputer:
         return self.mv.nr_teams * (self.mv.settings.max_team_size - self.mv.settings.min_team_size)
 
     def _compute_balance_level(self) -> int:
-        return min(1000, self.mv.nr_teams * self.mv.nr_teams * self.mv.settings.max_team_size * Level.max_value())
+        team_sizes = range(self.mv.settings.min_team_size,
+                           self.mv.settings.max_team_size + 1)
+        lcm_sizes = math.lcm(*team_sizes)
+        max_lvl = max(p.level.value for p in self.mv.active_players)
+        return math.comb(self.mv.nr_teams, 2) * lcm_sizes * max_lvl
 
     def _compute_reduce_level_gap(self) -> int:
-        return self.mv.nr_teams * self.mv.settings.max_team_size * Level.max_value()
+        nr_lvls = len(Level.all_values())
+        per_team = nr_lvls * (nr_lvls ** 2 - 1) // 6  # sum_{i<j} (j-i)
+        return self.mv.nr_teams * per_team
 
     def _compute_diversify_partners(self) -> int:
-        return self.mv.history.get_all_partners_counts()
+        return sum(
+            self.mv.history.get_partner_frequency(i, j)
+            for (i, j) in self.mv.history.partner_tuples
+        )
 
     def _compute_diversify_opponents(self) -> int:
-        return self.mv.history.get_all_opponents_counts()
+        return sum(
+            self.mv.history.get_opponent_frequency(i, j)
+            for (i, j) in self.mv.history.opponent_tuples
+        )
 
     def _compute_maximize_courts_usage(self) -> int:
-        return len(self.mv.courts)
+        overload_per_court = self.mv.nr_teams - self.mv.settings.min_nr_teams_in_match
+        return len(self.mv.courts) * overload_per_court

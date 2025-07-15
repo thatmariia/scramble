@@ -1,10 +1,11 @@
 from ortools.sat.python.cp_model import CpModel, IntVar, LinearExpr, Domain
 import math
+from itertools import combinations, product
 from scramble.core import Level
 from scramble.settings import Goal
 from scramble.solver.model_variables import ModelVariables
 from scramble.solver.objective.function_protocol import ScoringFunction
-from scramble.solver.utils import define_and_var, define_or_var, absolute_slack
+from scramble.solver.utils import define_and_var, define_or_var, absolute_slack, define_and_var_bool
 
 
 # --- Individual goal scoring functions ---
@@ -94,20 +95,33 @@ def score_reduce_lvl_gap(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVa
     Conforms to the ScoreFunction protocol.
     """
     terms: list[IntVar] = []
+    team_has_lvl = {}
 
-    for player_i_id, player_j_id in mv.history.partner_tuples:
-        if mv.player_exists(player_i_id) and mv.player_exists(player_j_id):
-            same_team = mv.players_in_same_team(mdl, player_i_id, player_j_id)
+    by_level: dict[int, list] = {l: [] for l in Level.all_values()}
+    for player in mv.active_players:
+        by_level[player.level.value].append(player)
 
-            lvl_diff = mdl.new_int_var(-Level.max_value(), Level.max_value(), f"lvl_diff_{player_i_id}_{player_j_id}")
-            lvl_i = mv.id_to_player[player_i_id].level.value
-            lvl_j = mv.id_to_player[player_j_id].level.value
-            mdl.add(lvl_diff == lvl_i - lvl_j).only_enforce_if(same_team)
-            mdl.add(lvl_diff == 0).only_enforce_if(same_team.Not())
+    for team_id, level in product(range(mv.nr_teams), Level.all_values()):
+        lvl_players_in_team = [mv.player_in_team[(player.id, team_id)] for player in by_level[level]]
+        varname = f"team_{team_id}_has_lvl_{level}"
+        if not lvl_players_in_team:
+            var = mdl.new_bool_var(varname)
+            mdl.add(var == 0)
+        else:
+            var = define_or_var(mdl, varname, lvl_players_in_team)
+        team_has_lvl[(team_id, level)] = var
 
-            abs_lvl_diff = absolute_slack(mdl, lvl_diff, f"abs_lvl_diff_{player_i_id}_{player_j_id}", Level.max_value())
+    diffs = {(l1, l2): (l2 - l1) for l1, l2 in combinations(Level.all_values(), 2)}
+    for team_id in range(mv.nr_teams):
+        for l1, l2 in diffs:  # only l1 < l2 pairs
+            both = define_and_var_bool(
+                mdl,
+                team_has_lvl[(team_id, l1)],
+                team_has_lvl[(team_id, l2)],
+                f"t{team_id}_has_{l1}_and_{l2}"
+            )
 
-            terms.append(abs_lvl_diff)
+            terms.append(diffs[(l1, l2)] * both)
 
     return sum(terms)
 

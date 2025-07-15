@@ -79,7 +79,7 @@ class ScrambleSolver:
 
         self.model = cp.CpModel()
         self.solver = cp.CpSolver()
-        self.solver.parameters.log_search_progress = False
+        self.solver.parameters.log_search_progress = True
         self.solver.parameters.num_search_workers = min(8, multiprocessing.cpu_count())
         self.solver.parameters.random_seed = 1
         # self.solver.parameters.linearization_level = 1
