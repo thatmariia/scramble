@@ -134,8 +134,8 @@ class ScrambleSolver:
             team_on_court=self.vars["team_on_court"],
             team_active=self.vars["team_active"],
             court_active=self.vars["court_active"],
-            team_of_player={},  # filled in later on as needed
-            court_of_player={},  # filled in later on as needed
+            # team_of_player={},  # filled in later on as needed
+            # court_of_player={},  # filled in later on as needed
             # court_of_team=[],  # filled in later on as needed
             # players_same_team={},  # filled in later on as needed
             # players_same_court={},  # filled in later on as needed

@@ -19,8 +19,8 @@ class ModelVariables:
     team_on_court: dict
     team_active: dict
     court_active: dict
-    team_of_player: dict
-    court_of_player: dict
+    # team_of_player: dict
+    # court_of_player: dict
     # court_of_team: list
     # players_same_team: dict
     # players_same_court: dict
@@ -30,21 +30,23 @@ class ModelVariables:
     courts: list[Court]
     history: HistoryManager
     settings: Settings
-    _player_combos = None
+    # _player_combos = None
     id_to_player: dict[str, Player] = None
     _teams_same_court_cache = None
     _players_same_court_diff_teams_cache = None
     _players_same_court_cache = None
     _players_same_team_cache = None
+    _player_on_court_cache = None
 
     def __post_init__(self):
-        self._player_combos = list(combinations(self.active_players, 2))
+        # self._player_combos = list(combinations(self.active_players, 2))
         self.id_to_player = {player.id: player for player in self.active_players}
         self.scale_weights()
         self._teams_same_court_cache = {}
         self._players_same_court_diff_teams_cache = {}
         self._players_same_court_cache = {}
         self._players_same_team_cache = {}
+        self._player_on_court_cache = {}
 
     def scale_weights(self):
         def scale_weight(w_value, w_max, scale):
@@ -132,39 +134,12 @@ class ModelVariables:
         return same_team
 
     # new
-    def players_on_same_court(self, mdl: CpModel, p1_id: str, p2_id: str) -> IntVar:
-        key = tuple(sorted((p1_id, p2_id)))
-        if key in self._players_same_court_cache:
-            return self._players_same_court_cache[key]
-
-        vars_per_court = []
-        for court in self.courts:
-            for t1 in range(self.nr_teams):
-                for t2 in range(self.nr_teams):
-                    # player p1 in team t1 AND p2 in t2 AND both teams on same court
-                    cond = define_and_var(
-                        mdl,
-                        f"{p1_id}_{p2_id}_t{t1}_t{t2}_on_c{court.id}",
-                        [
-                            self.player_in_team[(p1_id, t1)],
-                            self.player_in_team[(p2_id, t2)],
-                            self.team_on_court[(t1, court.id)],
-                            self.team_on_court[(t2, court.id)],
-                        ]
-                    )
-                    vars_per_court.append(cond)
-
-        result = define_or_var(mdl, f"{p1_id}_{p2_id}_same_court", vars_per_court)
-        self._players_same_court_cache[key] = result
-        return result
-
-    # new
     def players_in_same_court_diff_team(self, mdl: CpModel, p1_id: str, p2_id: str) -> IntVar:
         key = tuple(sorted((p1_id, p2_id)))
         if key in self._players_same_court_diff_teams_cache:
             return self._players_same_court_diff_teams_cache[key]
 
-        same_court = self.players_on_same_court(mdl, p1_id, p2_id)
+        same_court = self._players_on_same_court(mdl, p1_id, p2_id)
         same_team = self.players_in_same_team(mdl, p1_id, p2_id)
 
         var = define_and_var_imp(
@@ -174,6 +149,45 @@ class ModelVariables:
             f"players_same_court_diff_teams_{p1_id}_{p2_id}"
         )
         self._players_same_court_diff_teams_cache[key] = var
+        return var
+
+        # new
+    def _players_on_same_court(self, mdl: CpModel, p1_id: str, p2_id: str) -> IntVar:
+        key = tuple(sorted((p1_id, p2_id)))
+        if key in self._players_same_court_cache:
+            return self._players_same_court_cache[key]
+
+        per_court = [
+            define_and_var(
+                mdl,
+                f"{p1_id}_{p2_id}_both_on_{c.id}",
+                [self._player_on_court(mdl, p1_id, c.id), self._player_on_court(mdl, p2_id, c.id)]
+            )
+            for c in self.courts
+        ]
+
+        var = define_or_var(mdl, f"{p1_id}_{p2_id}_same_court", per_court)
+        self._players_same_court_cache[key] = var
+        return var
+
+    def _player_on_court(self, mdl: CpModel, player_id: str, court_id: str) -> IntVar:
+        """
+        Returns a BoolVar that is true iff the player is on the given court.
+        """
+        key = (player_id, court_id)
+        if key in self._player_on_court_cache:
+            return self._player_on_court_cache[key]
+
+        per_team = [
+            define_and_var(
+                mdl,
+                f"{player_id}_on_court_{court_id}_team_{t}",
+                [self.player_in_team[(player_id, t)], self.team_on_court[(t, court_id)]]
+            )
+            for t in range(self.nr_teams)
+        ]
+        var = define_or_var(mdl,  f"{player_id}_on_court_{court_id}", per_team)
+        self._player_on_court_cache[key] = var
         return var
 
 
