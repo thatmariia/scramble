@@ -118,12 +118,14 @@ def score_reduce_lvl_gap(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVa
         Helper function to handle the left or right side of the level gap calculation.
         """
         is_side = {lvl: mdl.new_bool_var(f"t{t}_is_{side}_lvl_{lvl}") for lvl in Level.all_values()}
-        mdl.add(sum(is_side.values()) == 1)
+        mdl.add(sum(is_side.values()) == 1).only_enforce_if(mv.team_active[t])
+        mdl.add(sum(is_side.values()) == 0).only_enforce_if(mv.team_active[t].Not())
         for lvl in Level.all_values():
-            mdl.add_implication(is_side[lvl], team_has_lvl[(t, lvl)])
+            mdl.add(team_has_lvl[(t, lvl)] == 1).only_enforce_if([mv.team_active[t], is_side[lvl]])
 
         side_lvl = mdl.new_int_var(Level.min_value(), Level.max_value(), f"{side}_lvl_t{t}")
-        mdl.add(side_lvl == sum(lvl * is_side[lvl] for lvl in Level.all_values()))
+        mdl.add(side_lvl == sum(lvl * is_side[lvl] for lvl in Level.all_values())).only_enforce_if(mv.team_active[t])
+        mdl.add(side_lvl == Level.min_value()).only_enforce_if(mv.team_active[t].Not())
 
         return side_lvl, is_side
 
@@ -132,13 +134,6 @@ def score_reduce_lvl_gap(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVa
         min_lvl, is_min = handle_side("min", team_id)
         # right side (max)
         max_lvl, is_max = handle_side("max", team_id)
-
-        # deactivate if team is not active
-        mdl.add(min_lvl == Level.min_value()).only_enforce_if(mv.team_active[team_id].Not())
-        mdl.add(max_lvl == Level.min_value()).only_enforce_if(mv.team_active[team_id].Not())
-
-        for has in (*is_min.values(), *is_max.values()):
-            mdl.add(has == 0).only_enforce_if(mv.team_active[team_id].Not())
 
         # calculate the range
         rng = mdl.new_int_var(0, Level.max_value() - Level.min_value(), f"lvl_range_t{team_id}")
