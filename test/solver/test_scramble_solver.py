@@ -280,6 +280,23 @@ def test_15_matches_with_history(caplog):
     expected_variants = num_rounds
     assert len(set(rounds)) == expected_variants
 
+def test_1_match_with_5_levels(caplog):
+    caplog.set_level(logging.DEBUG)
+    players = (
+            generate_players(4, Level.BEGINNER, start_index=1)
+            + generate_players(4, Level.IMPROVER, start_index=5)
+            + generate_players(4, Level.INTERMEDIATE, start_index=9)
+            + generate_players(4, Level.ADVANCED, start_index=13)
+            + generate_players(4, Level.EXPERT, start_index=17)
+        )
+    courts = generate_courts(7)
+    solver = ScrambleSolver(players, HistoryManager(), courts, Settings())
+    round = solver.solve()
+
+    assert len(round.matches) == 5
+    for match in round.matches:
+        levels = {player.level for team in match.teams for player in team.players}
+        assert len(levels) == 1
 
 def test_1_match_with_history_and_pause(caplog):
     caplog.set_level(logging.DEBUG)
