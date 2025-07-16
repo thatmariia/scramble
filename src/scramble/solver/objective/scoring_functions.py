@@ -103,40 +103,42 @@ def score_reduce_lvl_gap(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVa
 
     for team_id, level in product(range(mv.nr_teams), Level.all_values()):
         lvl_players_in_team = [mv.player_in_team[(player.id, team_id)] for player in by_level[level]]
-        b = mdl.new_bool_var(f"t{team_id}_has_lvl_{level}")
+        has = mdl.new_bool_var(f"t{team_id}_has_lvl_{level}")
         if lvl_players_in_team:
-            mdl.add_bool_or([b] + [lit.Not() for lit in lvl_players_in_team])
-            for lit in lvl_players_in_team:
-                mdl.add_implication(lit, b)  # lit ⇒ b
+            lvl_players_not_in_team = [lvl_player.Not() for lvl_player in lvl_players_in_team]
+            mdl.add_bool_or([has] + lvl_players_not_in_team)
+            for lvl_player in lvl_players_in_team:
+                mdl.add_implication(lvl_player, has)
         else:
-            mdl.add(b == 0)
-        team_has_lvl[(team_id, level)] = b
+            mdl.add(has == 0)
+        team_has_lvl[(team_id, level)] = has
+
+    def handle_side(side: str, t: int):
+        """
+        Helper function to handle the left or right side of the level gap calculation.
+        """
+        is_side = {lvl: mdl.new_bool_var(f"t{t}_is_{side}_lvl_{lvl}") for lvl in Level.all_values()}
+        mdl.add(sum(is_side.values()) == 1)
+        for lvl in Level.all_values():
+            mdl.add_implication(is_side[lvl], team_has_lvl[(t, lvl)])
+
+        side_lvl = mdl.new_int_var(Level.min_value(), Level.max_value(), f"{side}_lvl_t{t}")
+        mdl.add(side_lvl == sum(lvl * is_side[lvl] for lvl in Level.all_values()))
+
+        return side_lvl, is_side
 
     for team_id in range(mv.nr_teams):
-        # min
-        is_min = {lvl: mdl.new_bool_var(f"t{team_id}_is_min_lvl_{lvl}") for lvl in Level.all_values()}
-        mdl.add(sum(is_min.values()) == 1)
-        for lvl in Level.all_values():
-            mdl.add_implication(is_min[lvl], team_has_lvl[(team_id, lvl)])
-
-        min_lvl = mdl.new_int_var(Level.min_value(), Level.max_value(), f"min_lvl_t{team_id}")
-        mdl.add(min_lvl == sum(lvl * is_min[lvl] for lvl in Level.all_values()))
-
-        # max
-        is_max = {lvl: mdl.new_bool_var(f"t{team_id}_is_max_lvl_{lvl}") for lvl in Level.all_values()}
-        mdl.add(sum(is_max.values()) == 1)
-        for lvl in Level.all_values():
-            mdl.add_implication(is_max[lvl], team_has_lvl[(team_id, lvl)])
-
-        max_lvl = mdl.new_int_var(Level.min_value(), Level.max_value(), f"max_lvl_t{team_id}")
-        mdl.add(max_lvl == sum(lvl * is_max[lvl] for lvl in Level.all_values()))
+        # left side (min)
+        min_lvl, is_min = handle_side("min", team_id)
+        # right side (max)
+        max_lvl, is_max = handle_side("max", team_id)
 
         # deactivate if team is not active
         mdl.add(min_lvl == Level.min_value()).only_enforce_if(mv.team_active[team_id].Not())
         mdl.add(max_lvl == Level.min_value()).only_enforce_if(mv.team_active[team_id].Not())
 
-        for b in (*is_min.values(), *is_max.values()):
-            mdl.add(b == 0).only_enforce_if(mv.team_active[team_id].Not())
+        for has in (*is_min.values(), *is_max.values()):
+            mdl.add(has == 0).only_enforce_if(mv.team_active[team_id].Not())
 
         # calculate the range
         rng = mdl.new_int_var(0, Level.max_value() - Level.min_value(), f"lvl_range_t{team_id}")

@@ -230,11 +230,8 @@ class UpperBoundsComputer:
         """
         raw_ubs = {goal: self.compute_upper_bound(goal) for goal in self.mv.settings.goal_configs.keys()}
         raw_ub_values = list(raw_ubs.values())
-        print(f"*** RAW max {max(raw_ub_values)} ***")
         ub_gcd = math.gcd(*raw_ub_values)
-        print(f"*** GCD {ub_gcd} ***")
         scaled_ubs = {goal: ub // ub_gcd for goal, ub in raw_ubs.items()}
-        print(f"*** SCALED max {max(scaled_ubs.values())} ***")
         return scaled_ubs
 
     def compute_upper_bound(self, goal: Goal) -> int:
