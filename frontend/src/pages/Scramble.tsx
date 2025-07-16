@@ -3,8 +3,8 @@ import Session from '../components/Session';
 import Players from '../components/Players';
 import Courts from '../components/Courts';
 import { RoundButtons } from '../components/RoundButtons';
+import SessionButtons from "../components/SessionButtons"
 import RoundViz from '../components/RoundViz';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 import styles from './Scramble.module.css';
 
@@ -18,13 +18,7 @@ export default function Scramble() {
 
             <header className={`card ${styles.header}`}>
                 <Session />
-                <button
-                    className={styles.collapseBtn}
-                    onClick={() => setCollapsed(!collapsed)}
-                    aria-label={collapsed ? 'Open sidebar' : 'Close sidebar'}
-                >
-                    {collapsed ? <ChevronLeft className='icon' /> : <ChevronRight className='icon' />}
-                </button>
+                <SessionButtons collapsed={collapsed} setCollapsed={setCollapsed} />
             </header>
 
             <div className={styles.contentRow}>  
