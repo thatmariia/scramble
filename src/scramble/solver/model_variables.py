@@ -230,8 +230,11 @@ class UpperBoundsComputer:
         """
         raw_ubs = {goal: self.compute_upper_bound(goal) for goal in self.mv.settings.goal_configs.keys()}
         raw_ub_values = list(raw_ubs.values())
-        ub_gcd = math.gcd(*raw_ub_values)
-        scaled_ubs = {goal: ub // ub_gcd for goal, ub in raw_ubs.items()}
+        non_zero_raw_ub_values = [ub for ub in raw_ub_values if ub > 0]
+        ub_lcm = math.lcm(*non_zero_raw_ub_values)
+        scaled_ubs = {}
+        for goal, ub in raw_ubs.items():
+            scaled_ubs[goal] = ub_lcm // ub if ub > 0 else 0
         return scaled_ubs
 
     def compute_upper_bound(self, goal: Goal) -> int:
