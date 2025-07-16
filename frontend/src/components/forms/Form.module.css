@@ -7,3 +7,7 @@
 .submitButton {
     margin-top: var(--padding);
 }
+
+.disabledInput {
+    color: var(--color-danger);
+}

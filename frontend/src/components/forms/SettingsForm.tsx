@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { EntityFormWrapper } from './shared/FormWrapper';
 import styles from './Form.module.css';
 
@@ -8,14 +8,26 @@ interface Props {
 }
 
 export default function SettingsForm({ close, setActive }: Props) {
-    const [minTeamSize, setMinTeamSize] = useState('');
-    const initMinTeamSize = minTeamSize || '2';
-    const [maxTeamSize, setMaxTeamSize] = useState('');
-    const initMaxTeamSize = maxTeamSize || '4';
-    const [nrTeams, setNrTeams] = useState('');
-    const initNrTeams = nrTeams || '2';
+    const [minTeamSize, setMinTeamSize] = useState(2);
+    const initMinTeamSize = minTeamSize || 2;
+    const [maxTeamSize, setMaxTeamSize] = useState(2);
+    const initMaxTeamSize = maxTeamSize || 2;
+    const [nrTeams, setNrTeams] = useState(2);
+    const initNrTeams = nrTeams || 2;
 
     const doNothing = () => {};
+
+    useEffect(() => {
+        if (minTeamSize > maxTeamSize) {
+            setMaxTeamSize(minTeamSize);
+        }
+    }, [minTeamSize]);
+
+    useEffect(() => {
+        if (maxTeamSize < minTeamSize) {
+            setMinTeamSize(maxTeamSize);
+        }
+    }, [maxTeamSize]);
 
     const handleCancelMinTeamSize = () => {
         setMinTeamSize(initMinTeamSize);
@@ -48,7 +60,7 @@ export default function SettingsForm({ close, setActive }: Props) {
                     max={10}
                     step={1}
                     value={minTeamSize}
-                    onChange={(e) => setMinTeamSize(e.target.value)}
+                    onChange={(e) => setMinTeamSize(Number(e.target.value))}
                 />
             </EntityFormWrapper>
 
@@ -67,7 +79,7 @@ export default function SettingsForm({ close, setActive }: Props) {
                     max={10}
                     step={1}
                     value={maxTeamSize}
-                    onChange={(e) => setMaxTeamSize(e.target.value)}
+                    onChange={(e) => setMaxTeamSize(Number(e.target.value))}
                 />
             </EntityFormWrapper>
 
@@ -86,7 +98,7 @@ export default function SettingsForm({ close, setActive }: Props) {
                     max={10}
                     step={1}
                     value={nrTeams}
-                    onChange={(e) => setNrTeams(e.target.value)}
+                    onChange={(e) => setNrTeams(Number(e.target.value))}
                 />
             </EntityFormWrapper>
 

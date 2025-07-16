@@ -2,6 +2,7 @@ import { useSessionName } from '../context/SessionContext';
 import { useSession } from '../hooks/session';
 import SessionLoading from './session/SessionLoading';
 import Settings from './session/Settings';
+import Goals from './session/Goals';
 import styles from './SessionButtons.module.css';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -29,6 +30,7 @@ export default function SessionButtons(
     return (
         <div className={styles.sessionButtons}>
             <SessionLoading />
+            <Goals />
             <Settings />
             
             <button

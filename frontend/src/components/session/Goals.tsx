@@ -1,12 +1,12 @@
 import { useState, useRef } from 'react';
 import { useSessionName } from '../../context/SessionContext';
 import CustomDropdown from '../../elements/CustomDropdown';
-import SettingsForm from '../forms/SettingsForm';
+import GoalsForm from '../forms/GoalsForm';
 import styles from './SessionDropdown.module.css';
-import { Cog } from 'lucide-react';
+import { Target } from 'lucide-react';
 
 
-export default function Settings() {
+export default function Goals() {
     const { name: active, setName } = useSessionName();
     const [showMenu, setShowMenu] = useState(false);
     const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -18,7 +18,7 @@ export default function Settings() {
                 className={`button ghost ${styles.settingsButton}`}
                 onClick={() => setShowMenu((v) => !v)}
             >
-                <Cog className='icon' />
+                <Target className='icon' />
             </button>
             <CustomDropdown
                 open={showMenu}
@@ -26,8 +26,8 @@ export default function Settings() {
                 triggerRef={menuButtonRef}
             >
                 <div className={styles.dropdown}>
-                    <p className={styles.dropdownTitle}>Match settings</p>
-                    <SettingsForm close={() => setShowMenu(false)} setActive={setName} />
+                    <p className={styles.dropdownTitle}>Imporance of goals</p>
+                    <GoalsForm close={() => setShowMenu(false)} setActive={setName} />
                 </div>
             </CustomDropdown>
         </div>

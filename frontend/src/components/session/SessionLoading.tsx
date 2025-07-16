@@ -4,6 +4,7 @@ import CustomDropdown from '../../elements/CustomDropdown';
 import NewSessionForm from '../forms/NewSessionForm';
 import LoadSessionForm from '../forms/LoadSessionForm';
 import styles from './SessionDropdown.module.css';
+import { CalendarDays } from 'lucide-react';
 
 
 export default function SessionLoading() {
@@ -15,10 +16,10 @@ export default function SessionLoading() {
         <div className={styles.menuWrapper}>
             <button
                 ref={menuButtonRef}
-                className="button primary"
+                className={`button ghost ${styles.settingsButton}`}
                 onClick={() => setShowMenu((v) => !v)}
             >
-                <span className={styles.menuTitle}>session</span>
+                <CalendarDays className='icon' />
             </button>
             <CustomDropdown
                 open={showMenu}
@@ -26,6 +27,7 @@ export default function SessionLoading() {
                 triggerRef={menuButtonRef}
             >
                 <div className={styles.dropdown}>
+                    <p className={styles.dropdownTitle}>Manage session</p>
                     <NewSessionForm close={() => setShowMenu(false)} setActive={setName} />
                     <LoadSessionForm close={() => setShowMenu(false)} setActive={setName} />
                 </div>
