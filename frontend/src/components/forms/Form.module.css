@@ -13,6 +13,14 @@
     margin-right: 0.5em;
 }
 
+.tooltipContent {
+    display: block;
+    width: 100%;
+    white-space: normal;
+    word-wrap: break-word;
+    text-align: center;
+}
+
 .submitButton {
     margin-top: var(--padding);
 }

@@ -28,10 +28,14 @@ function TooltipIcon({ id, description }: { id: string; description: string }) {
     return (
         <span className={styles.tooltipIcon} ref={ref}>
             <Info className="icon" />
-            <HoverTooltip triggerRef={ref}>{description}</HoverTooltip>
+            <HoverTooltip triggerRef={ref}>
+                <span id={id} className={styles.tooltipContent}>
+                    {description}
+                </span>
+            </HoverTooltip>
         </span>
     );
-  }
+}
 
 export default function SettingsForm({ close, setActive }: Props) {
     const [keepIdealTeamSize, setKeepIdealTeamSize] = useState(3);
@@ -46,7 +50,7 @@ export default function SettingsForm({ close, setActive }: Props) {
             key: 'keepIdealTeamSize',
             label: 'Keep ideal team size',
             state: keepIdealTeamSize,
-            description: "TODO",
+            description: "Prefer team sizes that match the ideal number of players. For example, in a 2v2 format, avoid creating teams of 3 or more if a perfect split is possible.",
             setState: setKeepIdealTeamSize,
             default: 3,
             reset: () => setKeepIdealTeamSize(3),
@@ -55,7 +59,7 @@ export default function SettingsForm({ close, setActive }: Props) {
             key: 'maximizeCourtUsage',
             label: 'Maximize court usage',
             state: maximizeCourtUsage,
-            description: "TODO",
+            description: "Use all available courts efficiently. For example, if there are 8 players and 2 courts, prefer two full 2v2 matches over one 4v4.",
             setState: setMaximizeCourtUsage,
             default: 2,
             reset: () => setMaximizeCourtUsage(2),
@@ -64,7 +68,7 @@ export default function SettingsForm({ close, setActive }: Props) {
             key: 'balanceLvl',
             label: 'Balance levels',
             state: balanceLvl,
-            description: "TODO",
+            description: "Make matches fair by keeping total team skill levels as equal as possible. For example, a team with two beginner players shouldn’t face a team of advanced players.",
             setState: setBalanceLvl,
             default: 4,
             reset: () => setBalanceLvl(4),
@@ -73,7 +77,7 @@ export default function SettingsForm({ close, setActive }: Props) {
             key: 'reduceLvlGaps',
             label: 'Reduce level gaps',
             state: reduceLvlGaps,
-            description: "TODO",
+            description: "Minimize skill differences within teams to make each team internally balanced. For example, pairing a beginner with an advanced player would be less preferred than two intermediates together.",
             setState: setReduceLvlGaps,
             default: 1,
             reset: () => setReduceLvlGaps(1),
@@ -82,7 +86,7 @@ export default function SettingsForm({ close, setActive }: Props) {
             key: 'diversifyPartners',
             label: 'Diversify partners',
             state: diversifyPartners,
-            description: "TODO",
+            description: "Minimize repeated teammate pairings across rounds to keep teams varied. For example, if Alice has already teamed up with Bob once, prioritize assigning her a different partner in later rounds.",
             setState: setDiversifyPartners,
             default: 3,
             reset: () => setDiversifyPartners(3),
@@ -91,7 +95,7 @@ export default function SettingsForm({ close, setActive }: Props) {
             key: 'diversifyOpponents',
             label: 'Diversify opponents',
             state: diversifyOpponents,
-            description: "TODO",
+            description: "Reduce the number of times players face the same opponents across rounds. For example, if Alice played against Bob, aim to have them face different opponents in later rounds.",
             setState: setDiversifyOpponents,
             default: 2,
             reset: () => setDiversifyOpponents(2),

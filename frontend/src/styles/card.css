@@ -31,6 +31,9 @@
     padding: var(--small-padding);
     pointer-events: none;
     font-size: 0.9em;
-    /* max-width: 300px; */
+    /* min-width: 50px;
+    max-width: 300px; */
+    max-width: 300px;
+    width: max-content;
     z-index: 1000;
 }
