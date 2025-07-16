@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { EntityFormWrapper } from './shared/FormWrapper';
+import HoverTooltip from '../../elements/HoverTooltip';
 import styles from './Form.module.css';
+import { Info } from 'lucide-react';
 
 interface Props {
     close(): void;
@@ -14,10 +16,22 @@ interface PriorityField {
     key: string;
     label: string;
     state: number;
+    description?: string;
     setState: (val: number) => void;
     default: number;
     reset: () => void;
 }
+
+function TooltipIcon({ id, description }: { id: string; description: string }) {
+    const ref = useRef<HTMLSpanElement>(null);
+
+    return (
+        <span className={styles.tooltipIcon} ref={ref}>
+            <Info className="icon" />
+            <HoverTooltip triggerRef={ref}>{description}</HoverTooltip>
+        </span>
+    );
+  }
 
 export default function SettingsForm({ close, setActive }: Props) {
     const [keepIdealTeamSize, setKeepIdealTeamSize] = useState(3);
@@ -32,6 +46,7 @@ export default function SettingsForm({ close, setActive }: Props) {
             key: 'keepIdealTeamSize',
             label: 'Keep ideal team size',
             state: keepIdealTeamSize,
+            description: "TODO",
             setState: setKeepIdealTeamSize,
             default: 3,
             reset: () => setKeepIdealTeamSize(3),
@@ -40,6 +55,7 @@ export default function SettingsForm({ close, setActive }: Props) {
             key: 'maximizeCourtUsage',
             label: 'Maximize court usage',
             state: maximizeCourtUsage,
+            description: "TODO",
             setState: setMaximizeCourtUsage,
             default: 2,
             reset: () => setMaximizeCourtUsage(2),
@@ -48,6 +64,7 @@ export default function SettingsForm({ close, setActive }: Props) {
             key: 'balanceLvl',
             label: 'Balance levels',
             state: balanceLvl,
+            description: "TODO",
             setState: setBalanceLvl,
             default: 4,
             reset: () => setBalanceLvl(4),
@@ -56,6 +73,7 @@ export default function SettingsForm({ close, setActive }: Props) {
             key: 'reduceLvlGaps',
             label: 'Reduce level gaps',
             state: reduceLvlGaps,
+            description: "TODO",
             setState: setReduceLvlGaps,
             default: 1,
             reset: () => setReduceLvlGaps(1),
@@ -64,6 +82,7 @@ export default function SettingsForm({ close, setActive }: Props) {
             key: 'diversifyPartners',
             label: 'Diversify partners',
             state: diversifyPartners,
+            description: "TODO",
             setState: setDiversifyPartners,
             default: 3,
             reset: () => setDiversifyPartners(3),
@@ -72,6 +91,7 @@ export default function SettingsForm({ close, setActive }: Props) {
             key: 'diversifyOpponents',
             label: 'Diversify opponents',
             state: diversifyOpponents,
+            description: "TODO",
             setState: setDiversifyOpponents,
             default: 2,
             reset: () => setDiversifyOpponents(2),
@@ -103,10 +123,11 @@ export default function SettingsForm({ close, setActive }: Props) {
         <div>
             {fields.map((f) => (
                 <div key={f.key}>
-                    <p className={styles.title}>
-                        {f.label}
+                    <div className={styles.title}>
+                        {f.description && <TooltipIcon id={f.key} description={f.description} />}
+                        <span>{f.label}</span>
                         {displayWeight(f.state)}
-                    </p>
+                    </div>
                     <EntityFormWrapper
                         onSubmit={() => { }}
                         onCancel={f.reset}

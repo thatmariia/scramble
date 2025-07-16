@@ -1,7 +1,16 @@
 .title {
     font-weight: 600;
     margin-bottom: 0.5rem;
-    /* color: var(--color-text); */
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    /* align-content: center; */
+}
+
+.tooltipIcon {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 0.5em;
 }
 
 .submitButton {
