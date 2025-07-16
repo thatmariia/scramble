@@ -1,9 +1,7 @@
-import { useState, useRef } from 'react';
 import { useSessionName } from '../context/SessionContext';
 import { useSession } from '../hooks/session';
-import CustomDropdown from '../elements/CustomDropdown';
-import NewSessionForm from './forms/NewSessionForm';
-import LoadSessionForm from './forms/LoadSessionForm';
+import SessionLoading from './session/SessionLoading';
+import Settings from './session/Settings';
 import styles from './SessionButtons.module.css';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -13,8 +11,6 @@ export default function SessionButtons(
 ) {
     const { name: active, setName } = useSessionName();
     const { isLoading } = active ? useSession(active) : { isLoading: false }; 
-    const [showMenu, setShowMenu] = useState(false);
-    const menuButtonRef = useRef<HTMLButtonElement>(null);
 
     if (!active) {
         return (
@@ -32,32 +28,11 @@ export default function SessionButtons(
 
     return (
         <div className={styles.sessionButtons}>
-
+            <SessionLoading />
+            <Settings />
             
-            {/* session button */}
-            <div className={styles.menuWrapper}>
-                <button
-                    ref={menuButtonRef}
-                    className={styles.menuToggle}
-                    onClick={() => setShowMenu((v) => !v)}
-                >
-                    <span className={styles.menuTitle}>session</span>
-                </button>
-                <CustomDropdown
-                    open={showMenu}
-                    onClose={() => setShowMenu(false)}
-                    triggerRef={menuButtonRef}
-                >
-                    <div className={styles.dropdown}>
-                        <NewSessionForm close={() => setShowMenu(false)} setActive={setName} />
-                        <LoadSessionForm close={() => setShowMenu(false)} setActive={setName} />
-                    </div>
-                </CustomDropdown>
-            </div>
-
-            {/* chevron */}
             <button
-                className={styles.collapseBtn}
+                className={`button ghost ${styles.chevronButton}`}
                 onClick={() => setCollapsed(!collapsed)}
                 aria-label={collapsed ? 'Open sidebar' : 'Close sidebar'}
             >

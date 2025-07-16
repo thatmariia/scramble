@@ -1,4 +1,3 @@
-// src/components/forms/NewSessionForm.tsx
 import { useState } from 'react';
 import { useNewSession } from '../../hooks/session';
 import { EntityFormWrapper } from './shared/FormWrapper';
@@ -16,7 +15,7 @@ export default function NewSessionForm({ close, setActive }: Props) {
 
     const handleSubmit = () => {
         newSession.mutate(
-            { name: name || null, settings_path: settings || null },
+            { name: name || "", settings_path: settings || null },
             {
                 onSuccess: () => {
                     setActive(name || null);
@@ -42,12 +41,6 @@ export default function NewSessionForm({ close, setActive }: Props) {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                 />
-                {/* <input
-                    className="input"
-                    placeholder="Settings path (optional)"
-                    value={settings}
-                    onChange={(e) => setSettings(e.target.value)}
-                /> */}
             </EntityFormWrapper>
         </div>
     );
