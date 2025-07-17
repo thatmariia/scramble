@@ -1,6 +1,7 @@
 from ortools.sat.python.cp_model import CpModel, IntVar
 from scramble.solver.model_variables import ModelVariables
 from scramble.solver.constraints.function_protocol import ConstraintFunction
+from scramble.core import Level
 
 from typing import Callable, Hashable
 
@@ -71,9 +72,13 @@ def symmetry_teams(mdl: CpModel, mv: ModelVariables):
     if not mv.active_players:
         return
 
+    sorted_players = sorted(
+        mv.active_players,
+        key=lambda p: (p.level.value, p.id)
+    )
     _add_symmetry_breaking_min_index_ordering(
         mdl=mdl,
-        entity_ids=[p.id for p in mv.active_players],
+        entity_ids=[p.id for p in sorted_players],
         group_ids=list(range(mv.nr_teams)),
         is_entity_in_group=lambda pid, tid: mv.player_in_team[(pid, tid)],
         is_group_active=lambda tid: mv.team_active[tid],
@@ -105,6 +110,47 @@ def symmetry_courts(mdl: CpModel, mv: ModelVariables):
     )
 
 
+def symmetry_players_within_level(mdl: CpModel, mv: ModelVariables):
+    """
+    For each level ℓ enforce an ordering on the first player of that level
+    in every active team.  Works even if player ids are strings/UUIDs.
+    """
+    if not mv.active_players:
+        return
+
+    sorted_by_id = sorted(mv.active_players, key=lambda p: str(p.id))
+    id2rank = {p.id: r for r, p in enumerate(sorted_by_id)}
+    big_m = len(sorted_by_id)          # strictly > every rank
+
+    for lvl in Level.all_values():
+        players_of_level = [p for p in mv.active_players if p.level.value == lvl]
+        if not players_of_level:
+            continue
+
+        first_rank = {}
+        for team_id in range(mv.nr_teams):
+            masks = []
+            for p in players_of_level:
+                rank = id2rank[p.id]
+                in_t = mv.player_in_team[(p.id, team_id)]
+                m = mdl.new_int_var(0, big_m, f"mask_p{rank}_t{team_id}_lvl{lvl}")
+                mdl.add(m >= rank)
+                mdl.add(m <= rank + big_m * (1 - in_t))
+                masks.append(m)
+
+            first_rank[team_id] = mdl.new_int_var(0, big_m, f"first_t{team_id}_lvl{lvl}")
+            mdl.add_min_equality(first_rank[team_id], masks)
+
+        # Enforce increasing order across **active** teams
+        for team_id in range(mv.nr_teams - 1):
+            both_active = mdl.new_bool_var(f"both_t{team_id}_{team_id+1}_lvl{lvl}")
+            mdl.add_bool_and([mv.team_active[team_id], mv.team_active[team_id + 1]]).only_enforce_if(both_active)
+            mdl.add(
+                first_rank[team_id] + big_m * (1 - both_active) <
+                first_rank[team_id + 1] + big_m * (1 - both_active)
+            ).only_enforce_if(both_active)
+
+
 def symmetry_anchor_first_player(mdl: CpModel, mv: ModelVariables):
     """
     Anchors the first player (player 0) to be in team 0.
@@ -112,8 +158,12 @@ def symmetry_anchor_first_player(mdl: CpModel, mv: ModelVariables):
 
     Conforms to the ConstraintFunction protocol.
     """
+    sorted_players = sorted(
+        mv.active_players,
+        key=lambda p: (p.level.value, p.id)
+    )
     if mv.active_players and mv.nr_teams > 0:
-        p0 = mv.active_players[0].id
+        p0 = sorted_players[0].id
         mdl.add(mv.team_active[0] == 1)
         mdl.add(mv.player_in_team[(p0, 0)] == 1)
 
@@ -125,8 +175,9 @@ def symmetry_anchor_first_team(mdl: CpModel, mv: ModelVariables):
 
     Conforms to the ConstraintFunction protocol.
     """
+    sorted_courts = sorted(mv.courts, key=lambda c: c.id)
     if mv.courts and mv.nr_teams > 0:
-        c0 = mv.courts[0].id
+        c0 = sorted_courts[0].id
         mdl.add(mv.court_active[c0] == 1)
         mdl.add(mv.team_on_court[(0, c0)] == 1)
 
@@ -160,6 +211,7 @@ def symmetry_court_groups(mdl: CpModel, mv: ModelVariables):
 SYMMETRY_FUNCTIONS: list[ConstraintFunction] = [
     symmetry_teams,
     symmetry_courts,
+    symmetry_players_within_level,
     symmetry_anchor_first_player,
     symmetry_anchor_first_team,
     symmetry_team_groups,

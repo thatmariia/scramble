@@ -1,6 +1,7 @@
 from ortools.sat.python.cp_model import CpModel
+from itertools import chain
 from scramble.solver.model_variables import ModelVariables
-from scramble.core import Round
+from scramble.core import Round, Player
 
 
 def add_hints_from_round(mdl: CpModel, mv: ModelVariables, game_round: Round):
@@ -40,12 +41,33 @@ def add_startup_hints(mdl: CpModel, mv: ModelVariables):
     Adds hints to the model.
     This helps guide the solver towards more optimal solutions.
     """
-    players = sorted(mv.active_players, key=lambda p: p.level.value, reverse=True)
+    players = sorted(mv.active_players, key=lambda p: p.level.value)
 
     nr_teams = mv.nr_teams
     nr_courts = len(mv.courts)
     min_team_size = mv.settings.min_team_size
     min_teams_in_match = mv.settings.min_nr_teams_in_match
+
+    # batch_size = min_team_size * min_teams_in_match
+    #
+    # def zigzag_sort(bp: list[Player]):
+    #     n = len(bp)
+    #     less = True  # Start with expecting a < b
+    #
+    #     for i in range(n - 1):
+    #         if less:
+    #             if bp[i].level.value > bp[i + 1].level.value:
+    #                 bp[i], bp[i + 1] = bp[i + 1], bp[i]
+    #         else:
+    #             if bp[i].level.value < bp[i + 1].level.value:
+    #                 bp[i], bp[i + 1] = bp[i + 1], bp[i]
+    #         less = not less  # Flip expectation
+    #
+    #     return bp
+    # batched_players = [
+    #     zigzag_sort(players[i:i + batch_size]) for i in range(0, len(players), batch_size)
+    # ]
+    # players = list(chain.from_iterable(batched_players))
 
     # assign players to teams, respecting min_team_size
     player_in_team = {}

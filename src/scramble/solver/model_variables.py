@@ -45,35 +45,22 @@ class ModelVariables:
         self._player_team_on_court_cache = {}
 
     def scale_weights(self):
-        def scale_weight(w_value, w_max):
-            if w_max == 0:
+        def scale_weight(w_value, w_c):
+            if w_c == 0:
                 return 0
-            return int(w_value * w_max)
+            return int(w_value * w_c)
 
         ubc = UpperBoundsComputer(self)
-        upper_bounds = ubc.compute_upper_bounds()
-        # print upper bounds
-        # print("\n\n")
-        # print("Weight original")
-        # for _, config in self.settings.goal_configs.items():
-        #     print(config)
-        # print()
-        # print("Upper Bounds:")
-        # for goal, ub in upper_bounds.items():
-        #     print(f"{goal.value}: {ub}")
-        # print()
-        max_weight = 1000
+        weight_coefs = ubc.compute_weight_coefs()
         for goal, config in self.settings.goal_configs.items():
             if config.enabled:
-                w_max = upper_bounds[goal]
-                config.weight = scale_weight(config.weight, w_max)
+                weight_coef = weight_coefs[goal]
+                config.weight = scale_weight(config.weight, weight_coef)
             else:
                 config.weight = 0
-
-        # print new weights
-        # print("Scaled Weights:")
-        # for _, config in self.settings.goal_configs.items():
-        #     print(config)
+            if config.weight == 0:
+                config.enabled = False
+            # print("Scaled Weight for goal", goal.value, ":", config.weight)
 
     def player_exists(self, player_id: str) -> bool:
         """
@@ -219,7 +206,7 @@ class UpperBoundsComputer:
     def __init__(self, mv: ModelVariables):
         self.mv = mv
 
-    def compute_upper_bounds(self) -> dict[Goal, int]:
+    def compute_weight_coefs(self) -> dict[Goal, int]:
         """
         Computes upper bounds for all goals defined in the model variables.
 
@@ -229,13 +216,27 @@ class UpperBoundsComputer:
             A dictionary mapping each goal to its computed upper bound.
         """
         raw_ubs = {goal: self.compute_upper_bound(goal) for goal in self.mv.settings.goal_configs.keys()}
-        raw_ub_values = list(raw_ubs.values())
+        # for goal, ub in raw_ubs.items():
+        #     print("Upper bound for goal", goal.value, ":", ub)
+        raw_ub_values: list[int] = list(raw_ubs.values())
         non_zero_raw_ub_values = [ub for ub in raw_ub_values if ub > 0]
         ub_lcm = math.lcm(*non_zero_raw_ub_values)
-        scaled_ubs = {}
+        lcm_scaled_ratios = [ub_lcm // ub if ub > 0 else 0 for ub in raw_ub_values]
+        max_ratio = max(lcm_scaled_ratios) if lcm_scaled_ratios else 1
+
+        # cp_max_int = 2**63 - 1  # maximum value for a 64-bit signed integer
+        cp_max_int = 10 ** 15  # a practical limit for our use case, can be adjusted
+        max_allowed_weight = 10
+        max_objective_value: float = sum(lcm_scaled_ratios) * sum(raw_ub_values) * max_allowed_weight
+        safe_ub = min([
+            max_objective_value,
+            float(cp_max_int) / (max_objective_value if max_objective_value > 0 else 1)
+        ])
+        scale = safe_ub / max_ratio if max_ratio > 0 else 1
+        scaled_ratios = {}
         for goal, ub in raw_ubs.items():
-            scaled_ubs[goal] = ub_lcm // ub if ub > 0 else 0
-        return scaled_ubs
+            scaled_ratios[goal] = int(ub_lcm * scale / ub) if ub > 0 else 0
+        return scaled_ratios
 
     def compute_upper_bound(self, goal: Goal) -> int:
         """

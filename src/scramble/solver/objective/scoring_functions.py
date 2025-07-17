@@ -53,6 +53,13 @@ def score_balance_lvl(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVar:
     scaled_avg: dict[int, IntVar] = {}
     for team_id in range(mv.nr_teams):
         total_team_lvl = mdl.new_int_var(0, max_total, f"total_lvl_t{team_id}")
+
+        # prev_total_lvl = total_team_lvl  # symmetry breaking
+        # if team_id > 0:
+        #     prev_active = mv.team_active[team_id - 1]
+        #     curr_active = mv.team_active[team_id]
+        #     mdl.add(prev_total_lvl <= total_team_lvl).only_enforce_if([prev_active, curr_active])
+
         mdl.add(
             total_team_lvl == sum(
                 player.level * mv.player_in_team[(player.id, team_id)]
@@ -105,38 +112,58 @@ def score_reduce_lvl_gap(mdl: CpModel, mv: ModelVariables) -> LinearExpr | IntVa
         lvl_players_in_team = [mv.player_in_team[(player.id, team_id)] for player in by_level[level]]
         has = mdl.new_bool_var(f"t{team_id}_has_lvl_{level}")
         if lvl_players_in_team:
-            lvl_players_not_in_team = [lvl_player.Not() for lvl_player in lvl_players_in_team]
-            mdl.add_bool_or([has] + lvl_players_not_in_team)
+            mdl.add_bool_or(lvl_players_in_team + [has.Not()])
             for lvl_player in lvl_players_in_team:
                 mdl.add_implication(lvl_player, has)
         else:
             mdl.add(has == 0)
         team_has_lvl[(team_id, level)] = has
 
-    def handle_side(side: str, t: int):
-        """
-        Helper function to handle the left or right side of the level gap calculation.
-        """
-        is_side = {lvl: mdl.new_bool_var(f"t{t}_is_{side}_lvl_{lvl}") for lvl in Level.all_values()}
-        mdl.add(sum(is_side.values()) == 1).only_enforce_if(mv.team_active[t])
-        mdl.add(sum(is_side.values()) == 0).only_enforce_if(mv.team_active[t].Not())
-        for lvl in Level.all_values():
-            mdl.add(team_has_lvl[(t, lvl)] == 1).only_enforce_if([mv.team_active[t], is_side[lvl]])
-
-        side_lvl = mdl.new_int_var(Level.min_value(), Level.max_value(), f"{side}_lvl_t{t}")
-        mdl.add(side_lvl == sum(lvl * is_side[lvl] for lvl in Level.all_values())).only_enforce_if(mv.team_active[t])
-        mdl.add(side_lvl == Level.min_value()).only_enforce_if(mv.team_active[t].Not())
-
-        return side_lvl, is_side
-
     for team_id in range(mv.nr_teams):
-        # left side (min)
-        min_lvl, is_min = handle_side("min", team_id)
-        # right side (max)
-        max_lvl, is_max = handle_side("max", team_id)
+        min_lvl = mdl.new_int_var(Level.min_value(), Level.max_value() + 1, f"min_lvl_t{team_id}")
+        max_lvl = mdl.new_int_var(Level.min_value() - 1, Level.max_value(), f"max_lvl_t{team_id}")
+
+        prev_min_lvl = min_lvl # symmetry breaking
+        # prev_max_lvl = max_lvl  # symmetry breaking
+        if team_id > 0:
+            prev_active = mv.team_active[team_id - 1]
+            curr_active = mv.team_active[team_id]
+            mdl.add(prev_min_lvl <= min_lvl).only_enforce_if([prev_active, curr_active])
+            # mdl.add(prev_max_lvl <= max_lvl).only_enforce_if([prev_active, curr_active])
+
+        mdl.add(sum(team_has_lvl[(team_id, lvl)] for lvl in Level.all_values()) >= 1).only_enforce_if(mv.team_active[team_id])
+        mdl.add(sum(team_has_lvl[(team_id, lvl)] for lvl in Level.all_values()) == 0).only_enforce_if(mv.team_active[team_id].Not())
+
+        rng = mdl.new_int_var(0, Level.max_value() - Level.min_value(), f"lvl_range_t{team_id}")
+
+        for level in Level.all_values():
+            has = team_has_lvl[(team_id, level)]
+            mdl.add_implication(has, mv.team_active[team_id])
+
+            mdl.add(min_lvl <= level).only_enforce_if(has)
+            # mdl.add(min_lvl == 0).only_enforce_if(has.Not())
+            # If the team does NOT contain any level strictly below `lvl`,
+            # then min_lvl cannot be below lvl either.
+            lower_present = [team_has_lvl[(team_id, k)] for k in range(Level.min_value(), level)]
+            if lower_present:
+                none_lower = define_and_var(mdl, f"none_lower_t{team_id}_{level}",  [lit.Not() for lit in lower_present])
+                mdl.add(min_lvl >= level).only_enforce_if([has, none_lower])  # tighten bottom
+
+                remaining_above = Level.max_value() - level
+                mdl.add(rng <= remaining_above).only_enforce_if([has, none_lower])  # tighten top
+
+            # Same idea, symmetrically, for max_lvl.
+            mdl.add(max_lvl >= level).only_enforce_if(has)
+            # mdl.add(max_lvl == 0).only_enforce_if(has.Not())
+            higher_present = [team_has_lvl[(team_id, k)] for k in range(level + 1, Level.max_value() + 1)]
+            if higher_present:
+                none_higher = define_and_var(mdl, f"none_higher_t{team_id}_{level}", [lit.Not() for lit in higher_present])
+                mdl.add(max_lvl <= level).only_enforce_if([has, none_higher])
+
+                remaining_below = level - Level.min_value()
+                mdl.add(rng <= remaining_below).only_enforce_if([has, none_higher])
 
         # calculate the range
-        rng = mdl.new_int_var(0, Level.max_value() - Level.min_value(), f"lvl_range_t{team_id}")
         mdl.add(rng == max_lvl - min_lvl).only_enforce_if(mv.team_active[team_id])
         mdl.add(rng == 0).only_enforce_if(mv.team_active[team_id].Not())
 

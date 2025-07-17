@@ -11,9 +11,25 @@ from scramble.solver.model_variables import ModelVariables
 from scramble.solver.hints import add_startup_hints, add_hints_from_round
 from scramble.solver.constraints import add_constraints, add_symmetry_breaking
 from scramble.solver.objective import score_round
+from scramble.solver.objective.scoring_functions import SCORING_FUNCTIONS
 from scramble.solver.utils import define_and_var
 
 LOGGER = logging.getLogger(__name__)
+
+
+class InspectObjective(cp.CpSolverSolutionCallback):
+    def __init__(self, mdl, mv, scorers):
+        super().__init__()
+        self._mdl = mdl
+        self._mv = mv
+        self._scorers = scorers
+
+    def on_solution_callback(self):
+        vals = {}
+        for name, fn in self._scorers.items():
+            v = self.Value(fn(self._mdl, self._mv))
+            vals[name] = v
+        print(f"obj={self.ObjectiveValue()}  ", vals, flush=True)
 
 
 class ScrambleSolver:
@@ -63,9 +79,9 @@ class ScrambleSolver:
         settings : Settings
             The settings for the scramble solver.
         """
-        self.active_players = active_players
+        self.active_players = sorted(active_players, key=lambda p: p.level.value)
         self.history = history
-        self.courts = courts
+        self.courts = sorted(courts, key=lambda c: c.id)
         self.settings = settings
 
         if len(courts) == 0:
@@ -79,7 +95,7 @@ class ScrambleSolver:
 
         self.model = cp.CpModel()
         self.solver = cp.CpSolver()
-        self.solver.parameters.log_search_progress = False
+        self.solver.parameters.log_search_progress = True
         self.solver.parameters.num_search_workers = min(8, multiprocessing.cpu_count())
         self.solver.parameters.random_seed = 1
         # self.solver.parameters.linearization_level = 1
@@ -108,26 +124,51 @@ class ScrambleSolver:
         self.vars["court_active"] = {}
         self.vars["team_size"] = {}
 
+        flat_vars_player_in_team = []
+        flat_vars_team_on_court = []
+        flat_vars_team_active = []
+        flat_vars_court_active = []
+        flat_vars_team_size = []
+
         for team_id in range(self.nr_teams):
             self.vars["team_size"][team_id] = self.model.new_int_var(
                 0, self.settings.max_team_size, f"team_size_{team_id}"
             )
+            flat_vars_team_size.append(self.vars["team_size"][team_id])
             for player in self.active_players:
                 self.vars["player_in_team"][(player.id, team_id)] = self.model.new_bool_var(
                     f"player_{player.id}_in_team_{team_id}"
                 )
+                flat_vars_player_in_team.append(self.vars["player_in_team"][(player.id, team_id)])
             for court in self.courts:
                 self.vars["team_on_court"][(team_id, court.id)] = self.model.new_bool_var(
                     f"team_{team_id}_on_court_{court.id}"
                 )
+                flat_vars_team_on_court.append(self.vars["team_on_court"][(team_id, court.id)])
             self.vars["team_active"][team_id] = self.model.new_bool_var(
                 f"team_{team_id}_active"
             )
+            flat_vars_team_active.append(self.vars["team_active"][team_id])
 
         for court in self.courts:
             self.vars["court_active"][court.id] = self.model.new_bool_var(
                 f"court_{court.id}_active"
             )
+            flat_vars_court_active.append(self.vars["court_active"][court.id])
+
+        flat_vars = [flat_vars_player_in_team, flat_vars_team_on_court, flat_vars_team_active, flat_vars_court_active, flat_vars_team_size]
+        max_len = max(len(v) for v in flat_vars)
+        flat_vars_zigzag = []
+        for i in range(max_len):
+            for var_list in flat_vars:
+                if i < len(var_list):
+                    flat_vars_zigzag.append(var_list[i])
+
+        # self.model.add_decision_strategy(
+        #     variables=flat_vars_zigzag,
+        #     var_strategy=cp.CHOOSE_MIN_DOMAIN_SIZE,
+        #     domain_strategy=cp.SELECT_MAX_VALUE
+        # )
 
         LOGGER.debug(
             f"number of vars: {self.nr_teams * (len(self.active_players) + len(self.courts) + 1) + len(self.courts)}")
@@ -220,7 +261,7 @@ class ScrambleSolver:
         self.add_constraints()
         self.set_objective()
 
-        status = self.solver.Solve(self.model)
+        status = self.solver.Solve(self.model, InspectObjective(self.model, self._mv, SCORING_FUNCTIONS))
 
         if status in [cp.OPTIMAL, cp.FEASIBLE]:
             matches = self._matches_from_solutions()
