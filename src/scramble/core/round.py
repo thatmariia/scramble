@@ -19,7 +19,8 @@ class Round(Serializable):
 
     def __str__(self):
         separator = "-" * 40
-        match_strs = f"\n{separator}\n".join(str(match) for match in self.matches)
+        matches_sorted = sorted(self.matches, key=lambda m: m.court.id)
+        match_strs = f"\n{separator}\n".join(str(match) for match in matches_sorted)
         return f"Round:\n{match_strs}\n{separator}"
 
 

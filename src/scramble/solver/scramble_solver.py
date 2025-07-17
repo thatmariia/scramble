@@ -17,21 +17,6 @@ from scramble.solver.utils import define_and_var
 LOGGER = logging.getLogger(__name__)
 
 
-class InspectObjective(cp.CpSolverSolutionCallback):
-    def __init__(self, mdl, mv, scorers):
-        super().__init__()
-        self._mdl = mdl
-        self._mv = mv
-        self._scorers = scorers
-
-    def on_solution_callback(self):
-        vals = {}
-        for name, fn in self._scorers.items():
-            v = self.Value(fn(self._mdl, self._mv))
-            vals[name] = v
-        print(f"obj={self.ObjectiveValue()}  ", vals, flush=True)
-
-
 class ScrambleSolver:
     """
     Responsible for solving the scramble scheduling problem using OR-Tools CP-SAT solver,
@@ -95,12 +80,18 @@ class ScrambleSolver:
 
         self.model = cp.CpModel()
         self.solver = cp.CpSolver()
+        # supported = cp.sat_parameters_pb2.SatParameters().DESCRIPTOR.fields_by_name
+        # print("--------- Supported parameters ---------")
+        # print(sorted(supported))
+        # print("--------- End of supported parameters ---------")
         self.solver.parameters.log_search_progress = True
-        self.solver.parameters.num_search_workers = min(8, multiprocessing.cpu_count())
+        self.solver.parameters.num_search_workers = 0
         self.solver.parameters.random_seed = 1
-        # self.solver.parameters.linearization_level = 1
-        # self.solver.parameters.max_presolve_iterations = 2
-        # self.solver.parameters.max_time_in_seconds = 60.0
+
+        # self.solver.parameters.search_branching = cp.RANDOMIZED_SEARCH
+
+        # self.solver.parameters.optimize_with_lb_tree_search = True
+
         self.vars = {}
         self.nr_teams = max(
             self.settings.min_nr_teams_in_match,
@@ -156,19 +147,12 @@ class ScrambleSolver:
             )
             flat_vars_court_active.append(self.vars["court_active"][court.id])
 
-        flat_vars = [flat_vars_player_in_team, flat_vars_team_on_court, flat_vars_team_active, flat_vars_court_active, flat_vars_team_size]
-        max_len = max(len(v) for v in flat_vars)
-        flat_vars_zigzag = []
-        for i in range(max_len):
-            for var_list in flat_vars:
-                if i < len(var_list):
-                    flat_vars_zigzag.append(var_list[i])
-
-        # self.model.add_decision_strategy(
-        #     variables=flat_vars_zigzag,
-        #     var_strategy=cp.CHOOSE_MIN_DOMAIN_SIZE,
-        #     domain_strategy=cp.SELECT_MAX_VALUE
-        # )
+        flat_vars = flat_vars_player_in_team + flat_vars_team_on_court + flat_vars_team_active + flat_vars_court_active + flat_vars_team_size
+        self.model.add_decision_strategy(
+            variables=flat_vars,
+            var_strategy=cp.CHOOSE_FIRST,
+            domain_strategy=cp.SELECT_MAX_VALUE
+        )
 
         LOGGER.debug(
             f"number of vars: {self.nr_teams * (len(self.active_players) + len(self.courts) + 1) + len(self.courts)}")
@@ -261,7 +245,7 @@ class ScrambleSolver:
         self.add_constraints()
         self.set_objective()
 
-        status = self.solver.Solve(self.model, InspectObjective(self.model, self._mv, SCORING_FUNCTIONS))
+        status = self.solver.Solve(self.model)
 
         if status in [cp.OPTIMAL, cp.FEASIBLE]:
             matches = self._matches_from_solutions()

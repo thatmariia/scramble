@@ -1,13 +1,16 @@
-from ortools.sat.python.cp_model import CpModel, IntVar
+from ortools.sat.colab.flags import define_bool
+from ortools.sat.python import cp_model as cp
+from ortools.sat.python.cp_model import IntVar
 from scramble.solver.model_variables import ModelVariables
 from scramble.solver.constraints.function_protocol import ConstraintFunction
 from scramble.core import Level
+from scramble.solver.utils import define_and_var
 
 from typing import Callable, Hashable
 
 
 def _add_symmetry_breaking_min_index_ordering(
-    mdl: CpModel,
+    mdl: cp,
     entity_ids: list[Hashable],
     group_ids: list[Hashable],
     is_entity_in_group: Callable[[Hashable, Hashable], IntVar],
@@ -24,7 +27,7 @@ def _add_symmetry_breaking_min_index_ordering(
         List of ordered entity identifiers (e.g., players or teams).
     group_ids : list[Hashable]
         List of ordered group identifiers (e.g., teams or courts).
-    is_entity_in_group : (entity_id, group_id) -> BoolVar
+    is_entity_in_group: (entity_id, group_id) -> BoolVar
         Function returning BoolVar indicating if entity is in group.
     is_group_active : group_id -> BoolVar
         Function returning BoolVar indicating if group is active.
@@ -38,9 +41,14 @@ def _add_symmetry_breaking_min_index_ordering(
         masked = []
         for idx, entity_id in enumerate(entity_ids):
             in_group = is_entity_in_group(entity_id, group_id)
-            masked_idx = mdl.new_int_var(0, big_m, f"{prefix}_masked_idx_{idx}_{group_id}")
-            mdl.add(masked_idx >= idx)
-            mdl.add(masked_idx <= idx + big_m * (1 - in_group))
+            masked_idx = mdl.new_int_var(idx, big_m, f"{prefix}_masked_idx_{idx}_{group_id}")
+            mdl.add_decision_strategy(
+                variables=[masked_idx],
+                var_strategy=cp.CHOOSE_FIRST,
+                domain_strategy=cp.SELECT_MIN_VALUE
+            )
+            mdl.add(masked_idx == idx).only_enforce_if(in_group)
+            mdl.add(masked_idx == big_m).only_enforce_if(in_group.Not())
             masked.append(masked_idx)
 
         min_idx[group_id] = mdl.new_int_var(0, big_m, f"{prefix}_min_idx_{group_id}")
@@ -48,9 +56,7 @@ def _add_symmetry_breaking_min_index_ordering(
 
     for i in range(len(group_ids) - 1):
         g1, g2 = group_ids[i], group_ids[i + 1]
-        both_active = mdl.new_bool_var(f"{prefix}_both_active_{g1}_{g2}")
-        mdl.add_bool_and([is_group_active(g1), is_group_active(g2)]).only_enforce_if(both_active)
-
+        both_active = define_and_var(mdl, f"{prefix}_both_active_{g1}_{g2}", [is_group_active(g1), is_group_active(g2)])
         mdl.add(
             min_idx[g1] + big_m * (1 - both_active) <
             min_idx[g2] + big_m * (1 - both_active)
@@ -59,7 +65,7 @@ def _add_symmetry_breaking_min_index_ordering(
 
 # --- Individual constraint functions ---
 
-def symmetry_teams(mdl: CpModel, mv: ModelVariables):
+def symmetry_teams(mdl: cp, mv: ModelVariables):
     """
     Adds symmetry-breaking constraints over teams to reduce redundant team labelings.
     Reduces equivalent solutions caused by permutation of team IDs.
@@ -86,7 +92,7 @@ def symmetry_teams(mdl: CpModel, mv: ModelVariables):
     )
 
 
-def symmetry_courts(mdl: CpModel, mv: ModelVariables):
+def symmetry_courts(mdl: cp, mv: ModelVariables):
     """
     Adds symmetry-breaking constraints over courts to reduce redundant permutations.
     Reduces equivalent solutions caused by permutation of court IDs.
@@ -110,48 +116,7 @@ def symmetry_courts(mdl: CpModel, mv: ModelVariables):
     )
 
 
-def symmetry_players_within_level(mdl: CpModel, mv: ModelVariables):
-    """
-    For each level ℓ enforce an ordering on the first player of that level
-    in every active team.  Works even if player ids are strings/UUIDs.
-    """
-    if not mv.active_players:
-        return
-
-    sorted_by_id = sorted(mv.active_players, key=lambda p: str(p.id))
-    id2rank = {p.id: r for r, p in enumerate(sorted_by_id)}
-    big_m = len(sorted_by_id)          # strictly > every rank
-
-    for lvl in Level.all_values():
-        players_of_level = [p for p in mv.active_players if p.level.value == lvl]
-        if not players_of_level:
-            continue
-
-        first_rank = {}
-        for team_id in range(mv.nr_teams):
-            masks = []
-            for p in players_of_level:
-                rank = id2rank[p.id]
-                in_t = mv.player_in_team[(p.id, team_id)]
-                m = mdl.new_int_var(0, big_m, f"mask_p{rank}_t{team_id}_lvl{lvl}")
-                mdl.add(m >= rank)
-                mdl.add(m <= rank + big_m * (1 - in_t))
-                masks.append(m)
-
-            first_rank[team_id] = mdl.new_int_var(0, big_m, f"first_t{team_id}_lvl{lvl}")
-            mdl.add_min_equality(first_rank[team_id], masks)
-
-        # Enforce increasing order across **active** teams
-        for team_id in range(mv.nr_teams - 1):
-            both_active = mdl.new_bool_var(f"both_t{team_id}_{team_id+1}_lvl{lvl}")
-            mdl.add_bool_and([mv.team_active[team_id], mv.team_active[team_id + 1]]).only_enforce_if(both_active)
-            mdl.add(
-                first_rank[team_id] + big_m * (1 - both_active) <
-                first_rank[team_id + 1] + big_m * (1 - both_active)
-            ).only_enforce_if(both_active)
-
-
-def symmetry_anchor_first_player(mdl: CpModel, mv: ModelVariables):
+def symmetry_anchor_first_player(mdl: cp, mv: ModelVariables):
     """
     Anchors the first player (player 0) to be in team 0.
     This is a specific symmetry-breaking constraint that ensures player 0 is always assigned to team 0.
@@ -168,7 +133,7 @@ def symmetry_anchor_first_player(mdl: CpModel, mv: ModelVariables):
         mdl.add(mv.player_in_team[(p0, 0)] == 1)
 
 
-def symmetry_anchor_first_team(mdl: CpModel, mv: ModelVariables):
+def symmetry_anchor_first_team(mdl: cp, mv: ModelVariables):
     """
     Anchors the first team (team 0) to be on the first court (court 0).
     This is a specific symmetry-breaking constraint that ensures team 0 is always assigned to court 0.
@@ -182,7 +147,7 @@ def symmetry_anchor_first_team(mdl: CpModel, mv: ModelVariables):
         mdl.add(mv.team_on_court[(0, c0)] == 1)
 
 
-def symmetry_team_groups(mdl: CpModel, mv: ModelVariables):
+def symmetry_team_groups(mdl: cp, mv: ModelVariables):
     """
     Adds symmetry-breaking constraints to ensure teams are ordered by activity.
     This prevents equivalent solutions caused by reordering of team IDs.
@@ -191,9 +156,29 @@ def symmetry_team_groups(mdl: CpModel, mv: ModelVariables):
     """
     for t in range(mv.nr_teams - 1):
         mdl.add(mv.team_active[t] >= mv.team_active[t + 1])
+        mdl.add(mv.scaled_avg_team_lvl(mdl, t) <= mv.scaled_avg_team_lvl(mdl, t + 1)).only_enforce_if([
+            mv.team_active[t], mv.team_active[t + 1]
+        ])
+        equal_avg_lvl = mdl.new_bool_var(f"equal_avg_lvl_t{t}_t{t + 1}")
+        mdl.add_decision_strategy(
+            variables=[equal_avg_lvl],
+            var_strategy=cp.CHOOSE_FIRST,
+            domain_strategy=cp.SELECT_MAX_VALUE
+        )
+        mdl.add(mv.scaled_avg_team_lvl(mdl, t) == mv.scaled_avg_team_lvl(mdl, t + 1)).only_enforce_if(equal_avg_lvl)
+        mdl.add(mv.scaled_avg_team_lvl(mdl, t) != mv.scaled_avg_team_lvl(mdl, t + 1)).only_enforce_if(equal_avg_lvl.Not())
+        mdl.add(mv.team_size[t] >= mv.team_size[t + 1]).only_enforce_if([
+            mv.team_active[t], mv.team_active[t + 1], equal_avg_lvl
+        ])
+        # equal_sizes = mdl.new_bool_var(f"equal_sizes_t{t}_t{t + 1}")
+        # mdl.add(mv.team_size[t] == mv.team_size[t + 1]).only_enforce_if(equal_sizes)
+        # mdl.add(mv.team_size[t] != mv.team_size[t + 1]).only_enforce_if(equal_sizes.Not())
+        # mdl.add(mv.team_level_range(mdl, t) <= mv.team_level_range(mdl, t + 1)).only_enforce_if([
+        #     mv.team_active[t], mv.team_active[t + 1], equal_sizes, equal_avg_lvl
+        # ])
 
 
-def symmetry_court_groups(mdl: CpModel, mv: ModelVariables):
+def symmetry_court_groups(mdl: cp, mv: ModelVariables):
     """
     Adds symmetry-breaking constraints to ensure courts are ordered by activity.
     This prevents equivalent solutions caused by reordering of court IDs.
@@ -211,7 +196,6 @@ def symmetry_court_groups(mdl: CpModel, mv: ModelVariables):
 SYMMETRY_FUNCTIONS: list[ConstraintFunction] = [
     symmetry_teams,
     symmetry_courts,
-    symmetry_players_within_level,
     symmetry_anchor_first_player,
     symmetry_anchor_first_team,
     symmetry_team_groups,
