@@ -84,7 +84,7 @@ class ScrambleSolver:
         # print("--------- Supported parameters ---------")
         # print(sorted(supported))
         # print("--------- End of supported parameters ---------")
-        self.solver.parameters.log_search_progress = True
+        self.solver.parameters.log_search_progress = False
         self.solver.parameters.num_search_workers = 0
         self.solver.parameters.random_seed = 1
 

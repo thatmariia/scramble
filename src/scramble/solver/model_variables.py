@@ -67,7 +67,7 @@ class ModelVariables:
                 config.weight = 0
             if config.weight == 0:
                 config.enabled = False
-            print("Scaled Weight for goal", goal.value, ":", config.weight)
+            # print("Scaled Weight for goal", goal.value, ":", config.weight)
 
     def team_has_lvl(self, mdl: cp, team_id: int, lvl: Level) -> IntVar:
         """
@@ -328,8 +328,8 @@ class UpperBoundsComputer:
 
     def compute_weight_coefs(self) -> dict[Goal, int]:
         raw_ubs = {goal: self.compute_upper_bound(goal) for goal in self.mv.settings.goal_configs.keys()}
-        for goal, ub in raw_ubs.items():
-            print("Upper bound for goal", goal.value, ":", ub)
+        # for goal, ub in raw_ubs.items():
+        #     print("Upper bound for goal", goal.value, ":", ub)
         raw_ub_values: list[int] = list(raw_ubs.values())
         non_zero_raw_ub_values = [ub for ub in raw_ub_values if ub > 0]
         ub_lcm = math.lcm(*non_zero_raw_ub_values)
@@ -343,8 +343,8 @@ class UpperBoundsComputer:
         safe_ub = max_objective_value / 100
         scale = float(safe_ub) / max_ratio if max_ratio > 0 else 1
         scaled_ratios = {}
-        print("LCM of raw upper bounds:", ub_lcm)
-        print("Scale factor for upper bounds:", scale)
+        # print("LCM of raw upper bounds:", ub_lcm)
+        # print("Scale factor for upper bounds:", scale)
         for goal, ub in raw_ubs.items():
             scaled_ratios[goal] = max(1, int(ub_lcm * scale / ub)) if ub > 0 else 0
 
