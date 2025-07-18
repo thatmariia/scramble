@@ -76,7 +76,7 @@ def constraint_team_active_and_size(mdl: cp, mv: ModelVariables):
             for player in mv.active_players
         ]
 
-        mdl.add(mv.team_size[team_id] == sum(team_players)).only_enforce_if(mv.team_active[team_id])
+        mdl.add(mv.team_size[team_id] == sum(team_players))
         mdl.add(mv.team_size[team_id] == 0).only_enforce_if(mv.team_active[team_id].Not())
         is_non_zero = mdl.new_bool_var(f"team_{team_id}_is_non_zero")
         mdl.add(mv.team_size[team_id] >= mv.settings.min_team_size).only_enforce_if(is_non_zero)

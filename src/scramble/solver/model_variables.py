@@ -395,7 +395,7 @@ class UpperBoundsComputer:
         max_pl = max(p.level.value for p in self.mv.active_players)
         min_pl = min(p.level.value for p in self.mv.active_players)
         # return math.comb(self.mv.nr_teams, 2) * lcm_sizes * (max_pl - min_pl)
-        return lcm_sizes * (max_pl - min_pl)
+        return lcm_sizes * (max_pl - min_pl) // min(team_sizes)
 
     def _compute_reduce_level_gap(self) -> int:
         max_pl = max(p.level.value for p in self.mv.active_players)

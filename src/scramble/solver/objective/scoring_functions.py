@@ -22,16 +22,16 @@ def score_keep_ideal_team_size(mdl: cp, mv: ModelVariables) -> LinearExpr | IntV
         return mdl.new_int_var(0, 0, "ideal_team_size_score")
 
     ideal_team_size = mv.settings.min_team_size
+    size_range = mv.settings.max_team_size - ideal_team_size
     terms: list[IntVar] = []
     for team_id in range(mv.nr_teams):
         # calculate the deviation from the ideal team size
-        diff = mdl.new_int_var(-mv.settings.max_team_size, mv.settings.max_team_size, f"diff_t{team_id}")
-        team_size = sum(mv.player_in_team[player.id, team_id] for player in mv.active_players)
-        mdl.add(diff == team_size - ideal_team_size).only_enforce_if(mv.team_active[team_id])
+        diff = mdl.new_int_var(0, size_range, f"diff_t{team_id}")
+        mdl.add(diff == mv.team_size[team_id] - ideal_team_size).only_enforce_if(mv.team_active[team_id])
         mdl.add(diff == 0).only_enforce_if(mv.team_active[team_id].Not())
-        abs_diff = absolute_slack(mdl, diff, f"abs_diff_t{team_id}", mv.settings.max_team_size)
+        # abs_diff = absolute_slack(mdl, diff, f"abs_diff_t{team_id}", size_range)
 
-        terms.append(abs_diff)
+        terms.append(diff)
     return sum(terms)
 
 
