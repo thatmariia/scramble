@@ -4,7 +4,7 @@ import time
 
 from scramble.core import Level, Court, Player, Round, HistoryManager
 from scramble.solver import ScrambleSolver
-from scramble.settings import Settings
+from scramble.settings import Settings, Goal
 
 
 def generate_players(count: int, level: Level, start_index: int = 1) -> list[Player]:
@@ -76,6 +76,7 @@ def test_1_rounds_mixed_levels_no_history(caplog):
     courts = generate_courts(2)
 
     solver = ScrambleSolver(players, HistoryManager(), courts, Settings())
+    solver.settings.goal_configs[Goal.BALANCE_LVL].weight = 2
     round = solver.solve()
     assert len(round.matches) == 2
 
