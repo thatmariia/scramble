@@ -1,10 +1,13 @@
 from dataclasses import dataclass
+from collections import Counter
 import math
+import operator
+from abc import ABC, abstractmethod
 from ortools.sat.python.cp_model import IntVar
 from ortools.sat.python import cp_model as cp
 from scramble.settings import Settings
 from scramble.core import Player, HistoryManager, Court
-from scramble.solver.utils import define_and_var, define_and_var_imp, define_or_var
+from scramble.solver.utils import define_and_var, define_and_var_imp, define_or_var, reify_with_fallback, reify_existing_with_fallback, reify_existing_with_inequality
 from scramble.settings import Goal
 from scramble.core import Level
 
@@ -33,6 +36,7 @@ class ModelVariables:
     _players_same_team_cache = None
     _player_on_court_cache = None
     _player_team_on_court_cache = None
+    _court_lvl_spread_cache = None
     _scaled_avg_team_lvl_cache = None
     _team_has_lvl_cache = None
     _team_level_range_cache = None
@@ -47,6 +51,7 @@ class ModelVariables:
         self._players_same_team_cache = {}
         self._player_on_court_cache = {}
         self._player_team_on_court_cache = {}
+        self._court_lvl_spread_cache = {}
         self._scaled_avg_team_lvl_cache = {}
         self._team_has_lvl_cache = {}
         self._team_level_range_cache = {}
@@ -73,23 +78,40 @@ class ModelVariables:
         """
         Returns a BoolVar that is true iff the team has at least one player with the given level.
         """
-        if (team_id, lvl) in self._team_has_lvl_cache:
+        key = (team_id, lvl)
+        if key in self._team_has_lvl_cache:
             return self._team_has_lvl_cache[(team_id, lvl)]
 
-        players_with_lvl = [
+        lits = [
             self.player_in_team[(p.id, team_id)]
-            for p in self.active_players if p.level.value == lvl
+            for p in self.active_players
+            if p.level.value == lvl
         ]
-        has = mdl.new_bool_var(f"t{team_id}_has_lvl_{lvl}")
-        if players_with_lvl:
-            mdl.add_bool_or(players_with_lvl + [has.Not()])
-            for lvl_player in players_with_lvl:
-                mdl.add_implication(lvl_player, has)
-        else:
-            mdl.add(has == 0)
-        mdl.add_implication(has, self.team_active[team_id])
 
-        self._team_has_lvl_cache[(team_id, lvl)] = has
+        if not lits:
+            has = mdl.new_bool_var(f"t{team_id}_has_no_{lvl}")
+            mdl.add(has == 0)
+            self._team_has_lvl_cache[key] = has
+            return has
+
+        if len(lits) == 1:
+            has = lits[0]
+            self._team_has_lvl_cache[key] = has
+            return has
+
+        has = mdl.new_bool_var(f"t{team_id}_has_lvl_{lvl}")
+
+        # mdl.add(sum(lits) >= 1).only_enforce_if(has)
+        # mdl.add(sum(lits) == 0).only_enforce_if(has.Not())
+
+        for lit in lits:
+            mdl.add_implication(lit, has)
+            mdl.add_implication(has.Not(), lit.Not())
+
+        mdl.add_implication(has, self.team_active[team_id])
+        mdl.add_implication(self.team_active[team_id].Not(), has.Not())
+
+        self._team_has_lvl_cache[key] = has
         return has
 
     def team_level_range(self, mdl: cp, team_id: int) -> IntVar:
@@ -99,48 +121,56 @@ class ModelVariables:
         if team_id in self._team_level_range_cache:
             return self._team_level_range_cache[team_id]
 
-        all_lvls = sorted(list(set(p.level.value for p in self.active_players)))
-        max_lvl = all_lvls[-1]
-        min_lvl = all_lvls[0]
+        levels = sorted({p.level.value for p in self.active_players})
+        if len(set(levels)) == 1:
+            const = mdl.new_int_var(0, 0, f"rng_t{team_id}")
+            self._team_level_range_cache[team_id] = const
+            return const
 
-        min_team_lvl = mdl.new_int_var(0, max_lvl, f"min_team_lvl_t{team_id}")
-        max_team_lvl = mdl.new_int_var(0, max_lvl, f"max_team_lvl_t{team_id}")
-
-        rng = mdl.new_int_var(0, max_lvl - min_lvl, f"lvl_range_t{team_id}")
-
-        team_has_lvl = {}
-        for lvl in all_lvls:
-            team_has_lvl[lvl] = self.team_has_lvl(mdl, team_id, lvl)
-
-        for lvl in all_lvls:
-            has = team_has_lvl[lvl]
-            # add the level to the min and max level vars
-            mdl.add(min_team_lvl <= lvl).only_enforce_if(has)
-            mdl.add(max_team_lvl >= lvl).only_enforce_if(has)
-
-            if lvl > min_lvl:
-                none_lower = mdl.new_bool_var(f"t{team_id}_none_lower_than_{lvl}")
-                mdl.add(sum(team_has_lvl[ll] for ll in all_lvls if ll < lvl) == 0).only_enforce_if(none_lower)
-                mdl.add(sum(team_has_lvl[ll] for ll in all_lvls if ll < lvl) >= 1).only_enforce_if(none_lower.Not())
-                mdl.add(rng <= max_lvl - lvl).only_enforce_if([self.team_active[team_id], has, none_lower])
-
-            if lvl < max_lvl:
-                none_higher = mdl.new_bool_var(f"t{team_id}_none_higher_than_{lvl}")
-                mdl.add(sum(team_has_lvl[hl] for hl in all_lvls if hl > lvl) == 0).only_enforce_if(none_higher)
-                mdl.add(sum(team_has_lvl[hl] for hl in all_lvls if hl > lvl) >= 1).only_enforce_if(none_higher.Not())
-                mdl.add(rng <= lvl - min_lvl).only_enforce_if([self.team_active[team_id], has, none_higher])
-
-        mdl.add(sum(team_has_lvl[lvl] for lvl in all_lvls) >= 1).only_enforce_if(self.team_active[team_id])
-        mdl.add(sum(team_has_lvl[lvl] for lvl in all_lvls) == 0).only_enforce_if(self.team_active[team_id].Not())
-
-        mdl.add(min_team_lvl == 0).only_enforce_if(self.team_active[team_id].Not())
-        mdl.add(max_team_lvl == 0).only_enforce_if(self.team_active[team_id].Not())
-
-        mdl.add(rng == max_team_lvl - min_team_lvl).only_enforce_if(self.team_active[team_id])
+        rng = mdl.new_int_var(0, levels[-1] - levels[0], f"rng_t{team_id}")
         mdl.add(rng == 0).only_enforce_if(self.team_active[team_id].Not())
+        has = {lvl: self.team_has_lvl(mdl, team_id, lvl) for lvl in levels}
+
+        for i, lo in enumerate(levels):
+            for hi in levels[i + 1:]:
+                both = mdl.new_bool_var(f"t{team_id}_lvl{lo}_{hi}_both")
+                mdl.add(has[lo] + has[hi] == 2).only_enforce_if(both)
+                mdl.add(has[lo] + has[hi] <= 1).only_enforce_if(both.Not())
+
+                mdl.add(rng >= hi - lo).only_enforce_if(both)
 
         self._team_level_range_cache[team_id] = rng
         return rng
+
+    def court_lvl_spread(self, mdl: cp, court_id: str) -> IntVar:
+        if court_id in self._court_lvl_spread_cache:
+            return self._court_lvl_spread_cache[court_id]
+
+        max_lvl = max(p.level.value for p in self.active_players)
+        min_lvl = min(p.level.value for p in self.active_players)
+        lcm_sizes = self.settings.lcm_sizes()
+        scaled_max_lvl = lcm_sizes * max_lvl
+        scaled_min_lvl = lcm_sizes * min_lvl
+
+        avg_team_lvls = []
+        for team_id in range(self.nr_teams):
+            on_court = self.team_on_court[(team_id, court_id)]
+            mdl.add_implication(on_court, self.team_active[team_id])
+            avg_team_lvls.append((on_court, self.scaled_avg_team_lvl(mdl, team_id)))
+
+        max_lvl = mdl.new_int_var(scaled_min_lvl, scaled_max_lvl, f"max_lvl_{court_id}")
+        min_lvl = mdl.new_int_var(scaled_min_lvl, scaled_max_lvl, f"min_lvl_{court_id}")
+
+        for present, lvl in avg_team_lvls:
+            mdl.add(max_lvl >= lvl).only_enforce_if(present)
+            mdl.add(min_lvl <= lvl).only_enforce_if(present)
+
+        court_spread = reify_with_fallback(
+            mdl, max_lvl - min_lvl, 0, self.court_active[court_id],
+            (0, scaled_max_lvl), f"court_spread_{court_id}"
+        )
+        self._court_lvl_spread_cache[court_id] = court_spread
+        return court_spread
 
     def scaled_avg_team_lvl(self, mdl: cp, team_id: int) -> IntVar:
         """
@@ -150,33 +180,23 @@ class ModelVariables:
         if team_id in self._scaled_avg_team_lvl_cache:
             return self._scaled_avg_team_lvl_cache[team_id]
 
-        max_lvl = max(p.level.value for p in self.active_players)
-        min_lvl = min(p.level.value for p in self.active_players)
-        max_total = max_lvl * self.settings.max_team_size
-        min_total = min_lvl * self.settings.min_team_size
-        team_sizes = list(range(self.settings.min_team_size, self.settings.max_team_size + 1))
-        min_team_size = min(team_sizes)
-        lcm_sizes = math.lcm(*team_sizes)
-        scaled_min_total = lcm_sizes * min_total
-        scaled_max_total = lcm_sizes * max_total
-        scaled_min_lvl = lcm_sizes * min_lvl
-        scaled_max_lvl = lcm_sizes * max_lvl
+        lcm_sizes = self.settings.lcm_sizes()
 
-        total_team_lvl = mdl.new_int_var(0, scaled_max_total, f"total_team_lvl_t{team_id}")
-        mdl.add(total_team_lvl == lcm_sizes * sum(player.level * self.player_in_team[(player.id, team_id)] for player in self.active_players)).only_enforce_if(self.team_active[team_id])
-        mdl.add(total_team_lvl >= scaled_min_total).only_enforce_if(self.team_active[team_id])
-        mdl.add(total_team_lvl <= scaled_max_lvl * self.team_size[team_id]).only_enforce_if(self.team_active[team_id])
+        total_domain_values: set[int] = set([0] + [lcm_sizes * p.level.value * s for p in self.active_players for s in range(self.settings.min_team_size, self.settings.max_team_size + 1)])
+        total_domain = cp.Domain.from_values(sorted(total_domain_values))
+        total_team_lvl = mdl.new_int_var_from_domain(total_domain, f"total_team_lvl_t{team_id}")
+
+        mdl.add(total_team_lvl == lcm_sizes * sum(player.level * self.player_in_team[(player.id, team_id)] for player in self.active_players))
+
+        avg_domain_values: set[int] = set([v // s for v in total_domain_values for s in range(self.settings.min_team_size, self.settings.max_team_size + 1)])
+        avg_domain = cp.Domain.from_values(sorted(avg_domain_values))
+        avg_team_lvl = mdl.new_int_var_from_domain(avg_domain, f"avg_team_lvl_t{team_id}")
+
+        mdl.add_multiplication_equality(total_team_lvl, avg_team_lvl, self.team_size[team_id])
+        mdl.add(avg_team_lvl == 0).only_enforce_if(self.team_active[team_id].Not())
+        mdl.add(avg_team_lvl >= lcm_sizes * Level.min_value()).only_enforce_if(self.team_active[team_id])
+
         mdl.add(total_team_lvl == 0).only_enforce_if(self.team_active[team_id].Not())
-
-        avg_team_lvl = mdl.new_int_var(0, scaled_max_lvl, f"avg_team_lvl_t{team_id}")
-        mdl.add_decision_strategy(
-            variables=[avg_team_lvl],
-            var_strategy=cp.CHOOSE_FIRST,
-            domain_strategy=cp.SELECT_LOWER_HALF
-        )
-        mdl.add_multiplication_equality(total_team_lvl, avg_team_lvl, self.team_size[team_id])#.only_enforce_if(self.team_active[team_id])
-
-        mdl.add(avg_team_lvl >= scaled_min_lvl).only_enforce_if(self.team_active[team_id])
         mdl.add(avg_team_lvl == 0).only_enforce_if(self.team_active[team_id].Not())
 
         self._scaled_avg_team_lvl_cache[team_id] = avg_team_lvl
@@ -317,17 +337,74 @@ class ModelVariables:
         return var
 
 
-class UpperBoundsComputer:
+class BoundsComputer:
+    """
+    Base class for computing bounds for optimization goals.
+    This class defines the interface for computing bounds based on model variables.
+    """
+
+    def __init__(self, mv: ModelVariables):
+        self.mv = mv
+
+    def compute(self, goal: Goal) -> int:
+        """
+        Computes the upper bound for a specific goal.
+
+        Parameters
+        ----------
+        goal : Goal
+            The optimization goal for which to compute the upper bound.
+        """
+        if goal == Goal.KEEP_IDEAL_TEAM_SIZE:
+            return self._compute_keep_ideal_team_size()
+        if goal == Goal.BALANCE_LVL:
+            return self._compute_balance_level()
+        if goal == Goal.REDUCE_LVL_GAP:
+            return self._compute_reduce_level_gap()
+        if goal == Goal.DIVERSIFY_PARTNERS:
+            return self._compute_diversify_partners()
+        if goal == Goal.DIVERSIFY_OPPONENTS:
+            return self._compute_diversify_opponents()
+        if goal == Goal.MAXIMIZE_COURTS_USAGE:
+            return self._compute_maximize_courts_usage()
+        return 0
+
+    @abstractmethod
+    def _compute_keep_ideal_team_size(self) -> int:
+        pass
+
+    @abstractmethod
+    def _compute_balance_level(self) -> int:
+        pass
+
+    @abstractmethod
+    def _compute_reduce_level_gap(self) -> int:
+        pass
+
+    @abstractmethod
+    def _compute_diversify_partners(self) -> int:
+        pass
+
+    @abstractmethod
+    def _compute_diversify_opponents(self) -> int:
+        pass
+
+    @abstractmethod
+    def _compute_maximize_courts_usage(self) -> int:
+        pass
+
+
+class UpperBoundsComputer(BoundsComputer):
     """
     Computes upper bounds for various optimization goals based on the provided model variables.
     This class is used to determine the maximum possible values for each goal in the optimization process.
     """
 
     def __init__(self, mv: ModelVariables):
-        self.mv = mv
+        super().__init__(mv)
 
     def compute_weight_coefs(self) -> dict[Goal, int]:
-        raw_ubs = {goal: self.compute_upper_bound(goal) for goal in self.mv.settings.goal_configs.keys()}
+        raw_ubs = {goal: self.compute(goal) for goal in self.mv.settings.goal_configs.keys()}
         # for goal, ub in raw_ubs.items():
         #     print("Upper bound for goal", goal.value, ":", ub)
         raw_ub_values: list[int] = list(raw_ubs.values())
@@ -359,71 +436,97 @@ class UpperBoundsComputer:
         }
         return updated_scaled_ratios
 
-    def compute_upper_bound(self, goal: Goal) -> int:
-        """
-        Computes the upper bound for a specific goal.
-
-        Parameters
-        ----------
-        goal : Goal
-            The optimization goal for which to compute the upper bound.
-        """
-        match goal:
-            case Goal.KEEP_IDEAL_TEAM_SIZE:
-                return self._compute_ideal_team_size()
-            case Goal.BALANCE_LVL:
-                return self._compute_balance_level()
-            case Goal.REDUCE_LVL_GAP:
-                return self._compute_reduce_level_gap()
-            case Goal.DIVERSIFY_PARTNERS:
-                return self._compute_diversify_partners()
-            case Goal.DIVERSIFY_OPPONENTS:
-                return self._compute_diversify_opponents()
-            case Goal.MAXIMIZE_COURTS_USAGE:
-                return self._compute_maximize_courts_usage()
-            case _:
-                raise ValueError(f"Unknown goal: {goal}")
-
-    def _compute_ideal_team_size(self) -> int:
-        # return self.mv.nr_teams * (self.mv.settings.max_team_size - self.mv.settings.min_team_size)
-        return self.mv.settings.max_team_size - self.mv.settings.min_team_size
+    def _compute_keep_ideal_team_size(self) -> int:
+        return self.mv.nr_teams * (self.mv.settings.max_team_size - self.mv.settings.min_team_size)
+        # return self.mv.settings.max_team_size - self.mv.settings.min_team_size
 
     def _compute_balance_level(self) -> int:
-        team_sizes = range(self.mv.settings.min_team_size,
-                           self.mv.settings.max_team_size + 1)
-        lcm_sizes = math.lcm(*team_sizes)
+        lcm_sizes = self.mv.settings.lcm_sizes()
         max_pl = max(p.level.value for p in self.mv.active_players)
         min_pl = min(p.level.value for p in self.mv.active_players)
         # return math.comb(self.mv.nr_teams, 2) * lcm_sizes * (max_pl - min_pl)
-        return lcm_sizes * (max_pl - min_pl) // min(team_sizes)
+        return lcm_sizes * (max_pl - min_pl) * len(self.mv.courts)
 
     def _compute_reduce_level_gap(self) -> int:
         max_pl = max(p.level.value for p in self.mv.active_players)
         min_pl = min(p.level.value for p in self.mv.active_players)
-        # return self.mv.nr_teams * (max_pl - min_pl)
-        return max_pl - min_pl
+        return self.mv.nr_teams * (max_pl - min_pl)
+        # return max_pl - min_pl
 
     def _compute_diversify_partners(self) -> int:
-        # return sum(
-        #     self.mv.history.get_partner_frequency(i, j)
-        #     for (i, j) in self.mv.history.partner_tuples
-        # )
-        return max([0] + [
+        existing_tuples = [
+            (i, j) for (i, j) in self.mv.history.partner_tuples
+            if self.mv.player_exists(i) and self.mv.player_exists(j)
+        ]
+        return sum([
             self.mv.history.get_partner_frequency(i, j)
-            for (i, j) in self.mv.history.partner_tuples
+            for (i, j) in existing_tuples
         ])
 
     def _compute_diversify_opponents(self) -> int:
-        # return sum(
-        #     self.mv.history.get_opponent_frequency(i, j)
-        #     for (i, j) in self.mv.history.opponent_tuples
-        # )
-        return max([0] + [
+        existing_tuples = [
+            (i, j) for (i, j) in self.mv.history.opponent_tuples
+            if self.mv.player_exists(i) and self.mv.player_exists(j)
+        ]
+        return sum([
             self.mv.history.get_opponent_frequency(i, j)
-            for (i, j) in self.mv.history.opponent_tuples
+            for (i, j) in existing_tuples
         ])
 
     def _compute_maximize_courts_usage(self) -> int:
         overload_per_court = self.mv.nr_teams - self.mv.settings.min_nr_teams_in_match
-        # return len(self.mv.courts) * overload_per_court
-        return overload_per_court
+        return len(self.mv.courts) * overload_per_court
+        # return overload_per_court
+
+
+class LowerBoundsComputer(BoundsComputer):
+    """
+    Computes lower bounds for various optimization goals based on the provided model variables.
+    This class is used to determine the minimum possible values for each goal in the optimization process.
+    """
+
+    def __init__(self, mv: ModelVariables):
+        super().__init__(mv)
+
+    def _compute_keep_ideal_team_size(self) -> int:
+        return len(self.mv.active_players) % self.mv.settings.min_team_size
+
+    def _compute_balance_level(self) -> int:
+        return 0
+
+    def _compute_reduce_level_gap(self) -> int:
+        m = self.mv.settings.min_team_size
+        M = self.mv.settings.max_team_size
+        level_counts = Counter(p.level.value for p in self.mv.active_players)
+
+        if len(level_counts) <= 1:
+            return 0
+
+        sorted_levels = sorted(level_counts)
+        delta = min(b - a for a, b in zip(sorted_levels, sorted_levels[1:]))
+
+        leftovers = sum(c % m for c in level_counts.values())
+        mixed_teams_min = math.ceil(leftovers / M)
+        return mixed_teams_min * delta
+
+    def _compute_diversify_partners(self) -> int:
+        freqs = [
+            self.mv.history.get_partner_frequency(i, j)
+            for (i, j) in self.mv.history.partner_tuples
+            if self.mv.player_exists(i) and self.mv.player_exists(j)
+        ]
+        return min(freqs) if freqs else 0
+
+    def _compute_diversify_opponents(self) -> int:
+        freqs = [
+            self.mv.history.get_opponent_frequency(i, j)
+            for (i, j) in self.mv.history.opponent_tuples
+            if self.mv.player_exists(i) and self.mv.player_exists(j)
+        ]
+        return min(freqs) if freqs else 0
+
+    def _compute_maximize_courts_usage(self) -> int:
+        max_nr_teams = math.ceil(len(self.mv.active_players) / self.mv.settings.min_team_size)
+        max_nr_courts_needed = max_nr_teams // self.mv.settings.min_nr_teams_in_match
+        return max(0, len(self.mv.courts) - max_nr_courts_needed)
+

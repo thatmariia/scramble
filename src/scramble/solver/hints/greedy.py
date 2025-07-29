@@ -14,6 +14,7 @@ def greedy_assignment(mv: ModelVariables):
 
     # assign players to teams, respecting min_team_size
     player_in_team = {}
+    team_size = {}
     team_ids_with_players = []
     player_idx = 0
     last_repeated_team_id = 0
@@ -31,6 +32,7 @@ def greedy_assignment(mv: ModelVariables):
                 player_in_team[(player.id, team_id)] = 1
                 if team_id not in team_ids_with_players:
                     team_ids_with_players.append(team_id)
+                team_size[team_id] = team_size.get(team_id, 0) + 1
                 player_idx += 1
 
     # assign teams to courts, respecting min_teams_in_match
@@ -66,4 +68,4 @@ def greedy_assignment(mv: ModelVariables):
     for court in mv.courts:
         court_active[court.id] = 1 if court.id in court_ids_with_teams else 0
 
-    return player_in_team, team_on_court, team_active, court_active
+    return player_in_team, team_on_court, team_active, court_active, team_size

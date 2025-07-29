@@ -10,11 +10,23 @@ from scramble.settings import Settings, Goal
 from scramble.solver.model_variables import ModelVariables
 from scramble.solver.hints import add_startup_hints, add_hints_from_round
 from scramble.solver.constraints import add_constraints, add_symmetry_breaking
-from scramble.solver.objective import score_round
+from scramble.solver.objective import score_round, get_lb, get_ub
 from scramble.solver.objective.scoring_functions import SCORING_FUNCTIONS
 from scramble.solver.utils import define_and_var
 
 LOGGER = logging.getLogger(__name__)
+
+
+class SolutionPrinter(cp.CpSolverSolutionCallback):
+    def __init__(self):
+        cp.CpSolverSolutionCallback.__init__(self)
+        self.best_objective = None
+
+    def on_solution_callback(self):
+        obj = self.objective_value
+        if self.best_objective is None or obj < self.best_objective:
+            print(f'New best objective: {obj}')
+            self.best_objective = obj
 
 
 class ScrambleSolver:
@@ -80,23 +92,44 @@ class ScrambleSolver:
 
         self.model = cp.CpModel()
         self.solver = cp.CpSolver()
-        # supported = cp.sat_parameters_pb2.SatParameters().DESCRIPTOR.fields_by_name
-        # print("--------- Supported parameters ---------")
-        # print(sorted(supported))
-        # print("--------- End of supported parameters ---------")
-        self.solver.parameters.log_search_progress = False
-        self.solver.parameters.num_search_workers = 0
+        self.solver.parameters.log_search_progress = True
+        self.solver.parameters.num_search_workers = max(8, multiprocessing.cpu_count())
         self.solver.parameters.random_seed = 1
+        self.solver.parameters.linearization_level = 2
+        self.solver.parameters.cut_level = 2
+        self.solver.parameters.add_lp_constraints_lazily = True
+        self.solver.parameters.add_objective_cut = True
+        self.solver.parameters.add_cg_cuts = True
+        self.solver.parameters.add_mir_cuts = True
+        self.solver.parameters.add_zero_half_cuts = True
+        self.solver.parameters.add_clique_cuts = True
+        self.solver.parameters.add_rlt_cuts = True
+        self.solver.parameters.add_lin_max_cuts = True
+        self.solver.parameters.use_implied_bounds = True
+        # self.solver.parameters.optimize_with_core = True
+        self.solver.parameters.optimize_with_lb_tree_search = True
+        self.solver.parameters.exploit_relaxation_solution = True
+        self.solver.parameters.symmetry_level = 4
+        self.solver.parameters.new_linear_propagation = True
+        self.solver.parameters.use_symmetry_in_lp = True
+        self.solver.parameters.exploit_best_solution = True
+        self.solver.parameters.only_solve_ip = True
+        # self.solver.parameters.mip_compute_true_objective_bound = True
+        self.solver.parameters.randomize_search = True
 
-        # self.solver.parameters.search_branching = cp.RANDOMIZED_SEARCH
+        # self.solver.parameters.max_num_cuts = 100000
 
-        # self.solver.parameters.optimize_with_lb_tree_search = True
+        # optionally: params.find_feasible_solution_period = 0
+        # self.solver.parameters.max_time_in_seconds = 10  # 10 seconds for example
+
+        self.solver.parameters.search_branching = cp.PORTFOLIO_WITH_QUICK_RESTART_SEARCH
 
         self.vars = {}
         self.nr_teams = max(
             self.settings.min_nr_teams_in_match,
             math.ceil(len(self.active_players) / self.settings.min_team_size)
         )
+        print("nr teams:", self.nr_teams)
         self._mv = None
         self._prev_round = prev_round
         LOGGER.debug(f"number of teams: {self.nr_teams}")
@@ -147,7 +180,7 @@ class ScrambleSolver:
             )
             flat_vars_court_active.append(self.vars["court_active"][court.id])
 
-        flat_vars = flat_vars_player_in_team + flat_vars_team_on_court + flat_vars_team_active + flat_vars_court_active + flat_vars_team_size
+        flat_vars = flat_vars_team_active + flat_vars_court_active + flat_vars_player_in_team + flat_vars_team_on_court + flat_vars_team_size
         self.model.add_decision_strategy(
             variables=flat_vars,
             var_strategy=cp.CHOOSE_FIRST,
@@ -189,7 +222,7 @@ class ScrambleSolver:
         """
         Sets the weighted sum of scoring functions as the objective to minimize.
         """
-        self.model.Minimize(score_round(self.model, self._mv))
+        self.model.minimize(score_round(self.model, self._mv))
 
     def _matches_from_solutions(self) -> list[Match]:
         """
@@ -245,13 +278,15 @@ class ScrambleSolver:
         self.add_constraints()
         self.set_objective()
 
-        status = self.solver.Solve(self.model)
+        # status = self.solver.Solve(self.model)
+        printer = SolutionPrinter()
+        status = self.solver.solve(self.model, solution_callback=printer)
 
         if status in [cp.OPTIMAL, cp.FEASIBLE]:
             matches = self._matches_from_solutions()
             game_round = Round(matches)
             LOGGER.debug(f"Solution found:\n{game_round}")
-            # print(self.solver.ResponseStats())
+            print(self.solver.response_stats())
             return game_round
         else:
             raise RuntimeError("No feasible solution found")

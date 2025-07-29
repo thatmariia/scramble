@@ -42,9 +42,10 @@ def add_startup_hints(mdl: CpModel, mv: ModelVariables):
     Adds hints to the model.
     This helps guide the solver towards more optimal solutions.
     """
-    player_in_team, team_on_court, team_active, court_active = greedy_assignment(mv)
+    player_in_team, team_on_court, team_active, court_active, team_size = greedy_assignment(mv)
 
     for team_id in range(mv.nr_teams):
+        mdl.add_hint(mv.team_size[team_id], team_size.get(team_id, 0))
         mdl.add_hint(mv.team_active[team_id], team_active.get(team_id, 0))
 
         for player in mv.active_players:
@@ -55,3 +56,4 @@ def add_startup_hints(mdl: CpModel, mv: ModelVariables):
 
     for court in mv.courts:
         mdl.add_hint(mv.court_active[court.id], court_active.get(court.id, 0))
+

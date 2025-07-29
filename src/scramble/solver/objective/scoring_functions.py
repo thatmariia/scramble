@@ -6,7 +6,7 @@ from scramble.core import Level
 from scramble.settings import Goal
 from scramble.solver.model_variables import ModelVariables
 from scramble.solver.objective.function_protocol import ScoringFunction
-from scramble.solver.utils import define_and_var, define_or_var, absolute_slack, define_and_var_bool
+from scramble.solver.utils import define_and_var, define_or_var, absolute_slack, absolute_value, define_and_var_bool, reify_with_fallback
 
 
 # --- Individual goal scoring functions ---
@@ -26,12 +26,16 @@ def score_keep_ideal_team_size(mdl: cp, mv: ModelVariables) -> LinearExpr | IntV
     terms: list[IntVar] = []
     for team_id in range(mv.nr_teams):
         # calculate the deviation from the ideal team size
-        diff = mdl.new_int_var(0, size_range, f"diff_t{team_id}")
-        mdl.add(diff == mv.team_size[team_id] - ideal_team_size).only_enforce_if(mv.team_active[team_id])
-        mdl.add(diff == 0).only_enforce_if(mv.team_active[team_id].Not())
-        # abs_diff = absolute_slack(mdl, diff, f"abs_diff_t{team_id}", size_range)
+        diff = mdl.new_int_var(-mv.settings.min_team_size, size_range, f"diff_t{team_id}")
+        mdl.add(diff == mv.team_size[team_id] - ideal_team_size)
+        abs_diff = absolute_slack(mdl, diff, f"abs_diff_t{team_id}", size_range)
+        # abs_diff = absolute_value(mdl, diff, f"abs_diff_t{team_id}", size_range)
 
-        terms.append(diff)
+        penalty = reify_with_fallback(
+            mdl, abs_diff, 0, mv.team_active[team_id],
+            (0, size_range), f"penalty_reify_ideal_team_size_t{team_id}"
+        )
+        terms.append(penalty)
     return sum(terms)
 
 
@@ -44,23 +48,8 @@ def score_balance_lvl(mdl: cp, mv: ModelVariables) -> LinearExpr | IntVar:
     """
     terms: list[IntVar] = []
 
-    max_lvl = max(p.level.value for p in mv.active_players)
-    team_sizes = list(range(mv.settings.min_team_size, mv.settings.max_team_size + 1))
-    lcm_sizes = math.lcm(*team_sizes)
-    scaled_max_lvl = lcm_sizes * max_lvl
-
-    for team1_id in range(mv.nr_teams):
-        for team2_id in range(team1_id + 1, mv.nr_teams):
-            both_on_court_and_active = mv.teams_on_same_court(mdl, team1_id, team2_id)
-
-            gap = mdl.new_int_var(-scaled_max_lvl, scaled_max_lvl, f"gap_t{team1_id}_t{team2_id}")
-            avg1 = mv.scaled_avg_team_lvl(mdl, team1_id)
-            avg2 = mv.scaled_avg_team_lvl(mdl, team2_id)
-            mdl.add(gap == avg1 - avg2).only_enforce_if(both_on_court_and_active)
-            mdl.add(gap == 0).only_enforce_if(both_on_court_and_active.Not())
-            abs_gap = absolute_slack(mdl, gap, f"abs_gap_t{team1_id}_t{team2_id}", scaled_max_lvl)
-
-            terms.append(abs_gap)
+    for court in mv.courts:
+        terms.append(mv.court_lvl_spread(mdl, court.id))
 
     return sum(terms)
 
@@ -90,10 +79,20 @@ def score_diversify_partners(mdl: cp, mv: ModelVariables) -> LinearExpr | IntVar
     terms: list[IntVar] = []
 
     for player_i_id, player_j_id in mv.history.partner_tuples:
-        if mv.player_exists(player_i_id) and mv.player_exists(player_j_id):
-            freq = mv.history.get_partner_frequency(player_i_id, player_j_id)
-            same_team = mv.players_in_same_team(mdl, player_i_id, player_j_id)
-            terms.append(same_team * freq)
+        if not mv.player_exists(player_i_id) and not mv.player_exists(player_j_id):
+            continue
+
+        freq = mv.history.get_partner_frequency(player_i_id, player_j_id)
+        if freq == 0:
+            continue
+
+        same_team = mv.players_in_same_team(mdl, player_i_id, player_j_id)
+
+        penalty = reify_with_fallback(
+            mdl, freq, 0, same_team,
+            (0, freq), f"penalty_reify_partners_{player_i_id}_{player_j_id}"
+        )
+        terms.append(penalty)
     return sum(terms)
 
 
@@ -107,10 +106,20 @@ def score_diversify_opponents(mdl: cp, mv: ModelVariables) -> LinearExpr | IntVa
     terms: list[IntVar] = []
 
     for player_i_id, player_j_id in mv.history.opponent_tuples:
-        if mv.player_exists(player_i_id) and mv.player_exists(player_j_id):
-            freq = mv.history.get_opponent_frequency(player_i_id, player_j_id)
-            valid_pair = mv.players_in_same_court_diff_team(mdl, player_i_id, player_j_id)
-            terms.append(valid_pair * freq)
+        if not mv.player_exists(player_i_id) and not mv.player_exists(player_j_id):
+            continue
+
+        freq = mv.history.get_opponent_frequency(player_i_id, player_j_id)
+        if freq == 0:
+            continue
+
+        valid_pair = mv.players_in_same_court_diff_team(mdl, player_i_id, player_j_id)
+
+        penalty = reify_with_fallback(
+            mdl, freq, 0, valid_pair,
+            (0, freq), f"penalty_reify_opponents_{player_i_id}_{player_j_id}"
+        )
+        terms.append(penalty)
 
     return sum(terms)
 
@@ -129,14 +138,14 @@ def score_maximize_courts_usage(mdl: cp, mv: ModelVariables) -> LinearExpr | Int
         teams_on_court = [
             mv.team_on_court[(team_id, court.id)] for team_id in range(mv.nr_teams)
         ]
-        total_teams = mdl.new_int_var(0, mv.nr_teams, f"total_teams_on_{court.id}")
-        mdl.add(total_teams == sum(teams_on_court))
+        overload = mdl.new_int_var(-min_teams, mv.nr_teams, f"overload_{court.id}")
+        mdl.add(overload == sum(teams_on_court) - min_teams)
 
-        overload = mdl.new_int_var(0, mv.nr_teams, f"overload_{court.id}")
-        mdl.add(overload == total_teams - min_teams).only_enforce_if(mv.court_active[court.id])
-        mdl.add(overload == 0).only_enforce_if(mv.court_active[court.id].Not())
-
-        terms.append(overload)
+        penalty = reify_with_fallback(
+            mdl, overload, 0, mv.court_active[court.id],
+            (0, mv.nr_teams), f"penalty_reify_{court.id}"
+        )
+        terms.append(penalty)
 
     return sum(terms)
 

@@ -1,8 +1,10 @@
 from ortools.sat.python import cp_model as cp
 import math
+import operator
 from scramble.solver.model_variables import ModelVariables
 from scramble.solver.constraints.function_protocol import ConstraintFunction
 from scramble.settings import Settings, Goal
+from scramble.solver.utils import reify_existing_with_fallback
 
 
 # --- Individual constraint functions ---
@@ -19,9 +21,6 @@ def constraint_nr_active_teams(mdl: cp, mv: ModelVariables):
         min_nr_active_teams = math.ceil(len(mv.active_players) / mv.settings.max_team_size)
 
     mdl.add(sum(mv.team_active.values()) >= min_nr_active_teams)
-
-    max_nr_active_teams = math.ceil(len(mv.active_players) / mv.settings.min_team_size)
-    mdl.add(sum(mv.team_active.values()) <= max_nr_active_teams)
 
 
 def constraint_nr_active_courts(mdl: cp, mv: ModelVariables):
@@ -60,6 +59,11 @@ def constraint_player_mapping(mdl: cp, mv: ModelVariables):
             mv.player_in_team[(player.id, team_id)]
             for team_id in range(mv.nr_teams)
         ]
+        # teams_with_player = []
+        # for team_id in range(mv.nr_teams):
+        #     teams_with_player.append(mv.player_in_team[(player.id, team_id)])
+        #     mdl.add_implication(mv.player_in_team[(player.id, team_id)], mv.team_active[team_id])
+
         mdl.add(sum(teams_with_player) == 1)
 
 
@@ -75,14 +79,16 @@ def constraint_team_active_and_size(mdl: cp, mv: ModelVariables):
             mv.player_in_team[(player.id, team_id)]
             for player in mv.active_players
         ]
-
-        mdl.add(mv.team_size[team_id] == sum(team_players))
+        mdl.add_bool_or(team_players).only_enforce_if(mv.team_active[team_id])
         mdl.add(mv.team_size[team_id] == 0).only_enforce_if(mv.team_active[team_id].Not())
-        is_non_zero = mdl.new_bool_var(f"team_{team_id}_is_non_zero")
-        mdl.add(mv.team_size[team_id] >= mv.settings.min_team_size).only_enforce_if(is_non_zero)
-        mdl.add(mv.team_size[team_id] <= mv.settings.max_team_size).only_enforce_if(is_non_zero)
-        mdl.add(mv.team_size[team_id] == 0).only_enforce_if(is_non_zero.Not())
-        mdl.add(mv.team_active[team_id] == is_non_zero)
+
+        mdl.add(sum(team_players) == mv.team_size[team_id])
+        reify_existing_with_fallback(
+            mdl, mv.team_size[team_id], mv.settings.min_team_size, 0, mv.team_active[team_id], operator.ge
+        )
+        reify_existing_with_fallback(
+            mdl, mv.team_size[team_id], mv.settings.max_team_size, 0, mv.team_active[team_id], operator.le
+        )
 
 
 def constraint_team_mapping(mdl: cp, mv: ModelVariables):
@@ -92,11 +98,18 @@ def constraint_team_mapping(mdl: cp, mv: ModelVariables):
     Conforms to the ConstraintFunction protocol.
     """
     for team_id in range(mv.nr_teams):
-        team_on_courts = [
-            mv.team_on_court[(team_id, court.id)]
-            for court in mv.courts
-        ]
+        # team_on_courts = [
+        #     mv.team_on_court[(team_id, court.id)]
+        #     for court in mv.courts
+        # ]
+        team_on_courts = []
+        for court in mv.courts:
+            team_on_courts.append(mv.team_on_court[(team_id, court.id)])
+            mdl.add_implication(mv.team_on_court[(team_id, court.id)], mv.team_active[team_id])
+            mdl.add_implication(mv.team_on_court[(team_id, court.id)], mv.court_active[court.id])
+
         mdl.add(sum(team_on_courts) == mv.team_active[team_id])
+        mdl.add(sum(team_on_courts) == 0).only_enforce_if(mv.team_active[team_id].Not())
 
 
 def constraint_court_active_and_size(mdl: cp, mv: ModelVariables):
@@ -111,13 +124,17 @@ def constraint_court_active_and_size(mdl: cp, mv: ModelVariables):
             mv.team_on_court[(team_id, court.id)]
             for team_id in range(mv.nr_teams)
         ]
+        mdl.add_bool_or(teams_on_court).only_enforce_if(mv.court_active[court.id])
+        mdl.add(sum(teams_on_court) == 0).only_enforce_if(mv.court_active[court.id].Not())
 
-        is_non_zero = mdl.new_bool_var(f"court_{court.id}_is_non_zero")
-        mdl.add(sum(teams_on_court) >= mv.settings.min_nr_teams_in_match).only_enforce_if(is_non_zero)
         max_nr_teams_in_match = len(mv.active_players) // mv.settings.min_team_size
-        mdl.add(sum(teams_on_court) <= max_nr_teams_in_match).only_enforce_if(is_non_zero)
-        mdl.add(sum(teams_on_court) == 0).only_enforce_if(is_non_zero.Not())
-        mdl.add(mv.court_active[court.id] == is_non_zero)
+
+        mdl.add(sum(teams_on_court) >= mv.settings.min_nr_teams_in_match).only_enforce_if(mv.court_active[court.id])
+        mdl.add(sum(teams_on_court) <= max_nr_teams_in_match).only_enforce_if(mv.court_active[court.id])
+        mdl.add(sum(teams_on_court) == 0).only_enforce_if(mv.court_active[court.id].Not())
+
+        # mdl.add(sum(teams_on_court) >= mv.settings.min_nr_teams_in_match * (mv.court_active[court.id]))
+        # mdl.add(sum(teams_on_court) <= max_nr_teams_in_match * (mv.court_active[court.id]))
 
 
 # --- Constraint function registry ---
