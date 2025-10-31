@@ -27,8 +27,6 @@ class PlayerHistory(Serializable):
             f"{combined_df.to_string()}\n"
         )
 
-
-
     @classmethod
     def from_dict(cls, data: dict) -> "PlayerHistory":
         return cls(

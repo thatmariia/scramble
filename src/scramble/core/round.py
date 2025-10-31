@@ -19,8 +19,13 @@ class Round(Serializable):
 
     def __str__(self):
         separator = "-" * 40
-        match_strs = f"\n{separator}\n".join(str(match) for match in self.matches)
-        return f"Round:\n{match_strs}\n{separator}"
+        matches_sorted = sorted(self.matches, key=lambda m: m.court.id)
+        match_strs = f"\n{separator}\n".join(str(match) for match in matches_sorted)
+        nr_courts = len(set(match.court.id for match in matches_sorted))
+        nr_courts_str = f"{nr_courts} court{'s' if nr_courts > 1 else ''}"
+        nr_teams = sum(len(match.teams) for match in matches_sorted)
+        nr_teams_str = f"{nr_teams} team{'s' if nr_teams > 1 else ''}"
+        return f"Round ({nr_courts_str}, {nr_teams_str}):\n{match_strs}\n{separator}"
 
 
     @classmethod

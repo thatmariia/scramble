@@ -1,5 +1,7 @@
 from dataclasses import dataclass
+import math
 from itertools import combinations_with_replacement
+from copy import deepcopy
 from scramble.utils import Serializable
 from scramble.core import Level
 from scramble.settings.goal import Goal
@@ -24,19 +26,22 @@ class Settings(Serializable):
         If not provided, defaults to the predefined goal configurations.
     """
     min_team_size: int = 2
-    max_team_size: int = 5
+    max_team_size: int = 3
     min_nr_teams_in_match: int = 2
     goal_configs: dict[Goal, GoalConfig] | None = None
 
     def __post_init__(self):
+        # ensure that min_team_size and max_team_size are valid
         self.max_team_size = max(self.min_team_size, self.max_team_size)
+
+        # ensure goal_configs is initialized, default values if some goals not provided
         if self.goal_configs is None:
-            self.goal_configs = DEFAULT_GOAL_CONFIGS.copy()
+            self.goal_configs = deepcopy(DEFAULT_GOAL_CONFIGS)
         else:
             # Ensure that all default goals are present in the goal_configs
             for goal in DEFAULT_GOAL_CONFIGS:
                 if goal not in self.goal_configs:
-                    self.goal_configs[goal] = DEFAULT_GOAL_CONFIGS[goal]
+                    self.goal_configs[goal] = deepcopy(DEFAULT_GOAL_CONFIGS[goal])
 
     def __str__(self):
         goal_configs_str = "None"
@@ -65,3 +70,10 @@ class Settings(Serializable):
             "min_nr_teams_in_match": self.min_nr_teams_in_match,
             "goal_configs": {goal.value: config.to_dict() for goal, config in self.goal_configs.items()}
         }
+
+    def lcm_sizes(self):
+        team_sizes = list(range(self.min_team_size, self.max_team_size + 1))
+        lcm_sizes = math.lcm(*team_sizes)
+        return lcm_sizes
+
+
